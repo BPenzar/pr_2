@@ -24,7 +24,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
     if (!confirm('Are you sure you want to delete this QR code?')) return
 
     try {
-      await deleteQRCode.mutateAsync(qrCodeId)
+      await deleteQRCode.mutateAsync({ id: qrCodeId, formId })
     } catch (error) {
       console.error('Failed to delete QR code:', error)
     }

@@ -59,37 +59,21 @@ export function useCreateQRCode() {
       formId: string
       locationName?: string
     }) => {
-      // Generate short URL using the database function
-      const { data: shortUrlResult, error: shortUrlError } = await supabase
-        .rpc('generate_short_url')
+      const { data: qrCode, error } = await supabase.functions.invoke('generate-qr-code', {
+        body: {
+          formId: data.formId,
+          locationName: data.locationName,
+        },
+      })
 
-      if (shortUrlError) throw shortUrlError
-
-      const shortUrl = shortUrlResult as string
-      const baseUrl = window.location.origin
-      const fullUrl = `${baseUrl}/f/${shortUrl}`
-
-      // Insert QR code record
-      const { data: qrCode, error: insertError } = await supabase
-        .from('qr_codes')
-        .insert({
-          form_id: data.formId,
-          short_url: shortUrl,
-          full_url: fullUrl,
-          location_name: data.locationName,
-        })
-        .select()
-        .single()
-
-      if (insertError) throw insertError
-
-      return {
-        id: qrCode.id,
-        shortUrl,
-        fullUrl,
-        formId: data.formId,
-        locationName: data.locationName,
-        scanCount: 0,
+      if (error) throw error
+      return qrCode as {
+        id: string
+        shortUrl: string
+        fullUrl: string
+        formId: string
+        locationName?: string
+        scanCount: number
       }
     },
     onSuccess: (data) => {
@@ -129,18 +113,17 @@ export function useDeleteQRCode() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (qrCodeId: string) => {
+    mutationFn: async (data: { id: string; formId: string }) => {
       const { error } = await supabase
         .from('qr_codes')
         .delete()
-        .eq('id', qrCodeId)
+        .eq('id', data.id)
 
       if (error) throw error
     },
-    onSuccess: (_, qrCodeId) => {
-      queryClient.invalidateQueries({ queryKey: ['qr-code', qrCodeId] })
-      // We don't know the form_id here, so invalidate all qr-codes queries
-      queryClient.invalidateQueries({ queryKey: ['qr-codes'] })
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['qr-code', variables.id] })
+      queryClient.invalidateQueries({ queryKey: ['qr-codes', variables.formId] })
     },
   })
 }

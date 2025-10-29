@@ -57,6 +57,7 @@ export function useCreateQuestion() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['form', data.form_id] })
+      queryClient.invalidateQueries({ queryKey: ['questions', data.form_id] })
     },
   })
 }
@@ -95,6 +96,7 @@ export function useUpdateQuestion() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['form', variables.formId] })
+      queryClient.invalidateQueries({ queryKey: ['questions', variables.formId] })
     },
   })
 }
@@ -113,6 +115,7 @@ export function useDeleteQuestion() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['form', variables.formId] })
+      queryClient.invalidateQueries({ queryKey: ['questions', variables.formId] })
     },
   })
 }
