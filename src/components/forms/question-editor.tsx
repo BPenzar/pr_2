@@ -43,6 +43,7 @@ export function QuestionEditor({
   const [description, setDescription] = useState(question?.description || '')
   const [required, setRequired] = useState(question?.required || false)
   const [options, setOptions] = useState<string[]>(question?.options || [''])
+  const [ratingScale, setRatingScale] = useState<number>(question?.rating_scale || 5)
   const [error, setError] = useState<string | null>(null)
 
   const createQuestion = useCreateQuestion()
@@ -51,6 +52,7 @@ export function QuestionEditor({
 
   const isEditing = !!question
   const isChoiceType = type === 'choice' || type === 'multiselect'
+  const isRatingType = type === 'rating'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,6 +65,7 @@ export function QuestionEditor({
         description: description.trim() || undefined,
         required,
         options: isChoiceType ? options.filter(opt => opt.trim()) : undefined,
+        rating_scale: isRatingType ? ratingScale : undefined,
       }
 
       if (isEditing) {
@@ -226,6 +229,28 @@ export function QuestionEditor({
                   Add Option
                 </Button>
               </div>
+            </div>
+          )}
+
+          {isRatingType && (
+            <div className="space-y-2">
+              <Label>Rating Scale</Label>
+              <Select
+                value={ratingScale.toString()}
+                onValueChange={(value) => setRatingScale(parseInt(value))}
+                disabled={isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rating scale" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">1-5 Stars</SelectItem>
+                  <SelectItem value="10">1-10 Scale</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose between a 5-star rating or 1-10 numerical scale
+              </p>
             </div>
           )}
 

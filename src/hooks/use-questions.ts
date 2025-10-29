@@ -1,8 +1,27 @@
 'use client'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-client'
 import { Question } from '@/types/database'
+
+export function useQuestions(formId?: string) {
+  return useQuery({
+    queryKey: ['questions', formId],
+    queryFn: async () => {
+      if (!formId) return []
+
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('form_id', formId)
+        .order('order_index', { ascending: true })
+
+      if (error) throw error
+      return data as Question[]
+    },
+    enabled: !!formId,
+  })
+}
 
 export function useCreateQuestion() {
   const queryClient = useQueryClient()
@@ -15,6 +34,7 @@ export function useCreateQuestion() {
       description?: string
       required: boolean
       options?: string[]
+      rating_scale?: number
       orderIndex: number
     }) => {
       const { data: question, error } = await supabase
@@ -26,6 +46,7 @@ export function useCreateQuestion() {
           description: data.description,
           required: data.required,
           options: data.options,
+          rating_scale: data.rating_scale,
           order_index: data.orderIndex,
         })
         .select()
@@ -51,6 +72,7 @@ export function useUpdateQuestion() {
       description?: string
       required?: boolean
       options?: string[]
+      rating_scale?: number
       orderIndex?: number
     }) => {
       const updateData: any = {}
@@ -58,6 +80,7 @@ export function useUpdateQuestion() {
       if (data.description !== undefined) updateData.description = data.description
       if (data.required !== undefined) updateData.required = data.required
       if (data.options !== undefined) updateData.options = data.options
+      if (data.rating_scale !== undefined) updateData.rating_scale = data.rating_scale
       if (data.orderIndex !== undefined) updateData.order_index = data.orderIndex
 
       const { data: question, error } = await supabase

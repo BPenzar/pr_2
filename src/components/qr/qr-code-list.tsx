@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 import { useQRCodes, useDeleteQRCode } from '@/hooks/use-qr-codes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { QRCodeGenerator } from './qr-code-generator'
-import { QrCodeIcon, PlusIcon, TrashIcon, ExternalLinkIcon, EyeIcon } from 'lucide-react'
+import { QrCodeIcon, PlusIcon, TrashIcon, EyeIcon, DownloadIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface QRCodeListProps {
@@ -27,6 +28,49 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
     } catch (error) {
       console.error('Failed to delete QR code:', error)
     }
+  }
+
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      // You could add a toast notification here
+    } catch (error) {
+      console.error('Failed to copy URL:', error)
+    }
+  }
+
+  const handleDownloadQR = (qrCode: any) => {
+    const svg = document.querySelector(`#qr-${qrCode.id}`) as SVGElement
+    if (!svg) return
+
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const img = new Image()
+
+    img.onload = () => {
+      canvas.width = 512
+      canvas.height = 512
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const downloadLink = document.createElement('a')
+        downloadLink.href = url
+        downloadLink.download = `qr-code-${qrCode.location_name || qrCode.short_url}.png`
+        document.body.appendChild(downloadLink)
+        downloadLink.click()
+        document.body.removeChild(downloadLink)
+        URL.revokeObjectURL(url)
+      }, 'image/png')
+    }
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData)
   }
 
   if (isLoading) {
@@ -117,6 +161,17 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* QR Code Visual */}
+                  <div className="flex justify-center bg-white p-4 rounded-lg border">
+                    <QRCodeSVG
+                      id={`qr-${qrCode.id}`}
+                      value={qrCode.full_url}
+                      size={160}
+                      level="M"
+                      includeMargin={true}
+                    />
+                  </div>
+
                   {/* QR Code Stats */}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Scans</span>
@@ -146,11 +201,11 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(qrCode.full_url, '_blank')}
+                      onClick={() => handleDownloadQR(qrCode)}
                       className="flex-1"
                     >
-                      <ExternalLinkIcon className="w-4 h-4 mr-1" />
-                      Open
+                      <DownloadIcon className="w-4 h-4 mr-1" />
+                      Download
                     </Button>
                   </div>
 
