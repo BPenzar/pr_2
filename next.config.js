@@ -1,22 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {
-    rules: {
-      // Add any custom loader rules here if needed
-      // Example: "*.mdx": ["mdx-loader"]
+  experimental: {
+    turbo: {
+      loaders: {},
     },
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-      },
-      {
-        protocol: 'https',
-        hostname: 'localhost',
-      },
-    ],
+    domains: ['localhost'],
   },
 }
 
