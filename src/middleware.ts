@@ -1,47 +1,95 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_PATHS = ['/dashboard', '/projects', '/forms', '/settings']
-const PUBLIC_PATHS = ['/f/', '/api/client-info']
-const AUTH_PATHS = ['/auth/login', '/auth/signup']
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname
-  const hasSession =
-    Boolean(request.cookies.get('sb-access-token')?.value) ||
-    Boolean(request.cookies.get('sb-refresh-token')?.value)
-
-  const isProtectedPath = PROTECTED_PATHS.some((path) =>
-    pathname.startsWith(path)
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          supabaseResponse.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: any) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          supabaseResponse.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
   )
-  const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path))
-  const isAuthPath = AUTH_PATHS.some((path) => pathname.startsWith(path))
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const protectedPaths = ['/dashboard', '/projects', '/forms', '/settings']
+  const isProtectedPath = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  const publicPaths = ['/f/', '/api/client-info']
+  const isPublicPath = publicPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  const authPaths = ['/auth/login', '/auth/signup']
+  const isAuthPath = authPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  )
 
   if (isPublicPath) {
-    return NextResponse.next()
+    return supabaseResponse
   }
 
-  if (isProtectedPath && !hasSession) {
+  if (isProtectedPath && !session) {
     const redirectUrl = new URL('/auth/login', request.url)
-    redirectUrl.searchParams.set('redirectTo', pathname)
+    redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
-  if (isAuthPath && hasSession) {
+  if (isAuthPath && session) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return NextResponse.next()
+  return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
