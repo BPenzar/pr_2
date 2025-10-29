@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { usePublicForm, useSubmitResponse } from '@/hooks/use-public-form'
 import { QuestionRenderer } from './question-renderer'
 import { Button } from '@/components/ui/button'
@@ -32,7 +32,10 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
   const [captcha, setCaptcha] = useState<{ question: string; answer: string } | null>(null)
   const [captchaInput, setCaptchaInput] = useState('')
 
-  const questions = (formData?.form as any)?.questions || []
+  const questions = useMemo(() => {
+    const rawQuestions = (formData?.form as any)?.questions
+    return Array.isArray(rawQuestions) ? rawQuestions : []
+  }, [formData?.form])
   const isMultiStep = questions.length > 3
   const questionsPerStep = isMultiStep ? 1 : questions.length
   const totalSteps = isMultiStep ? questions.length : 1
