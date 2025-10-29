@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbo: {
-      loaders: {},
-    },
+  turbopack: {
+    rules: {},
   },
   images: {
     domains: ['localhost'],
