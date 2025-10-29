@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { ResponseChart, QRPerformanceChart, LocationAnalytics } from './response-chart'
 import { TrendingUpIcon, Users2Icon, QrCodeIcon, PercentIcon, CalendarIcon, DownloadIcon, FileTextIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import type { Question } from '@/types/database'
 
 interface AnalyticsDashboardProps {
   formId: string
@@ -48,7 +49,7 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
       id: form.id,
       name: form.name,
       description: form.description,
-      questions: form.questions?.map(q => ({
+      questions: form.questions?.map((q: Question) => ({
         id: q.id,
         title: q.title,
         description: q.description,
@@ -72,7 +73,7 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
       id: form.id,
       name: form.name,
       description: form.description,
-      questions: form.questions?.map(q => ({
+      questions: form.questions?.map((q: Question) => ({
         id: q.id,
         title: q.title,
         description: q.description,
@@ -259,7 +260,7 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Project:</span>
-                  <span>{formData.project.name}</span>
+                  <span>{(formData.project as any)?.[0]?.name || 'Unknown Project'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created:</span>

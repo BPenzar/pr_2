@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useForm } from '@/hooks/use-forms'
+import { useForm, useUpdateForm } from '@/hooks/use-forms'
+import { useQRCodes } from '@/hooks/use-qr-codes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuestionEditor } from './question-editor'
@@ -16,6 +17,8 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const [isAddingQuestion, setIsAddingQuestion] = useState(false)
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
   const { data: form, isLoading, error } = useForm(formId)
+  const { data: qrCodes } = useQRCodes(formId)
+  const updateForm = useUpdateForm()
 
   if (isLoading) {
     return (
@@ -69,10 +72,12 @@ export function FormBuilder({ formId }: FormBuilderProps) {
               </CardDescription>
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
-                <SettingsIcon className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
+              <Link href={`/forms/${formId}/settings`}>
+                <Button variant="outline" size="sm">
+                  <SettingsIcon className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              </Link>
               <Link href={`/forms/${formId}/analytics`}>
                 <Button variant="outline" size="sm">
                   <BarChart3Icon className="w-4 h-4 mr-2" />
@@ -85,13 +90,38 @@ export function FormBuilder({ formId }: FormBuilderProps) {
                   QR Codes
                 </Button>
               </Link>
-              <Button variant="outline" size="sm">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Create a preview URL with form data
+                  const previewUrl = `/forms/${formId}/preview`
+                  window.open(previewUrl, '_blank')
+                }}
+              >
                 <EyeIcon className="w-4 h-4 mr-2" />
                 Preview
               </Button>
-              <Button size="sm">
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (!form) return
+
+                  try {
+                    await updateForm.mutateAsync({
+                      id: formId,
+                      name: form.name,
+                      description: form.description ?? undefined,
+                      is_active: !form.is_active
+                    })
+                  } catch (error) {
+                    console.error('Failed to update form status:', error)
+                  }
+                }}
+                disabled={updateForm.isPending}
+              >
                 <SaveIcon className="w-4 h-4 mr-2" />
-                Publish
+                {form?.is_active ? 'Unpublish' : 'Publish'}
               </Button>
             </div>
           </div>
@@ -107,12 +137,17 @@ export function FormBuilder({ formId }: FormBuilderProps) {
                 {form.is_active ? 'Active' : 'Inactive'}
               </span>
             </div>
-            {form.is_active && (
-              <Link href={`/f/${formId}`} target="_blank">
+            {form.is_active && qrCodes && qrCodes.length > 0 && (
+              <Link href={`/f/${qrCodes[0].short_url}`} target="_blank">
                 <Button variant="outline" size="sm">
                   View Live Form
                 </Button>
               </Link>
+            )}
+            {form.is_active && (!qrCodes || qrCodes.length === 0) && (
+              <Button variant="outline" size="sm" disabled>
+                No QR Code Yet
+              </Button>
             )}
           </div>
         </CardContent>

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { TrashIcon, DownloadIcon, FilterIcon, StarIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import type { Question } from '@/types/database'
 
 interface ResponseViewerProps {
   formId: string
@@ -62,7 +63,7 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
       id: form.id,
       name: form.name,
       description: form.description,
-      questions: form.questions?.map(q => ({
+      questions: form.questions?.map((q: Question) => ({
         id: q.id,
         title: q.title,
         description: q.description,

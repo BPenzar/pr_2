@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const fetchAccount = async (userId: string) => {
+    console.log('Fetching account for userId:', userId)
     try {
       const { data, error } = await supabase
         .from('accounts')
@@ -82,8 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (error) {
-        console.error('Error fetching account:', error)
+        console.error('Error fetching account:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error
+        })
       } else {
+        console.log('Successfully fetched account:', data)
         setAccount(data as any)
       }
     } catch (error) {

@@ -59,19 +59,41 @@ export function useCreateQRCode() {
       formId: string
       locationName?: string
     }) => {
-      // Call the edge function to generate QR code and short URL
-      const { data: qrCode, error } = await supabase.functions.invoke('generate-qr-code', {
-        body: {
-          formId: data.formId,
-          locationName: data.locationName,
-        },
-      })
+      // Generate short URL using the database function
+      const { data: shortUrlResult, error: shortUrlError } = await supabase
+        .rpc('generate_short_url')
 
-      if (error) throw error
-      return qrCode
+      if (shortUrlError) throw shortUrlError
+
+      const shortUrl = shortUrlResult as string
+      const baseUrl = window.location.origin
+      const fullUrl = `${baseUrl}/f/${shortUrl}`
+
+      // Insert QR code record
+      const { data: qrCode, error: insertError } = await supabase
+        .from('qr_codes')
+        .insert({
+          form_id: data.formId,
+          short_url: shortUrl,
+          full_url: fullUrl,
+          location_name: data.locationName,
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      return {
+        id: qrCode.id,
+        shortUrl,
+        fullUrl,
+        formId: data.formId,
+        locationName: data.locationName,
+        scanCount: 0,
+      }
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['qr-codes', data.form_id] })
+      queryClient.invalidateQueries({ queryKey: ['qr-codes', data.formId] })
     },
   })
 }
