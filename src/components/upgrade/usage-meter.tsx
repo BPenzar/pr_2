@@ -104,9 +104,10 @@ export function UsageMeter({ usage, planName, onUpgrade, showUpgradePrompts = tr
     }
   }
 
-  const hasAnyLimitExceeded = Object.values(usage).some(
-    ({ current, limit }) => limit !== -1 && current >= limit
-  )
+  const hasAnyLimitExceeded = Object.values(usage).some(({ current, limit }) => {
+    const normalizedLimit = typeof limit === 'number' && Number.isFinite(limit) ? limit : -1
+    return normalizedLimit !== -1 && current >= normalizedLimit
+  })
 
   return (
     <div className="space-y-6">
@@ -139,9 +140,10 @@ export function UsageMeter({ usage, planName, onUpgrade, showUpgradePrompts = tr
       {/* Usage Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Object.entries(usage).map(([key, { current, limit }]) => {
+          const normalizedLimit = typeof limit === 'number' && Number.isFinite(limit) ? limit : -1
           const Icon = USAGE_ICONS[key as keyof typeof USAGE_ICONS]
-          const status = getUsageStatus(current, limit)
-          const progress = calculateProgress(current, limit)
+          const status = getUsageStatus(current, normalizedLimit)
+          const progress = calculateProgress(current, normalizedLimit)
 
           return (
             <Card key={key} className={status === 'exceeded' ? 'border-red-200' : ''}>
@@ -167,11 +169,11 @@ export function UsageMeter({ usage, planName, onUpgrade, showUpgradePrompts = tr
                       {current.toLocaleString()}
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {limit === -1 ? '∞' : `/ ${limit.toLocaleString()}`}
-                    </span>
-                  </div>
+                      {normalizedLimit === -1 ? '∞' : `/ ${normalizedLimit.toLocaleString()}`}
+                  </span>
+                </div>
 
-                  {limit !== -1 && (
+                  {normalizedLimit !== -1 && (
                     <div className="space-y-1">
                       <Progress
                         value={progress}
@@ -206,7 +208,8 @@ export function UsageMeter({ usage, planName, onUpgrade, showUpgradePrompts = tr
       {showUpgradePrompts && planName === 'Free' && hasAnyLimitExceeded && (
         <div className="space-y-4">
           {Object.entries(usage).map(([key, { current, limit }]) => {
-            if (limit === -1 || current < limit) return null
+            const normalizedLimit = typeof limit === 'number' && Number.isFinite(limit) ? limit : -1
+            if (normalizedLimit === -1 || current < normalizedLimit) return null
 
             const upgradeLimit = key === 'responses' ? 10000 : -1 // Pro limits
 
@@ -214,7 +217,7 @@ export function UsageMeter({ usage, planName, onUpgrade, showUpgradePrompts = tr
               <UpgradePrompt
                 key={key}
                 feature={USAGE_LABELS[key as keyof typeof USAGE_LABELS].toLowerCase()}
-                currentLimit={limit}
+                currentLimit={normalizedLimit}
                 upgradeLimit={upgradeLimit}
                 onUpgrade={onUpgrade}
                 variant="inline"
