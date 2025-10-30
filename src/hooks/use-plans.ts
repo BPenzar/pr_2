@@ -18,6 +18,44 @@ export interface Plan {
   created_at: string
 }
 
+const normalizePlan = (plan: any): Plan => {
+  const priceCents = typeof plan?.price === 'number' ? plan.price : 0
+  const monthly = priceCents / 100
+  const yearly = monthly * 12
+
+  const features = Array.isArray(plan?.features)
+    ? plan.features
+    : typeof plan?.features === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(plan.features)
+            return Array.isArray(parsed) ? parsed : []
+          } catch (error) {
+            return []
+          }
+        })()
+      : []
+
+  return {
+    id: plan?.id ?? '',
+    name: plan?.name ?? 'Unknown',
+    price_monthly: Number.isFinite(monthly) ? parseFloat(monthly.toFixed(2)) : 0,
+    price_yearly: Number.isFinite(yearly) ? parseFloat(yearly.toFixed(2)) : 0,
+    max_projects: typeof plan?.max_projects === 'number' ? plan.max_projects : -1,
+    max_forms_per_project: typeof plan?.max_forms_per_project === 'number' ? plan.max_forms_per_project : -1,
+    max_responses_per_month:
+      typeof plan?.max_responses_per_month === 'number'
+        ? plan.max_responses_per_month
+        : typeof plan?.max_responses_per_form === 'number'
+          ? plan.max_responses_per_form
+          : -1,
+    max_qr_codes_per_form: typeof plan?.max_qr_codes_per_form === 'number' ? plan.max_qr_codes_per_form : -1,
+    features,
+    is_active: plan?.is_active ?? true,
+    created_at: plan?.created_at ?? new Date().toISOString(),
+  }
+}
+
 export interface UsageData {
   projects: number
   forms: number
@@ -43,10 +81,10 @@ export function usePlans() {
         .from('plans')
         .select('*')
         .eq('is_active', true)
-        .order('price_monthly', { ascending: true })
+        .order('price', { ascending: true })
 
       if (error) throw error
-      return data as Plan[]
+      return (data ?? []).map(normalizePlan)
     },
   })
 }
@@ -92,7 +130,7 @@ export function useAccountPlan() {
 
       return {
         account: accountData,
-        plan: accountData.plan as Plan,
+        plan: normalizePlan(accountData.plan),
         usage: {
           projects: accountData.usage_counters?.projects_count || 0,
           forms: accountData.usage_counters?.forms_count || 0,
