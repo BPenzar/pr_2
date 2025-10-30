@@ -111,12 +111,17 @@ export function useCreateForm() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['forms', data.project_id] })
       queryClient.invalidateQueries({ queryKey: ['project', data.project_id] })
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
+      }
     },
   })
 }
 
 export function useUpdateForm() {
   const queryClient = useQueryClient()
+  const { account } = useAuth()
 
   return useMutation({
     mutationFn: async (data: {
@@ -142,6 +147,10 @@ export function useUpdateForm() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['form', data.id] })
       queryClient.invalidateQueries({ queryKey: ['forms', data.project_id] })
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
+      }
     },
   })
 }
@@ -150,6 +159,7 @@ type DeleteFormArgs = { formId: string; projectId?: string }
 
 export function useDeleteForm() {
   const queryClient = useQueryClient()
+  const { account } = useAuth()
 
   return useMutation({
     mutationFn: async ({ formId }: DeleteFormArgs) => {
@@ -165,6 +175,10 @@ export function useDeleteForm() {
       queryClient.invalidateQueries({ queryKey: ['forms'] })
       if (projectId) {
         queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      }
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
       }
     },
   })

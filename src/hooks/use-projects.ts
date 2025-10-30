@@ -90,6 +90,10 @@ export function useCreateProject() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', account?.id] })
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
+      }
     },
   })
 }
@@ -137,6 +141,10 @@ export function useDeleteProject() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', account?.id] })
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
+      }
     },
   })
 }
