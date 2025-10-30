@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -43,6 +43,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
     const currentRating = parseInt(value as string) || 0
     const maxRating = question.rating_scale || 5
     const isStarRating = maxRating === 5
+    const ratingValues = useMemo(() => Array.from({ length: maxRating }, (_, i) => i + 1), [maxRating])
 
     if (isStarRating) {
       // 5-star rating with star icons
@@ -80,27 +81,48 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
       )
     } else {
       // 1-10 scale with numbered buttons
+      const getBaseColor = (ratingValue: number) => {
+        if (ratingValue <= 6) return 'border-red-200 bg-red-50 text-red-700'
+        if (ratingValue <= 8) return 'border-yellow-200 bg-yellow-50 text-yellow-700'
+        if (ratingValue === 9) return 'border-green-200 bg-green-50 text-green-700'
+        return 'border-green-300 bg-green-100 text-green-800'
+      }
+
+      const getHoverColor = (ratingValue: number) => {
+        if (ratingValue <= 6) return 'border-red-400 bg-red-100 text-red-800'
+        if (ratingValue <= 8) return 'border-yellow-400 bg-yellow-100 text-yellow-800'
+        if (ratingValue === 9) return 'border-green-400 bg-green-100 text-green-800'
+        return 'border-green-500 bg-green-200 text-green-900'
+      }
+
+      const getSelectedColor = (ratingValue: number) => {
+        if (ratingValue <= 6) return 'border-red-600 bg-red-600 text-white shadow-sm'
+        if (ratingValue <= 8) return 'border-yellow-500 bg-yellow-500 text-white shadow-sm'
+        if (ratingValue === 9) return 'border-green-500 bg-green-500 text-white shadow-sm'
+        return 'border-green-700 bg-green-700 text-white shadow-sm'
+      }
+
       return (
         <div className="space-y-3">
-          <div className="grid grid-cols-5 gap-2">
-            {[...Array(maxRating)].map((_, index) => {
-              const ratingValue = index + 1
+          <div className="flex gap-2 overflow-x-auto pb-1 flex-nowrap">
+            {ratingValues.map((ratingValue) => {
               const isSelected = ratingValue === currentRating
               const isHovered = ratingValue === hoverRating
+              const baseColor = getBaseColor(ratingValue)
 
               return (
                 <button
-                  key={index}
+                  key={ratingValue}
                   type="button"
                   onClick={() => onChange(ratingValue.toString())}
                   onMouseEnter={() => setHoverRating(ratingValue)}
                   onMouseLeave={() => setHoverRating(null)}
-                  className={`w-12 h-12 rounded-lg border-2 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`flex h-12 w-12 min-w-[3rem] items-center justify-center rounded-lg border-2 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 md:h-14 md:w-14 ${
                     isSelected
-                      ? 'bg-blue-600 text-white border-blue-600'
+                      ? getSelectedColor(ratingValue)
                       : isHovered
-                      ? 'bg-blue-100 border-blue-300 text-blue-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                      ? getHoverColor(ratingValue)
+                      : baseColor
                   }`}
                 >
                   {ratingValue}

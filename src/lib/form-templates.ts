@@ -18,6 +18,7 @@ export interface TemplateQuestion {
   required: boolean
   options?: string[]
   order_index: number
+  rating_scale?: number
 }
 
 export const FORM_TEMPLATES: FormTemplate[] = [
@@ -36,24 +37,28 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How would you rate your overall dining experience?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
         title: 'How was the quality of your food?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 1
       },
       {
         title: 'How would you rate our service?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 2
       },
       {
         title: 'How clean and comfortable was our restaurant?',
         type: 'rating',
         required: false,
+        rating_scale: 10,
         order_index: 3
       },
       {
@@ -98,18 +103,21 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How satisfied are you with your shopping experience today?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
         title: 'How would you rate our product selection?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 1
       },
       {
         title: 'How helpful was our staff?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 2
       },
       {
@@ -156,24 +164,28 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How would you rate this event overall?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
         title: 'How relevant was the content to your needs?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 1
       },
       {
         title: 'How would you rate the speakers/presenters?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 2
       },
       {
         title: 'How was the venue and facilities?',
         type: 'rating',
         required: false,
+        rating_scale: 10,
         order_index: 3
       },
       {
@@ -218,24 +230,28 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How satisfied are you with your current role?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
         title: 'How would you rate your work-life balance?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 1
       },
       {
         title: 'How satisfied are you with your direct manager?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 2
       },
       {
         title: 'How would you rate communication within the company?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 3
       },
       {
@@ -261,6 +277,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How likely are you to recommend this company as a place to work?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 7
       }
     ]
@@ -279,30 +296,35 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How would you rate your overall experience today?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
         title: 'How easy was it to schedule your appointment?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 1
       },
       {
         title: 'How would you rate the quality of care you received?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 2
       },
       {
         title: 'How courteous and helpful was our staff?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 3
       },
       {
         title: 'How clean and comfortable were our facilities?',
         type: 'rating',
         required: false,
+        rating_scale: 10,
         order_index: 4
       },
       {
@@ -340,6 +362,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How satisfied are you with our product/service?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
@@ -379,6 +402,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         description: '0 = Not at all likely, 10 = Extremely likely',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
@@ -403,12 +427,14 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How would you rate the service you received today?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 0
       },
       {
         title: 'How knowledgeable was our staff member?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 1
       },
       {
@@ -422,6 +448,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'How friendly and professional was our staff?',
         type: 'rating',
         required: true,
+        rating_scale: 10,
         order_index: 3
       },
       {
