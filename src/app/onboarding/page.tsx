@@ -32,11 +32,8 @@ export default function OnboardingPage() {
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [completionState, setCompletionState] = useState<CompletionState | null>(null)
-  const shouldRedirect = useMemo(() => {
-    if (account?.onboarding_completed) return true
-    if (projects && projects.length > 0) return true
-    return false
-  }, [account?.onboarding_completed, projects])
+  const projectCount = projects?.length ?? 0
+  const shouldRedirect = projectCount > 0
 
   useEffect(() => {
     if (shouldRedirect) {
