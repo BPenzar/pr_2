@@ -24,14 +24,6 @@ export default function SettingsPage() {
   const [confirmText, setConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
-  }
-
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsUpdating(true)
@@ -82,6 +74,14 @@ export default function SettingsPage() {
 
   const currentPlan = useMemo(() => (account as any)?.plans, [account])
   const deleteDisabled = confirmText !== 'DELETE' || !account?.id || isDeleting
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
