@@ -19,11 +19,6 @@ export function usePublicForm(shortUrl: string) {
             name,
             description,
             is_active,
-            project:projects(
-              id,
-              name,
-              account_id
-            ),
             questions:questions(
               id,
               type,
