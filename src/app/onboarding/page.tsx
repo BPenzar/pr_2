@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   OnboardingWizard,
@@ -15,6 +15,7 @@ import { CheckIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
 import { markOnboardingCompleted } from '@/lib/onboarding'
+import { useProjects } from '@/hooks/use-projects'
 
 interface CompletionState {
   setupOption: OnboardingData['setupOption']
@@ -24,12 +25,24 @@ export default function OnboardingPage() {
   const router = useRouter()
   const completeOnboarding = useCompleteOnboarding()
   const { account } = useAuth()
+  const { data: projects } = useProjects()
 
   const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null)
   const [wizardState, setWizardState] = useState<OnboardingFormState | null>(null)
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [completionState, setCompletionState] = useState<CompletionState | null>(null)
+  const shouldRedirect = useMemo(() => {
+    if (account?.onboarding_completed) return true
+    if (projects && projects.length > 0) return true
+    return false
+  }, [account?.onboarding_completed, projects])
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      router.replace('/dashboard')
+    }
+  }, [shouldRedirect, router])
 
   const handleWizardComplete = async (data: OnboardingData) => {
     try {
@@ -80,6 +93,14 @@ export default function OnboardingPage() {
       await markOnboardingCompleted(account.id)
     }
     router.replace('/dashboard')
+  }
+
+  if (shouldRedirect) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 text-sm text-muted-foreground">
+        Redirecting you to your dashboard...
+      </div>
+    )
   }
 
   const handleTemplateSelected = (template: FormTemplate) => {
