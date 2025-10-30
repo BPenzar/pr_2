@@ -1,685 +1,401 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Input } from '@/components/ui/input'
 import { FORM_TEMPLATES, type FormTemplate } from '@/lib/form-templates'
 import { TemplatePreviewModal } from '@/components/onboarding/template-selector'
 import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  BarChart3Icon,
-  BuildingIcon,
-  CheckIcon,
-  CoffeeIcon,
-  FileTextIcon,
-  HeartIcon,
-  SparklesIcon,
-  Users2Icon,
-  QrCodeIcon,
-  ShoppingBagIcon
+  ArrowLeft as ArrowLeftIcon,
+  ArrowRight as ArrowRightIcon,
+  Building2 as BuildingIcon,
+  Check as CheckIcon,
+  ClipboardList as ClipboardListIcon,
+  FileText as FileTextIcon,
+  HeartPulse as HeartPulseIcon,
+  Sparkles as SparklesIcon,
+  Store as StoreIcon,
+  Users as UsersIcon,
+  UtensilsCrossed as UtensilsIcon,
+  ListChecks as ListChecksIcon
 } from 'lucide-react'
 
-type SetupOption = 'quick' | 'guided' | 'template'
-
-interface OnboardingWizardProps {
-  onComplete: (data: OnboardingData) => void
-  onSkip?: () => void
-  onOpenTemplateLibrary?: () => void
-  selectedTemplate: FormTemplate | null
-  onSelectTemplate: (template: FormTemplate | null) => void
-  isSubmitting?: boolean
-  onStateChange?: (state: OnboardingFormState) => void
-}
-
 export interface OnboardingData {
+  projectName: string
   businessType: string
   primaryUseCase: string
-  expectedVolume: string
-  setupOption: SetupOption
-  projectName: string
+  setupOption: 'template' | 'quick' | 'guided'
   selectedTemplate?: string
 }
 
 export interface OnboardingFormState {
+  projectName: string
   businessType: string
   primaryUseCase: string
-  expectedVolume: string
-  projectName: string
-  setupOption: SetupOption | null
+  setupOption: 'template' | 'quick' | 'guided' | ''
 }
 
-const BUSINESS_TYPE_NAMES: Record<string, string> = {
-  restaurant: 'Guest Feedback Hub',
-  retail: 'Store Feedback Hub',
-  corporate: 'Team Insights Hub',
-  healthcare: 'Patient Experience Hub',
-  other: 'Customer Feedback Hub'
+interface OnboardingWizardProps {
+  onComplete: (data: OnboardingData) => void
+  onSkip?: () => void
+  selectedTemplate: FormTemplate | null
+  onSelectTemplate: (template: FormTemplate | null) => void
+  onOpenTemplateLibrary?: () => void
+  isSubmitting?: boolean
+  onStateChange?: (state: OnboardingFormState) => void
 }
 
-const BUSINESS_TYPES = [
-  {
-    id: 'restaurant',
-    name: 'Restaurant / Food Service',
-    icon: CoffeeIcon,
-    description: 'Capture feedback on meals, service, and ambiance in minutes.'
-  },
-  {
-    id: 'retail',
-    name: 'Retail / E-commerce',
-    icon: ShoppingBagIcon,
-    description: 'Measure product satisfaction and in-store experience.'
-  },
-  {
-    id: 'corporate',
-    name: 'Corporate / Office',
-    icon: BuildingIcon,
-    description: 'Collect employee sentiment, event feedback, and internal surveys.'
-  },
-  {
-    id: 'healthcare',
-    name: 'Healthcare / Wellness',
-    icon: HeartIcon,
-    description: 'Understand patient experience after visits or treatments.'
-  },
-  {
-    id: 'other',
-    name: 'Something else',
-    icon: Users2Icon,
-    description: 'Create a custom feedback flow for your unique use case.'
-  }
+const businessOptions = [
+  { id: 'restaurant', label: 'Restaurant / Hospitality', icon: UtensilsIcon },
+  { id: 'retail', label: 'Retail / Shop', icon: StoreIcon },
+  { id: 'corporate', label: 'Office / Corporate', icon: BuildingIcon },
+  { id: 'healthcare', label: 'Healthcare / Wellness', icon: HeartPulseIcon },
+  { id: 'other', label: 'Other / Custom', icon: ClipboardListIcon },
 ]
 
-const USE_CASES = [
-  {
-    id: 'customer_satisfaction',
-    name: 'Customer Satisfaction',
-    description: 'Track how happy people are with your overall service.'
-  },
-  {
-    id: 'product_feedback',
-    name: 'Product Feedback',
-    description: 'Discover what people think about specific products or features.'
-  },
-  {
-    id: 'event_feedback',
-    name: 'Event Feedback',
-    description: 'Collect reactions right after workshops, meetups, or trainings.'
-  },
-  {
-    id: 'employee_engagement',
-    name: 'Employee Engagement',
-    description: 'Run quick internal check-ins and pulse surveys.'
-  },
-  {
-    id: 'market_research',
-    name: 'Market Research',
-    description: 'Validate ideas and understand audience preferences.'
-  }
+const useCaseOptions = [
+  { id: 'customer_satisfaction', label: 'Customer satisfaction' },
+  { id: 'product_feedback', label: 'Product feedback' },
+  { id: 'event_feedback', label: 'Event / experience feedback' },
+  { id: 'employee_engagement', label: 'Employee / team pulse' },
+  { id: 'market_research', label: 'Market research' },
 ]
 
-const VOLUME_OPTIONS = [
-  {
-    id: 'low',
-    name: 'Just getting started',
-    description: 'Less than 100 responses each month.',
-    recommendation: 'Perfect for the Free plan.'
-  },
-  {
-    id: 'medium',
-    name: 'Growing momentum',
-    description: 'Between 100 and 1,000 responses per month.',
-    recommendation: 'Pro plan keeps you covered.'
-  },
-  {
-    id: 'high',
-    name: 'High-volume feedback',
-    description: 'More than 1,000 responses per month.',
-    recommendation: 'Chat with us about scaling confidently.'
-  }
-]
-
-const SETUP_OPTIONS: Array<{
-  id: SetupOption
-  name: string
-  description: string
-  icon: typeof SparklesIcon
-  duration: string
-}> = [
-  {
-    id: 'quick',
-    name: 'Quick start',
-    description: 'Auto-create a simple form so you can start collecting responses immediately.',
-    icon: SparklesIcon,
-    duration: '≈2 minutes'
-  },
-  {
-    id: 'template',
-    name: 'Use a template',
-    description: 'Pick a best-practice template tailored to your business type.',
-    icon: FileTextIcon,
-    duration: '≈5 minutes'
-  },
-  {
-    id: 'guided',
-    name: 'Build from scratch',
-    description: 'Start with a blank slate and customise every question yourself.',
-    icon: Users2Icon,
-    duration: '≈10 minutes'
-  }
-]
+const formSchema = z.object({
+  projectName: z.string().min(1, 'Please enter a project name.'),
+  businessType: z.string().min(1, 'Please select a business type.'),
+  primaryUseCase: z.string().min(1, 'Please select what you want to measure.'),
+  setupOption: z.enum(['template', 'quick', 'guided']),
+  selectedTemplate: z.string().optional(),
+})
 
 export function OnboardingWizard({
   onComplete,
   onSkip,
-  onOpenTemplateLibrary,
   selectedTemplate,
   onSelectTemplate,
+  onOpenTemplateLibrary,
   isSubmitting = false,
-  onStateChange
+  onStateChange,
 }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [projectNameEdited, setProjectNameEdited] = useState(false)
+  const [projectName, setProjectName] = useState('Customer Feedback Project')
+  const [businessType, setBusinessType] = useState('')
+  const [primaryUseCase, setPrimaryUseCase] = useState('')
+  const [setupOption, setSetupOption] = useState<'template' | 'quick' | 'guided' | ''>('')
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null)
-  const [formState, setFormState] = useState<OnboardingFormState>({
-    businessType: '',
-    primaryUseCase: '',
-    expectedVolume: '',
-    projectName: 'My Feedback Project',
-    setupOption: null
-  })
-
-  const steps = ['Your business', 'Goals', 'Get started']
+  const steps = ['Project basics', 'Goal', 'Form setup']
   const progress = ((currentStep + 1) / steps.length) * 100
 
   const recommendedTemplates = useMemo(() => {
-    const matches = FORM_TEMPLATES.filter((template) => {
-      const matchesBusiness = formState.businessType
-        ? template.businessTypes.includes(formState.businessType)
-        : false
-      const matchesUseCase = formState.primaryUseCase
-        ? template.useCases.includes(formState.primaryUseCase)
-        : false
+    if (!businessType && !primaryUseCase) {
+      return FORM_TEMPLATES.slice(0, 4)
+    }
+    return FORM_TEMPLATES.filter((template) => {
+      const matchesBusiness = businessType ? template.businessTypes.includes(businessType) : false
+      const matchesUseCase = primaryUseCase ? template.useCases.includes(primaryUseCase) : false
       return matchesBusiness || matchesUseCase
     })
-
-    if (matches.length > 0) {
-      return matches
-    }
-
-    return FORM_TEMPLATES.filter((template) => template.popular).concat(
-      FORM_TEMPLATES.slice(0, 3)
-    )
-  }, [formState.businessType, formState.primaryUseCase])
-
-  const handleBusinessTypeSelect = (typeId: string) => {
-    setFormState((prev) => {
-      const projectName =
-        projectNameEdited || !BUSINESS_TYPE_NAMES[typeId]
-          ? prev.projectName
-          : BUSINESS_TYPE_NAMES[typeId]
-
-      return {
-        ...prev,
-        businessType: typeId,
-        projectName
-      }
-    })
-  }
-
-  const handleSetupOptionSelect = (option: SetupOption) => {
-    setFormState((prev) => ({
-      ...prev,
-      setupOption: option
-    }))
-
-    if (option !== 'template' && selectedTemplate) {
-      onSelectTemplate(null)
-    }
-  }
+  }, [businessType, primaryUseCase])
 
   useEffect(() => {
-    onStateChange?.(formState)
-  }, [formState, onStateChange])
+    onStateChange?.({ projectName, businessType, primaryUseCase, setupOption })
+  }, [projectName, businessType, primaryUseCase, setupOption, onStateChange])
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0:
-        return Boolean(formState.businessType && formState.projectName.trim())
-      case 1:
-        return Boolean(formState.primaryUseCase && formState.expectedVolume)
-      case 2:
-        if (!formState.setupOption) return false
-        if (formState.setupOption === 'template') {
-          return Boolean(selectedTemplate)
-        }
-        return true
-      default:
-        return true
+  useEffect(() => {
+    setErrors({})
+  }, [currentStep])
+
+  const handleNext = () => {
+    if (currentStep === 0) {
+      if (!projectName.trim()) {
+        setErrors({ projectName: 'Project name is required.' })
+        return
+      }
+      if (!businessType) {
+        setErrors({ businessType: 'Select the option that describes you best.' })
+        return
+      }
     }
-  }
 
-  const goNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1)
+    if (currentStep === 1) {
+      if (!primaryUseCase) {
+        setErrors({ primaryUseCase: 'Choose the outcome you want to focus on first.' })
+        return
+      }
+    }
+
+    if (currentStep === 2) {
+      if (!setupOption) {
+        setErrors({ setupOption: 'Pick how you want to start.' })
+        return
+      }
+
+      const chosenSetup = (setupOption || 'guided') as 'template' | 'quick' | 'guided'
+      const payload: OnboardingData = {
+        projectName: projectName.trim(),
+        businessType,
+        primaryUseCase,
+        setupOption: chosenSetup,
+        selectedTemplate: chosenSetup === 'template' ? selectedTemplate?.id : undefined,
+      }
+
+      const result = formSchema.safeParse(payload)
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {}
+        result.error.issues.forEach((issue) => {
+          const field = issue.path[0]
+          if (typeof field === 'string') {
+            fieldErrors[field] = issue.message
+          }
+        })
+        if (setupOption === 'template' && !selectedTemplate) {
+          fieldErrors.selectedTemplate = 'Select a template or choose another option.'
+        }
+        setErrors(fieldErrors)
+        return
+      }
+
+      onComplete(payload)
       return
     }
 
-    if (!formState.setupOption) return
-
-    onComplete({
-      businessType: formState.businessType,
-      primaryUseCase: formState.primaryUseCase,
-      expectedVolume: formState.expectedVolume,
-      setupOption: formState.setupOption,
-      projectName: formState.projectName.trim(),
-      selectedTemplate: formState.setupOption === 'template' ? selectedTemplate?.id : undefined
-    })
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))
   }
 
-  const goBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1)
-    }
-  }
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-900">Tell us about your business</h2>
-              <p className="text-sm text-gray-600 mt-2">
-                We tailor recommendations based on the experience you want to improve.
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {BUSINESS_TYPES.map((type) => {
-                const Icon = type.icon
-                const isSelected = formState.businessType === type.id
-
-                return (
-                  <Card
-                    key={type.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
-                    }`}
-                    onClick={() => handleBusinessTypeSelect(type.id)}
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-lg bg-blue-100 p-2">
-                          <Icon className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-medium text-gray-900">{type.name}</h3>
-                            {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
-                          </div>
-                          <p className="text-sm text-gray-600">{type.description}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-semibold text-gray-900">
-                  Name your first project
-                </CardTitle>
-                <CardDescription>
-                  You can always rename it later. This is how your workspace will appear on the dashboard.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Input
-                  value={formState.projectName}
-                  onChange={(event) => {
-                    setFormState((prev) => ({
-                      ...prev,
-                      projectName: event.target.value
-                    }))
-                    setProjectNameEdited(true)
-                  }}
-                  placeholder="e.g. Guest Feedback Hub"
-                />
-              </CardContent>
-            </Card>
-          </div>
-        )
-
-      case 1:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-900">What&apos;s your first goal?</h2>
-              <p className="text-sm text-gray-600 mt-2">
-                Pick the outcome you want from your feedback. We&apos;ll fine-tune recommendations accordingly.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {USE_CASES.map((useCase) => {
-                const isSelected = formState.primaryUseCase === useCase.id
-
-                return (
-                  <Card
-                    key={useCase.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
-                    }`}
-                    onClick={() =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        primaryUseCase: useCase.id
-                      }))
-                    }
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{useCase.name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">{useCase.description}</p>
-                        </div>
-                        {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                <BarChart3Icon className="h-4 w-4 text-blue-600" />
-                Expected response volume
-              </h3>
-              {VOLUME_OPTIONS.map((option) => {
-                const isSelected = formState.expectedVolume === option.id
-
-                return (
-                  <Card
-                    key={option.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
-                    }`}
-                    onClick={() =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        expectedVolume: option.id
-                      }))
-                    }
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{option.name}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{option.description}</p>
-                          <p className="text-xs text-blue-600 mt-2 font-medium uppercase tracking-wide">
-                            {option.recommendation}
-                          </p>
-                        </div>
-                        {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
-        )
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-900">How do you want to get started?</h2>
-              <p className="text-sm text-gray-600 mt-2">
-                Choose the setup approach that matches your timeline and level of customisation.
-              </p>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              {SETUP_OPTIONS.map((option) => {
-                const Icon = option.icon
-                const isSelected = formState.setupOption === option.id
-
-                return (
-                  <Card
-                    key={option.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
-                    }`}
-                    onClick={() => handleSetupOptionSelect(option.id)}
-                  >
-                    <CardContent className="p-5 space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-lg bg-blue-100 p-2">
-                          <Icon className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-medium text-gray-900">{option.name}</h3>
-                            {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
-                          </div>
-                          <p className="text-sm text-gray-600">{option.description}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Estimated time</span>
-                        <span className="font-medium text-gray-700">{option.duration}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-
-            {formState.setupOption === 'template' && (
-              <Card className="border-blue-200 bg-blue-50/30">
-                <CardHeader className="flex flex-row items-center justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-sm font-semibold text-gray-900">
-                      Recommended templates
-                    </CardTitle>
-                    <CardDescription className="text-xs text-gray-600">
-                      Hand-picked based on your industry and goal. Preview or pick one to continue.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onOpenTemplateLibrary?.()}
-                  >
-                    Browse all templates
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid gap-3 md:grid-cols-3">
-                    {recommendedTemplates.slice(0, 3).map((template) => {
-                      const isActive = selectedTemplate?.id === template.id
-
-                      return (
-                        <Card
-                          key={template.id}
-                          className={`border ${isActive ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-200'}`}
-                        >
-                          <CardHeader className="space-y-2">
-                            <Badge variant="outline" className="w-fit text-xs capitalize">
-                              {template.category}
-                            </Badge>
-                            <CardTitle className="text-base text-gray-900">
-                              {template.name}
-                            </CardTitle>
-                            <CardDescription className="text-xs text-gray-600">
-                              {template.description}
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-2">
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <QrCodeIcon className="h-4 w-4" />
-                              <span>{template.estimatedTime}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {template.tags.slice(0, 3).map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-[10px] capitalize">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="flex gap-2 pt-2">
-                              <Button
-                                size="sm"
-                                className="flex-1"
-                                variant={isActive ? 'default' : 'secondary'}
-                                onClick={() => onSelectTemplate(template)}
-                              >
-                                {isActive ? 'Selected' : 'Use template'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setPreviewTemplate(template)}
-                              >
-                                Preview
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
-                  </div>
-                  {!selectedTemplate && (
-                    <p className="text-xs text-gray-600">
-                      Choose a template above or open the library to continue.
-                    </p>
-                  )}
-                  {selectedTemplate && (
-                    <div className="rounded-md border border-blue-100 bg-white p-3 text-xs text-blue-700">
-                      <span className="font-medium text-blue-800">Selected:</span>{' '}
-                      {selectedTemplate.name}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold text-gray-900">
-                  Launch summary
-                </CardTitle>
-                <CardDescription className="text-xs text-gray-600">
-                  We&apos;ll create your workspace with the following settings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
-                <div>
-                  <span className="font-medium text-gray-900">Project name:</span>{' '}
-                  {formState.projectName || '—'}
-                </div>
-                <div>
-                  <span className="font-medium text-gray-900">Business type:</span>{' '}
-                  {formState.businessType ? BUSINESS_TYPES.find(b => b.id === formState.businessType)?.name : '—'}
-                </div>
-                <div>
-                  <span className="font-medium text-gray-900">Goal:</span>{' '}
-                  {formState.primaryUseCase
-                    ? USE_CASES.find(u => u.id === formState.primaryUseCase)?.name
-                    : '—'}
-                </div>
-                <div>
-                  <span className="font-medium text-gray-900">Setup:</span>{' '}
-                  {formState.setupOption
-                    ? SETUP_OPTIONS.find(o => o.id === formState.setupOption)?.name
-                    : '—'}
-                </div>
-                {formState.setupOption === 'template' && (
-                  <div className="md:col-span-2">
-                    <span className="font-medium text-gray-900">Template:</span>{' '}
-                    {selectedTemplate ? selectedTemplate.name : 'Not selected'}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )
-
-      default:
-        return null
-    }
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0))
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Let&apos;s get you collecting feedback</h1>
-              <p className="text-sm text-gray-600 mt-2">
-                A three-step setup to launch your first project. You can always change these choices later.
-              </p>
-            </div>
-            {onSkip && (
-              <Button variant="ghost" onClick={onSkip}>
-                Skip for now
-                <ArrowRightIcon className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.2em] text-gray-500">
-              <span>{steps[currentStep]}</span>
-              <span>
-                Step {currentStep + 1} of {steps.length}
-              </span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
+    <div className="max-w-3xl mx-auto min-h-[80vh] py-10 px-4 space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Step {currentStep + 1} of {steps.length}
+          </p>
+          <h1 className="text-2xl font-semibold text-gray-900 mt-1">Let's set up your workspace</h1>
         </div>
-
-        {renderStepContent()}
-
-        <div className="flex items-center justify-between gap-4">
-          <Button
-            variant="ghost"
-            onClick={goBack}
-            disabled={currentStep === 0 || isSubmitting}
-          >
-            <ArrowLeftIcon className="mr-2 h-4 w-4" />
-            Back
+        {onSkip && (
+          <Button variant="ghost" size="sm" onClick={onSkip} disabled={isSubmitting}>
+            Skip for now
           </Button>
-          <div className="flex items-center gap-2">
-            {currentStep === steps.length - 1 && (
-              <Button
-                variant="outline"
-                onClick={() => setPreviewTemplate(selectedTemplate)}
-                disabled={!selectedTemplate || formState.setupOption !== 'template' || isSubmitting}
+        )}
+      </div>
+
+      <Progress value={progress} className="h-2" />
+
+      {currentStep === 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Project basics</CardTitle>
+            <CardDescription>Give your project a clear name and tell us who it's for.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="projectName">Project name</Label>
+              <Input
+                id="projectName"
+                value={projectName}
+                onChange={(event) => setProjectName(event.target.value)}
+                placeholder="e.g. Guest feedback hub"
+                disabled={isSubmitting}
+              />
+              {errors.projectName && <p className="text-sm text-red-600">{errors.projectName}</p>}
+            </div>
+
+            <div className="space-y-3">
+              <Label>Which description fits best?</Label>
+              <div className="grid gap-3 md:grid-cols-2">
+                {businessOptions.map((option) => {
+                  const Icon = option.icon
+                  const isSelected = businessType === option.id
+                  return (
+                    <button
+                      type="button"
+                      key={option.id}
+                      onClick={() => setBusinessType(option.id)}
+                      className={`rounded-lg border p-4 text-left transition hover:shadow-sm ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                      disabled={isSubmitting}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`rounded-full p-2 ${isSelected ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <p className="font-medium text-gray-900">{option.label}</p>
+                        {isSelected && <CheckIcon className="h-4 w-4 text-blue-500 ml-auto" />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              {errors.businessType && <p className="text-sm text-red-600">{errors.businessType}</p>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {currentStep === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>What do you want to measure first?</CardTitle>
+            <CardDescription>Your answer helps us recommend templates and best practices.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              {useCaseOptions.map((option) => {
+                const isSelected = primaryUseCase === option.id
+                return (
+                  <button
+                    type="button"
+                    key={option.id}
+                    onClick={() => setPrimaryUseCase(option.id)}
+                    className={`rounded-lg border p-4 text-left transition hover:shadow-sm ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                    disabled={isSubmitting}
+                  >
+                    <div className="flex items-center gap-3">
+                      <ListChecksIcon className="h-4 w-4 text-muted-foreground" />
+                      <p className="font-medium text-gray-900">{option.label}</p>
+                      {isSelected && <CheckIcon className="h-4 w-4 text-blue-500 ml-auto" />}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            {errors.primaryUseCase && <p className="text-sm text-red-600">{errors.primaryUseCase}</p>}
+          </CardContent>
+        </Card>
+      )}
+
+      {currentStep === 2 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Create your first form</CardTitle>
+            <CardDescription>Choose how you want to get started. You can always edit later.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 md:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => setSetupOption('template')}
+                className={`rounded-lg border p-4 text-left transition hover:shadow-sm ${setupOption === 'template' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                disabled={isSubmitting}
               >
-                Preview selected
-              </Button>
+                <div className="flex items-center gap-3">
+                  <SparklesIcon className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-gray-900">Use a template</p>
+                    <p className="text-sm text-muted-foreground">Pick a ready-to-go template tailored to your goal.</p>
+                  </div>
+                  {setupOption === 'template' && <CheckIcon className="h-4 w-4 text-blue-500 ml-auto" />}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSetupOption('quick')}
+                className={`rounded-lg border p-4 text-left transition hover:shadow-sm ${setupOption === 'quick' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                disabled={isSubmitting}
+              >
+                <div className="flex items-center gap-3">
+                  <UsersIcon className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-gray-900">Quick start</p>
+                    <p className="text-sm text-muted-foreground">Generate a simple feedback form you can tweak later.</p>
+                  </div>
+                  {setupOption === 'quick' && <CheckIcon className="h-4 w-4 text-blue-500 ml-auto" />}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSetupOption('guided')}
+                className={`rounded-lg border p-4 text-left transition hover:shadow-sm ${setupOption === 'guided' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                disabled={isSubmitting}
+              >
+                <div className="flex items-center gap-3">
+                  <FileTextIcon className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-gray-900">Start from scratch</p>
+                    <p className="text-sm text-muted-foreground">Build your form question by question.</p>
+                  </div>
+                  {setupOption === 'guided' && <CheckIcon className="h-4 w-4 text-blue-500 ml-auto" />}
+                </div>
+              </button>
+            </div>
+            {errors.setupOption && <p className="text-sm text-red-600">{errors.setupOption}</p>}
+
+            {setupOption === 'template' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-800">Recommended templates</h3>
+                  <Button variant="outline" size="sm" onClick={onOpenTemplateLibrary} disabled={isSubmitting}>
+                    Browse all templates
+                  </Button>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {recommendedTemplates.slice(0, 4).map((template) => {
+                    const isActive = selectedTemplate?.id === template.id
+                    return (
+                      <Card key={template.id} className={isActive ? 'border-blue-500 ring-2 ring-blue-100' : ''}>
+                        <CardHeader className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">{template.name}</CardTitle>
+                            <Badge>{template.category}</Badge>
+                          </div>
+                          <CardDescription>{template.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="text-xs text-muted-foreground">
+                            Estimated time: {template.estimatedTime}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => onSelectTemplate(template)} disabled={isSubmitting}>
+                              {isActive ? 'Selected' : 'Use template'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setPreviewTemplate(template)} disabled={isSubmitting}>
+                              Preview
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                  {recommendedTemplates.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No direct matches yet. Browse the full library to explore more templates.</p>
+                  )}
+                </div>
+                {setupOption === 'template' && !selectedTemplate && (
+                  <p className="text-sm text-red-600">Select a template or choose another setup option.</p>
+                )}
+              </div>
             )}
-            <Button
-              onClick={goNext}
-              disabled={!canProceed() || isSubmitting}
-            >
-              {isSubmitting
-                ? 'Creating...'
-                : currentStep === steps.length - 1
-                  ? 'Launch workspace'
-                  : 'Continue'}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={handleBack} disabled={currentStep === 0 || isSubmitting}>
+          <ArrowLeftIcon className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <div className="flex items-center gap-2">
+          {currentStep === steps.length - 1 && setupOption === 'template' && selectedTemplate && (
+            <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(selectedTemplate)} disabled={isSubmitting}>
+              Preview
             </Button>
-          </div>
+          )}
+          <Button onClick={handleNext} disabled={isSubmitting}>
+            {isSubmitting ? 'Creating…' : currentStep === steps.length - 1 ? 'Create project' : 'Continue'}
+            <ArrowRightIcon className="h-4 w-4 ml-2" />
+          </Button>
         </div>
       </div>
 
@@ -689,6 +405,6 @@ export function OnboardingWizard({
           onClose={() => setPreviewTemplate(null)}
         />
       )}
-    </>
+    </div>
   )
 }
