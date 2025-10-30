@@ -199,6 +199,15 @@ export function useCompleteOnboarding() {
     }) => {
       if (!account?.id) throw new Error('No account')
 
+      // Ensure account can still create projects
+      const { data: canCreateProject, error: projectLimitError } = await supabase
+        .rpc('can_create_project', { account_uuid: account.id })
+
+      if (projectLimitError) throw projectLimitError
+      if (!canCreateProject) {
+        throw new Error('You have reached your project limit for this plan')
+      }
+
       // Create project first
       const { data: project, error: projectError } = await supabase
         .from('projects')

@@ -8,22 +8,24 @@ import { useAccountAnalytics } from '@/hooks/use-responses'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProjectList } from '@/components/projects/project-list'
-import { BarChart3Icon, FileTextIcon, MessageSquareIcon, QrCodeIcon, SettingsIcon, TrendingUpIcon } from 'lucide-react'
+import { BarChart3Icon, FileTextIcon, MessageSquareIcon, QrCodeIcon, SettingsIcon, TrendingUpIcon, SparklesIcon } from 'lucide-react'
 import { checkOnboardingStatus } from '@/lib/onboarding'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase-client'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { user, account, signOut, loading } = useAuth()
   const { data: projects } = useProjects()
   const { data: analytics } = useAccountAnalytics()
+  const [hasCreateAccess, setHasCreateAccess] = useState(true)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
 
   // Check if user needs onboarding
   useEffect(() => {
     async function checkOnboarding() {
       if (account?.id && !onboardingChecked) {
-        const { needsOnboarding } = await checkOnboardingStatus(account.id)
+        const { needsOnboarding } = await checkOnboardingStatus(account!.id)
         if (needsOnboarding) {
           router.push('/onboarding')
           return
@@ -36,6 +38,34 @@ export default function DashboardPage() {
       checkOnboarding()
     }
   }, [account, loading, onboardingChecked, router])
+
+  useEffect(() => {
+    if (!account?.id) {
+      setHasCreateAccess(false)
+      return
+    }
+
+    const accountId = account.id
+
+    async function checkProjectCapacity() {
+      try {
+        const { data: canCreate, error } = await supabase
+          .rpc('can_create_project', { account_uuid: accountId })
+
+        if (error) {
+          console.error('Failed to check project capacity:', error)
+          setHasCreateAccess(false)
+        } else {
+          setHasCreateAccess(Boolean(canCreate))
+        }
+      } catch (error) {
+        console.error('Failed to check project capacity:', error)
+        setHasCreateAccess(false)
+      }
+    }
+
+    checkProjectCapacity()
+  }, [account?.id])
 
   if (loading) {
     return (
@@ -72,6 +102,22 @@ export default function DashboardPage() {
               <p className="text-gray-600">Welcome back, {user?.email}</p>
             </div>
             <div className="flex space-x-4">
+              {!hasCreateAccess && (
+                <Link href="/billing">
+                  <Button variant="outline" size="sm">
+                    <TrendingUpIcon className="w-4 h-4 mr-2" />
+                    Upgrade for more projects
+                  </Button>
+                </Link>
+              )}
+              {hasCreateAccess && (
+                <Link href="/onboarding">
+                  <Button size="sm">
+                    <SparklesIcon className="w-4 h-4 mr-2" />
+                    Create New Form
+                  </Button>
+                </Link>
+              )}
               <Link href="/billing">
                 <Button variant="outline" size="sm">
                   <TrendingUpIcon className="w-4 h-4 mr-2" />
