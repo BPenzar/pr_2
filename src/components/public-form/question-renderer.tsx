@@ -24,7 +24,8 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
       value={value as string}
       onChange={(e) => onChange(e.target.value)}
       required={question.required}
-      className="w-full"
+      autoComplete="off"
+      className="w-full h-12 text-base"
     />
   )
 
@@ -35,7 +36,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
       onChange={(e) => onChange(e.target.value)}
       required={question.required}
       rows={4}
-      className="w-full"
+      className="w-full text-base"
     />
   )
 
@@ -48,7 +49,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
     if (isStarRating) {
       // 5-star rating with star icons
       return (
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-2">
           {[...Array(maxRating)].map((_, index) => {
             const starValue = index + 1
             const isFilled = starValue <= (hoverRating || currentRating)
@@ -63,7 +64,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
                 className="focus:outline-none"
               >
                 <StarIcon
-                  className={`w-8 h-8 transition-colors ${
+                  className={`w-9 h-9 transition-colors ${
                     isFilled
                       ? 'fill-yellow-400 text-yellow-400'
                       : 'text-gray-300 hover:text-yellow-400'
@@ -104,7 +105,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
 
       return (
         <div className="space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 flex-nowrap">
+          <div className="grid grid-cols-5 gap-2 sm:flex sm:flex-wrap sm:gap-2 sm:justify-center">
             {ratingValues.map((ratingValue) => {
               const isSelected = ratingValue === currentRating
               const isHovered = ratingValue === hoverRating
@@ -117,7 +118,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
                   onClick={() => onChange(ratingValue.toString())}
                   onMouseEnter={() => setHoverRating(ratingValue)}
                   onMouseLeave={() => setHoverRating(null)}
-                  className={`flex h-12 w-12 min-w-[3rem] items-center justify-center rounded-lg border-2 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 md:h-14 md:w-14 ${
+                  className={`flex h-12 w-full min-w-[2.75rem] items-center justify-center rounded-xl border-2 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 sm:h-12 sm:w-12 md:h-14 md:w-14 ${
                     isSelected
                       ? getSelectedColor(ratingValue)
                       : isHovered
@@ -145,20 +146,28 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
 
     return (
       <div className="space-y-3">
-        {question.options.map((option, index) => (
-          <label key={index} className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="radio"
-              name={`question-${question.id}`}
-              value={option}
-              checked={value === option}
-              onChange={(e) => onChange(e.target.value)}
-              required={question.required}
-              className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
-            />
-            <span className="text-sm">{option}</span>
-          </label>
-        ))}
+        {question.options.map((option, index) => {
+          const isSelected = value === option
+          return (
+            <label
+              key={index}
+              className={`flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+                isSelected ? 'border-primary/80 bg-primary/5' : 'border-gray-200 bg-white'
+              }`}
+            >
+              <input
+                type="radio"
+                name={`question-${question.id}`}
+                value={option}
+                checked={isSelected}
+                onChange={(e) => onChange(e.target.value)}
+                required={question.required}
+                className="h-5 w-5 border-gray-300 text-primary focus:ring-primary"
+              />
+              <span className="text-base text-gray-800">{option}</span>
+            </label>
+          )
+        })}
       </div>
     )
   }
@@ -177,15 +186,24 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
 
     return (
       <div className="space-y-3">
-        {question.options.map((option, index) => (
-          <label key={index} className="flex items-center space-x-3 cursor-pointer">
-            <Checkbox
-              checked={selectedValues.includes(option)}
-              onCheckedChange={(checked) => handleCheckboxChange(option, checked as boolean)}
-            />
-            <span className="text-sm">{option}</span>
-          </label>
-        ))}
+        {question.options.map((option, index) => {
+          const isChecked = selectedValues.includes(option)
+          return (
+            <label
+              key={index}
+              className={`flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+                isChecked ? 'border-primary/80 bg-primary/5' : 'border-gray-200 bg-white'
+              }`}
+            >
+              <Checkbox
+                checked={isChecked}
+                onCheckedChange={(checked) => handleCheckboxChange(option, checked as boolean)}
+                className="h-5 w-5 border-gray-300 text-primary"
+              />
+              <span className="text-base text-gray-800">{option}</span>
+            </label>
+          )
+        })}
       </div>
     )
   }
