@@ -16,8 +16,6 @@ import { Button } from '@/components/ui/button'
 
 interface CompletionState {
   setupOption: OnboardingData['setupOption']
-  projectId: string
-  formId?: string
 }
 
 export default function OnboardingPage() {
@@ -48,17 +46,11 @@ export default function OnboardingPage() {
       })
 
       setCompletionState({
-        setupOption: data.setupOption,
-        projectId: result.project.id,
-        formId: result.form?.id
+        setupOption: data.setupOption
       })
 
       setTimeout(() => {
-        if (result.form) {
-          router.push(`/forms/${result.form.id}`)
-        } else {
-          router.push(`/projects/${result.project.id}`)
-        }
+        router.replace('/dashboard')
       }, 2000)
     } catch (error) {
       const serializedError =
@@ -95,22 +87,18 @@ export default function OnboardingPage() {
             </div>
             <h2 className="text-xl font-bold mb-2">You&apos;re all set!</h2>
             <p className="text-gray-600 mb-4">
-              Your project{completionState.setupOption !== 'guided' ? ' and form have' : ' has'} been created successfully.
+              Your workspace is ready. We&apos;re taking you to the dashboard.
             </p>
             <div className="space-y-2 text-sm text-gray-500">
               <p>✅ Project created</p>
-              {completionState.setupOption !== 'guided' && <p>✅ Form created</p>}
+              {completionState.setupOption !== 'guided' && <p>✅ First form created</p>}
               <p>✅ Ready to collect feedback</p>
             </div>
             <p className="text-xs text-gray-500 mt-4">
-              Redirecting you to your {completionState.setupOption === 'guided' ? 'project' : 'form'}...
+              Redirecting you to your dashboard...
             </p>
             <Button variant="link" className="mt-4 text-xs" onClick={() => {
-              if (completionState.formId) {
-                router.push(`/forms/${completionState.formId}`)
-              } else {
-                router.push(`/projects/${completionState.projectId}`)
-              }
+              router.replace('/dashboard')
             }}>
               Go now
             </Button>
