@@ -38,15 +38,15 @@ export function SignupForm() {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Create Account</CardTitle>
-        <CardDescription>
-          Sign up for a free account to get started
+    <Card className="mx-auto w-full max-w-md border border-white/12 bg-white/[0.04] text-white shadow-[0_30px_50px_-30px_rgba(8,47,73,0.6)] backdrop-blur">
+      <CardHeader className="space-y-2">
+        <CardTitle className="text-xl font-semibold text-white">Create your account</CardTitle>
+        <CardDescription className="text-sm text-white/60">
+          Launch QR feedback journeys, templated forms, and dashboard analytics in minutes.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -60,7 +60,9 @@ export function SignupForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
+            <Label htmlFor="fullName" className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+              Full Name
+            </Label>
             <Input
               id="fullName"
               type="text"
@@ -68,11 +70,14 @@ export function SignupForm() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               disabled={isLoading}
+              className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/50 focus:border-sky-400 focus:ring-0"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -81,11 +86,14 @@ export function SignupForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
+              className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/50 focus:border-sky-400 focus:ring-0"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">
+              Password
+            </Label>
             <Input
               id="password"
               type="password"
@@ -95,23 +103,24 @@ export function SignupForm() {
               required
               disabled={isLoading}
               minLength={6}
+              className="rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/50 focus:border-sky-400 focus:ring-0"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-white/50">
               Password must be at least 6 characters long
             </p>
           </div>
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full rounded-full border border-sky-400/40 bg-sky-500/80 text-sm font-semibold text-white transition hover:border-sky-300 hover:bg-sky-400/80"
             disabled={isLoading}
           >
             {isLoading ? 'Creating account...' : 'Create Account'}
           </Button>
 
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-sm text-white/60">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline">
+            <Link href="/auth/login" className="text-sky-400 hover:text-sky-300">
               Sign in
             </Link>
           </div>
