@@ -139,22 +139,26 @@ export function useUpdateForm() {
   })
 }
 
+type DeleteFormArgs = { formId: string; projectId?: string }
+
 export function useDeleteForm() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (formId: string) => {
+    mutationFn: async ({ formId }: DeleteFormArgs) => {
       const { error } = await supabase
         .from('forms')
-        .update({ is_active: false })
+        .delete()
         .eq('id', formId)
 
       if (error) throw error
     },
-    onSuccess: (_, formId) => {
+    onSuccess: (_, { formId, projectId }: DeleteFormArgs) => {
       queryClient.invalidateQueries({ queryKey: ['form', formId] })
-      // We don't know the project_id here, so invalidate all forms queries
       queryClient.invalidateQueries({ queryKey: ['forms'] })
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      }
     },
   })
 }

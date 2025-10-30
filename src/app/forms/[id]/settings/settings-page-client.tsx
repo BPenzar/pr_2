@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm, useUpdateForm } from '@/hooks/use-forms'
+import { useForm, useUpdateForm, useDeleteForm } from '@/hooks/use-forms'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { ArrowLeftIcon, SaveIcon, TrashIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface FormSettingsPageClientProps {
   formId: string
@@ -18,11 +19,15 @@ interface FormSettingsPageClientProps {
 export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) {
   const { data: form, isLoading } = useForm(formId)
   const updateForm = useUpdateForm()
+  const deleteForm = useDeleteForm()
+  const router = useRouter()
 
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [hasChanges, setHasChanges] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     if (form) {
@@ -184,20 +189,59 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
               <div>
                 <h4 className="font-medium text-red-600">Delete Form</h4>
                 <p className="text-sm text-gray-600">
-                  This will permanently delete the form, all questions, QR codes, and responses.
+                  This permanently removes the form, all questions, QR codes, and responses.
                 </p>
+                {deleteError && (
+                  <p className="mt-2 text-sm text-red-600">{deleteError}</p>
+                )}
               </div>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete this form? This action cannot be undone.')) {
-                    alert('Delete functionality not implemented yet')
-                  }
-                }}
-              >
-                <TrashIcon className="w-4 h-4 mr-2" />
-                Delete Form
-              </Button>
+              <div className="flex items-center space-x-2">
+                {confirmDelete ? (
+                  <>
+                    <Button
+                      variant="destructive"
+                      onClick={async () => {
+                        if (!form) return
+                        setDeleteError(null)
+                        try {
+                          await deleteForm.mutateAsync({
+                            formId,
+                            projectId: form.project?.id,
+                          })
+                          router.replace(form.project?.id ? `/projects/${form.project.id}` : '/dashboard')
+                        } catch (error: any) {
+                          console.error('Failed to delete form:', error)
+                          setDeleteError(error?.message || 'Failed to delete form')
+                        } finally {
+                          setConfirmDelete(false)
+                        }
+                      }}
+                      disabled={deleteForm.isPending}
+                    >
+                      Confirm delete
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={deleteForm.isPending}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setDeleteError(null)
+                      setConfirmDelete(true)
+                    }}
+                    disabled={deleteForm.isPending}
+                  >
+                    <TrashIcon className="w-4 h-4 mr-2" />
+                    Delete Form
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

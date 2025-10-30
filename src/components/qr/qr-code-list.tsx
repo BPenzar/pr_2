@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useQRCodes, useDeleteQRCode } from '@/hooks/use-qr-codes'
 import { Button } from '@/components/ui/button'
@@ -19,21 +19,29 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
   const [showGenerator, setShowGenerator] = useState(false)
   const { data: qrCodes, isLoading } = useQRCodes(formId)
   const deleteQRCode = useDeleteQRCode()
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!copiedId) return
+    const timer = setTimeout(() => setCopiedId(null), 2000)
+    return () => clearTimeout(timer)
+  }, [copiedId])
 
   const handleDelete = async (qrCodeId: string) => {
-    if (!confirm('Are you sure you want to delete this QR code?')) return
-
     try {
       await deleteQRCode.mutateAsync({ id: qrCodeId, formId })
     } catch (error) {
       console.error('Failed to delete QR code:', error)
+    } finally {
+      setConfirmDeleteId(null)
     }
   }
 
-  const handleCopyUrl = async (url: string) => {
+  const handleCopyUrl = async (id: string, url: string) => {
     try {
       await navigator.clipboard.writeText(url)
-      // You could add a toast notification here
+      setCopiedId(id)
     } catch (error) {
       console.error('Failed to copy URL:', error)
     }
@@ -148,15 +156,36 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                       {qrCode.short_url}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(qrCode.id)}
-                    disabled={deleteQRCode.isPending}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </Button>
+                  {confirmDeleteId === qrCode.id ? (
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(qrCode.id)}
+                        disabled={deleteQRCode.isPending}
+                      >
+                        Confirm
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setConfirmDeleteId(null)}
+                        disabled={deleteQRCode.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConfirmDeleteId(qrCode.id)}
+                      disabled={deleteQRCode.isPending}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -213,6 +242,22 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                   <div className="text-xs text-muted-foreground font-mono bg-gray-50 p-2 rounded truncate">
                     {qrCode.full_url}
                   </div>
+                  {copiedId === qrCode.id && (
+                    <div className="text-xs text-green-600">Link copied to clipboard</div>
+                  )}
+                  {confirmDeleteId === qrCode.id && (
+                    <div className="text-xs text-red-600">
+                      Deleting removes this QR code permanently. Printed codes will stop working.
+                    </div>
+                  )}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleCopyUrl(qrCode.id, qrCode.full_url)}
+                    className="w-full"
+                  >
+                    Copy Link
+                  </Button>
                 </div>
               </CardContent>
             </Card>

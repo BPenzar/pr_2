@@ -46,7 +46,12 @@ export default function DashboardPage() {
   }
 
   const handleSignOut = async () => {
-    await signOut()
+    const { error } = await signOut()
+    if (error) {
+      console.error('Failed to sign out:', error)
+      return
+    }
+    router.replace('/')
   }
 
   const stats = analytics?.totals || {

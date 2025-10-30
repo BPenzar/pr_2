@@ -13,6 +13,20 @@ ALTER TABLE usage_counters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+-- Grant base privileges (RLS still applies)
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+GRANT INSERT, UPDATE, DELETE ON projects TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON forms TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON questions TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON qr_codes TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON responses TO authenticated;
+GRANT INSERT, UPDATE, DELETE ON response_items TO authenticated;
+GRANT INSERT, UPDATE ON usage_counters TO authenticated;
+GRANT INSERT, UPDATE ON subscriptions TO authenticated;
+GRANT INSERT ON audit_logs TO service_role;
+
 -- Plans table - read-only for authenticated users
 ALTER TABLE plans ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Plans are readable by authenticated users" ON plans
@@ -44,6 +58,15 @@ CREATE POLICY "Users can update their own account" ON accounts
 CREATE POLICY "Users can read their account's projects" ON projects
   FOR SELECT TO authenticated USING (account_id = get_user_account_id());
 
+CREATE POLICY "Public can view projects for active forms" ON projects
+  FOR SELECT TO anon USING (
+    EXISTS (
+      SELECT 1 FROM forms
+      WHERE forms.project_id = projects.id
+        AND forms.is_active = true
+    )
+  );
+
 CREATE POLICY "Users can create projects in their account" ON projects
   FOR INSERT TO authenticated WITH CHECK (account_id = get_user_account_id());
 
@@ -60,6 +83,9 @@ CREATE POLICY "Users can read forms in their account's projects" ON forms
       SELECT id FROM projects WHERE account_id = get_user_account_id()
     )
   );
+
+CREATE POLICY "Public can view active forms" ON forms
+  FOR SELECT TO anon USING (is_active = true);
 
 CREATE POLICY "Users can create forms in their account's projects" ON forms
   FOR INSERT TO authenticated WITH CHECK (
@@ -89,6 +115,14 @@ CREATE POLICY "Users can read questions in their account's forms" ON questions
       SELECT f.id FROM forms f
       JOIN projects p ON f.project_id = p.id
       WHERE p.account_id = get_user_account_id()
+    )
+  );
+
+CREATE POLICY "Public can view questions for active forms" ON questions
+  FOR SELECT TO anon USING (
+    form_id IN (
+      SELECT id FROM forms
+      WHERE is_active = true
     )
   );
 
@@ -126,6 +160,14 @@ CREATE POLICY "Users can read QR codes for their account's forms" ON qr_codes
       SELECT f.id FROM forms f
       JOIN projects p ON f.project_id = p.id
       WHERE p.account_id = get_user_account_id()
+    )
+  );
+
+CREATE POLICY "Public can view QR codes for active forms" ON qr_codes
+  FOR SELECT TO anon USING (
+    form_id IN (
+      SELECT id FROM forms
+      WHERE is_active = true
     )
   );
 

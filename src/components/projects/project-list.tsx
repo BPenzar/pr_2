@@ -1,17 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useProjects } from '@/hooks/use-projects'
+import { useProjects, useDeleteProject } from '@/hooks/use-projects'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreateProjectModal } from './create-project-modal'
-import { PlusIcon, FolderIcon, FileTextIcon, MessageSquareIcon } from 'lucide-react'
-import Link from 'next/link'
+import { PlusIcon, FolderIcon, FileTextIcon, MessageSquareIcon, TrashIcon, ArrowRightIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 export function ProjectList() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const { data: projects, isLoading, error } = useProjects()
+  const deleteProject = useDeleteProject()
+  const router = useRouter()
+  const [confirmProjectId, setConfirmProjectId] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -58,17 +61,96 @@ export function ProjectList() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects?.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`}>
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          {projects?.map((project) => {
+            const handleOpen = () => router.push(`/projects/${project.id}`)
+            return (
+              <Card
+                key={project.id}
+                role="button"
+                tabIndex={0}
+                onClick={handleOpen}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleOpen()
+                  }
+                }}
+                className="hover:shadow-lg transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <FolderIcon className="w-5 h-5 mr-2 text-blue-600" />
-                    {project.name}
-                  </CardTitle>
-                  <CardDescription>
-                    {project.description || 'No description'}
-                  </CardDescription>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="flex items-center">
+                        <FolderIcon className="w-5 h-5 mr-2 text-blue-600" />
+                        {project.name}
+                      </CardTitle>
+                      <CardDescription>
+                        {project.description || 'No description'}
+                      </CardDescription>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          event.preventDefault()
+                          handleOpen()
+                        }}
+                      >
+                        <ArrowRightIcon className="w-4 h-4 mr-1" />
+                        Open
+                      </Button>
+                      {confirmProjectId === project.id ? (
+                          <>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async (event) => {
+                                event.stopPropagation()
+                                event.preventDefault()
+                                try {
+                                  await deleteProject.mutateAsync(project.id)
+                                } catch (err) {
+                                  console.error('Failed to delete project:', err)
+                                } finally {
+                                  setConfirmProjectId(null)
+                                }
+                              }}
+                              disabled={deleteProject.isPending}
+                            >
+                              Confirm delete
+                            </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              event.preventDefault()
+                              setConfirmProjectId(null)
+                            }}
+                            disabled={deleteProject.isPending}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            event.preventDefault()
+                            setConfirmProjectId(project.id)
+                          }}
+                          disabled={deleteProject.isPending}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -85,11 +167,16 @@ export function ProjectList() {
                     <div className="text-xs text-gray-500">
                       Created {formatDistanceToNow(new Date(project.created_at))} ago
                     </div>
+                    {confirmProjectId === project.id && (
+                      <div className="text-xs text-red-600">
+                        Deleting removes this project and all related forms, QR codes, and responses permanently.
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            </Link>
-          ))}
+            )
+          })}
         </div>
       )}
 

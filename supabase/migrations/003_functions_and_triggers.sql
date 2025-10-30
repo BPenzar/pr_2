@@ -13,7 +13,7 @@ BEGIN
   END LOOP;
 
   -- Check if the short URL already exists
-  WHILE EXISTS (SELECT 1 FROM qr_codes WHERE short_url = short_url) LOOP
+  WHILE EXISTS (SELECT 1 FROM qr_codes WHERE qr_codes.short_url = short_url) LOOP
     short_url := '';
     FOR i IN 1..8 LOOP
       short_url := short_url || substr(chars, floor(random() * length(chars) + 1)::INTEGER, 1);
@@ -68,23 +68,38 @@ BEGIN
   JOIN plans p ON a.plan_id = p.id
   WHERE a.id = account_uuid;
 
+  IF max_allowed IS NULL THEN
+    RAISE EXCEPTION 'Plan limits missing for account %', account_uuid
+      USING ERRCODE = 'P0002';
+  END IF;
+
   -- Return true if unlimited (-1) or under limit
   RETURN max_allowed = -1 OR current_count < max_allowed;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to check if user can create forms based on plan limits
-CREATE OR REPLACE FUNCTION can_create_form(project_uuid UUID)
+CREATE OR REPLACE FUNCTION can_create_form(project_uuid UUID, account_uuid UUID DEFAULT NULL)
 RETURNS BOOLEAN AS $$
 DECLARE
   current_count INTEGER;
   max_allowed INTEGER;
-  account_uuid UUID;
+  project_account UUID;
 BEGIN
   -- Get account_id for the project
-  SELECT account_id INTO account_uuid
+  SELECT account_id INTO project_account
   FROM projects
   WHERE id = project_uuid;
+
+  IF project_account IS NULL THEN
+    RAISE EXCEPTION 'Project % does not exist', project_uuid
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  IF account_uuid IS NOT NULL AND project_account <> account_uuid THEN
+    RAISE EXCEPTION 'Project % does not belong to account %', project_uuid, account_uuid
+      USING ERRCODE = '42501';
+  END IF;
 
   -- Get current form count for this project
   SELECT COUNT(*) INTO current_count
@@ -95,7 +110,12 @@ BEGIN
   SELECT p.max_forms_per_project INTO max_allowed
   FROM accounts a
   JOIN plans p ON a.plan_id = p.id
-  WHERE a.id = account_uuid;
+  WHERE a.id = project_account;
+
+  IF max_allowed IS NULL THEN
+    RAISE EXCEPTION 'Plan limits missing for account %', project_account
+      USING ERRCODE = 'P0002';
+  END IF;
 
   -- Return true if unlimited (-1) or under limit
   RETURN max_allowed = -1 OR current_count < max_allowed;

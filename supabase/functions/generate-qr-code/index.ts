@@ -18,10 +18,25 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const serviceRoleKey =
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+      Deno.env.get('SERVICE_ROLE_KEY') ??
+      Deno.env.get('SERVICE_ROLE_SUPABASE_KEY') ??
+      ''
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing Supabase Edge Function configuration: SUPABASE_URL or service role key')
+      return new Response(
+        JSON.stringify({ error: 'Edge function misconfigured: missing Supabase credentials' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     // Get the request body
     const { formId, locationName }: RequestBody = await req.json()

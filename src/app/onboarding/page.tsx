@@ -17,10 +17,12 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('wizard')
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const completeOnboarding = useCompleteOnboarding()
 
   const handleWizardComplete = (data: OnboardingData) => {
+    setErrorMessage(null)
     setOnboardingData(data)
 
     if (data.setupOption === 'template') {
@@ -31,6 +33,7 @@ export default function OnboardingPage() {
   }
 
   const handleTemplateSelected = (template: FormTemplate) => {
+    setErrorMessage(null)
     setSelectedTemplate(template)
     if (onboardingData) {
       const updatedData = { ...onboardingData, selectedTemplate: template.id }
@@ -40,6 +43,7 @@ export default function OnboardingPage() {
 
   const handleFinishOnboarding = async (data: OnboardingData, template?: FormTemplate) => {
     try {
+      setErrorMessage(null)
       // Generate project name based on business type
       const businessTypeNames = {
         restaurant: 'Restaurant Feedback',
@@ -71,8 +75,18 @@ export default function OnboardingPage() {
       }, 2000)
 
     } catch (error) {
-      console.error('Onboarding failed:', error)
-      // Handle error - could show an error message
+      const serializedError =
+        error && typeof error === 'object'
+          ? {
+              message: (error as { message?: string }).message ?? 'Unknown error',
+              details: (error as { details?: string | null }).details ?? null,
+              hint: (error as { hint?: string | null }).hint ?? null,
+              code: (error as { code?: string | null }).code ?? null,
+            }
+          : { message: String(error ?? 'Unknown error'), details: null, hint: null, code: null }
+
+      console.error('Onboarding failed:', serializedError)
+      setErrorMessage(serializedError.message ?? 'Failed to complete onboarding. Please try again.')
     }
   }
 
@@ -112,24 +126,38 @@ export default function OnboardingPage() {
 
   if (currentStep === 'template') {
     return (
-      <TemplateSelector
-        businessType={onboardingData?.businessType}
-        useCase={onboardingData?.primaryUseCase}
-        onSelectTemplate={handleTemplateSelected}
-        onBack={handleBackToWizard}
-        onSkip={() => {
-          if (onboardingData) {
-            handleFinishOnboarding({ ...onboardingData, setupOption: 'guided' })
-          }
-        }}
-      />
+      <div className="space-y-4">
+        {errorMessage && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
+        <TemplateSelector
+          businessType={onboardingData?.businessType}
+          useCase={onboardingData?.primaryUseCase}
+          onSelectTemplate={handleTemplateSelected}
+          onBack={handleBackToWizard}
+          onSkip={() => {
+            if (onboardingData) {
+              handleFinishOnboarding({ ...onboardingData, setupOption: 'guided' })
+            }
+          }}
+        />
+      </div>
     )
   }
 
   return (
-    <OnboardingWizard
-      onComplete={handleWizardComplete}
-      onSkip={handleSkipOnboarding}
-    />
+    <div className="space-y-4">
+      {errorMessage && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
+      <OnboardingWizard
+        onComplete={handleWizardComplete}
+        onSkip={handleSkipOnboarding}
+      />
+    </div>
   )
 }

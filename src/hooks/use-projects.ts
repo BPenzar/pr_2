@@ -129,7 +129,7 @@ export function useDeleteProject() {
     mutationFn: async (projectId: string) => {
       const { error } = await supabase
         .from('projects')
-        .update({ is_active: false })
+        .delete()
         .eq('id', projectId)
         .eq('account_id', account?.id)
 

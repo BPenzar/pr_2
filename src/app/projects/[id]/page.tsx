@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useProject } from '@/hooks/use-projects'
+import { useDeleteForm } from '@/hooks/use-forms'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { CreateFormModal } from '@/components/forms/create-form-modal'
 import Link from 'next/link'
-import { ArrowLeftIcon, PlusIcon, FileTextIcon, MessageSquareIcon, QrCodeIcon, SettingsIcon } from 'lucide-react'
+import { ArrowLeftIcon, PlusIcon, FileTextIcon, MessageSquareIcon, QrCodeIcon, SettingsIcon, TrashIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
@@ -18,6 +19,8 @@ export default function ProjectPage() {
   const projectId = params.id as string
   const [showCreateFormModal, setShowCreateFormModal] = useState(false)
   const { data: project, isLoading, error } = useProject(projectId)
+  const deleteForm = useDeleteForm()
+  const [confirmFormId, setConfirmFormId] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -189,8 +192,51 @@ export default function ProjectPage() {
                             QR Code
                           </Button>
                         </Link>
+                        {confirmFormId === form.id ? (
+                          <>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await deleteForm.mutateAsync({ formId: form.id, projectId })
+                                } catch (err) {
+                                  console.error('Failed to delete form:', err)
+                                } finally {
+                                  setConfirmFormId(null)
+                                }
+                              }}
+                              disabled={deleteForm.isPending}
+                            >
+                              Confirm delete
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConfirmFormId(null)}
+                              disabled={deleteForm.isPending}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => setConfirmFormId(form.id)}
+                            disabled={deleteForm.isPending}
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
+                    {confirmFormId === form.id && (
+                      <p className="mt-2 text-xs text-red-600">
+                        Deleting removes this form and all associated data. This cannot be undone.
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

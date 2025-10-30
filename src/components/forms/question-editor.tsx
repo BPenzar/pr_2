@@ -45,6 +45,7 @@ export function QuestionEditor({
   const [options, setOptions] = useState<string[]>(question?.options || [''])
   const [ratingScale, setRatingScale] = useState<number>(question?.rating_scale || 5)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const createQuestion = useCreateQuestion()
   const updateQuestion = useUpdateQuestion()
@@ -89,7 +90,6 @@ export function QuestionEditor({
 
   const handleDelete = async () => {
     if (!question) return
-
     try {
       await deleteQuestion.mutateAsync({
         id: question.id,
@@ -98,6 +98,8 @@ export function QuestionEditor({
       onDelete?.()
     } catch (err: any) {
       setError(err.message)
+    } finally {
+      setConfirmDelete(false)
     }
   }
 
@@ -127,15 +129,38 @@ export function QuestionEditor({
           </CardTitle>
         </div>
         {isEditing && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isPending}
-            className="text-red-600 hover:text-red-700"
-          >
-            <TrashIcon className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            {confirmDelete ? (
+              <>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isPending}
+                >
+                  Confirm delete
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={isPending}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(true)}
+                disabled={isPending}
+                className="text-red-600 hover:text-red-700"
+              >
+                <TrashIcon className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         )}
       </CardHeader>
       <CardContent>
@@ -144,6 +169,12 @@ export function QuestionEditor({
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
+          )}
+
+          {isEditing && confirmDelete && (
+            <div className="text-sm text-red-600">
+              This question will be removed from the form immediately.
+            </div>
           )}
 
           {!isEditing && (

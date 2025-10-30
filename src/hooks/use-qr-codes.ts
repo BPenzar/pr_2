@@ -118,6 +118,7 @@ export function useDeleteQRCode() {
         .from('qr_codes')
         .delete()
         .eq('id', data.id)
+        .eq('form_id', data.formId)
 
       if (error) throw error
     },
