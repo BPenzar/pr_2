@@ -33,6 +33,31 @@ BEGIN
   -- Get the Free plan ID
   SELECT id INTO free_plan_id FROM plans WHERE name = 'Free' LIMIT 1;
 
+  -- Ensure Free plan exists
+  IF free_plan_id IS NULL THEN
+    INSERT INTO plans (
+      name,
+      price,
+      max_projects,
+      max_forms_per_project,
+      max_responses_per_form,
+      features,
+      is_active
+    )
+    VALUES (
+      'Free',
+      0,
+      1,
+      3,
+      50,
+      '["basic_analytics", "qr_codes"]',
+      true
+    )
+    ON CONFLICT (name) DO UPDATE
+      SET is_active = true
+    RETURNING id INTO free_plan_id;
+  END IF;
+
   -- Create account for new user
   INSERT INTO accounts (user_id, name, plan_id)
   VALUES (

@@ -675,6 +675,9 @@ CREATE POLICY "accounts_update_own" ON accounts
 CREATE POLICY "accounts_delete_own" ON accounts
     FOR DELETE USING (user_id = auth.uid());
 
+CREATE POLICY "accounts_insert_service" ON accounts
+    FOR INSERT TO service_role WITH CHECK (true);
+
 -- Projects: users can manage projects in their account
 CREATE POLICY "projects_select_own" ON projects
     FOR SELECT USING (
