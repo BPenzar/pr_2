@@ -13,6 +13,7 @@ export interface Account {
   user_id: string
   name: string
   plan_id: string
+  onboarding_completed?: boolean
   created_at: string
   updated_at: string
 }

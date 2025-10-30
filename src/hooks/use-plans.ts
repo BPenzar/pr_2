@@ -128,18 +128,30 @@ export function useAccountPlan() {
         console.warn('Error getting response count:', responseError)
       }
 
-      const { data: projectSummaries, error: summaryError } = await supabase
-        .from('dashboard_summary')
-        .select('forms_count, qr_codes_count')
+      const { data: projectGraph, error: projectGraphError } = await supabase
+        .from('projects')
+        .select('id, is_active, forms:forms(id, is_active, qr_codes:qr_codes(id))')
         .eq('account_id', account.id)
 
-      if (summaryError) {
-        console.warn('Error getting usage summary:', summaryError)
+      if (projectGraphError) {
+        console.warn('Error getting project usage graph:', projectGraphError)
       }
 
-      const projectsActual = projectSummaries?.length ?? 0
-      const formsActual = projectSummaries?.reduce((acc: number, row: any) => acc + (row.forms_count ?? 0), 0) ?? 0
-      const qrActual = projectSummaries?.reduce((acc: number, row: any) => acc + (row.qr_codes_count ?? 0), 0) ?? 0
+      const activeProjects = (projectGraph ?? []).filter((project: any) => project?.is_active !== false)
+      const projectsActual = activeProjects.length
+
+      let formsActual = 0
+      let qrActual = 0
+
+      for (const project of activeProjects) {
+        const forms = Array.isArray(project.forms) ? project.forms : []
+        const activeForms = forms.filter((form: any) => form?.is_active !== false)
+        formsActual += activeForms.length
+        for (const form of activeForms) {
+          const qrs = Array.isArray(form.qr_codes) ? form.qr_codes : []
+          qrActual += qrs.length
+        }
+      }
 
       const usageCountersRaw = (accountData as any)?.usage_counters
       const usageCounters = Array.isArray(usageCountersRaw)
@@ -150,10 +162,10 @@ export function useAccountPlan() {
         account: accountData,
         plan: normalizePlan(accountData.plan),
         usage: {
-          projects: projectsActual,
-          forms: formsActual,
+          projects: projectsActual ?? usageCounters?.projects_count ?? 0,
+          forms: formsActual ?? usageCounters?.forms_count ?? 0,
           responses_this_month: responseCount || 0,
-          qr_codes: qrActual,
+          qr_codes: qrActual ?? usageCounters?.qr_codes_count ?? 0,
         } as UsageData,
       }
     },
