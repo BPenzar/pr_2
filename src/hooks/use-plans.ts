@@ -153,22 +153,39 @@ export function usePlanLimits(): PlanLimits | null {
 
   const { plan, usage } = data
 
+  const resolvedPlan = plan || normalizePlan({})
+
+  const totalProjectCapacity =
+    resolvedPlan.max_projects === -1
+      ? Math.max(usage.projects, 1)
+      : resolvedPlan.max_projects
+
+  const totalFormCapacity =
+    resolvedPlan.max_forms_per_project === -1
+      ? -1
+      : resolvedPlan.max_forms_per_project * totalProjectCapacity
+
+  const totalQrCapacity =
+    resolvedPlan.max_qr_codes_per_form === -1 || totalFormCapacity === -1
+      ? -1
+      : resolvedPlan.max_qr_codes_per_form * totalFormCapacity
+
   return {
     projects: {
       current: usage.projects,
-      limit: plan.max_projects
+      limit: resolvedPlan.max_projects
     },
     forms: {
       current: usage.forms,
-      limit: plan.max_forms_per_project === -1 ? -1 : usage.projects * plan.max_forms_per_project
+      limit: totalFormCapacity
     },
     responses: {
       current: usage.responses_this_month,
-      limit: plan.max_responses_per_month
+      limit: resolvedPlan.max_responses_per_month
     },
     qrCodes: {
       current: usage.qr_codes,
-      limit: plan.max_qr_codes_per_form === -1 ? -1 : usage.forms * plan.max_qr_codes_per_form
+      limit: totalQrCapacity
     }
   }
 }
