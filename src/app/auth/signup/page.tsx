@@ -27,7 +27,7 @@ export default function SignupPage() {
   const destination = user ? '/dashboard' : '/'
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#05070a] via-[#0b1118] to-[#080b0f] text-white">
       <SiteHeader
         title="BSP Feedback Platform"
         subtitle="Design feedback journeys customers love"
