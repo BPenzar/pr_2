@@ -84,18 +84,49 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
     const { value, questions } = item
 
     if (questions.type === 'rating') {
+      const maxScale = typeof questions.rating_scale === 'number' && questions.rating_scale > 0
+        ? questions.rating_scale
+        : 10
       const rating = parseInt(value)
+
+      if (maxScale === 5) {
+        return (
+          <div className="flex items-center">
+            {[...Array(5)].map((_, i) => (
+              <StarIcon
+                key={i}
+                className={`w-4 h-4 ${
+                  i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                }`}
+              />
+            ))}
+            <span className="ml-2 text-sm text-gray-600">({rating}/5)</span>
+          </div>
+        )
+      }
+
       return (
-        <div className="flex items-center">
-          {[...Array(5)].map((_, i) => (
-            <StarIcon
-              key={i}
-              className={`w-4 h-4 ${
-                i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-              }`}
-            />
-          ))}
-          <span className="ml-2 text-sm text-gray-600">({rating}/5)</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-800">{rating}</span>
+          <div className="flex gap-1">
+            {[...Array(maxScale)].map((_, index) => {
+              const valueLabel = index + 1
+              const isSelected = valueLabel === rating
+              return (
+                <span
+                  key={valueLabel}
+                  className={`h-6 w-6 flex items-center justify-center rounded-full text-xs border ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-500 text-white'
+                      : 'border-gray-300 text-gray-600'
+                  }`}
+                >
+                  {valueLabel}
+                </span>
+              )
+            })}
+          </div>
+          <span className="text-xs text-gray-500">out of {maxScale}</span>
         </div>
       )
     }
