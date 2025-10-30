@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,8 +24,23 @@ export default function SettingsPage() {
   const [confirmText, setConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const accountId = account?.id ?? null
+
+  useEffect(() => {
+    if (typeof account?.name === 'string') {
+      setAccountName(account.name)
+    }
+  }, [account?.name])
+
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!accountId) {
+      setAccountAlert({
+        type: 'error',
+        text: 'Account is still loading. Please try again in a moment.'
+      })
+      return
+    }
     setIsUpdating(true)
     setAccountAlert(null)
 
@@ -33,7 +48,7 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('accounts')
         .update({ name: accountName.trim() })
-        .eq('id', account?.id)
+        .eq('id', accountId)
 
       if (error) throw error
 
@@ -46,7 +61,7 @@ export default function SettingsPage() {
   }
 
   const handleDeleteAccount = useCallback(async () => {
-    if (!account?.id || confirmText !== 'DELETE' || isDeleting) return
+    if (!accountId || confirmText !== 'DELETE' || isDeleting) return
 
     setIsDeleting(true)
     setDeleteAlert(null)
@@ -55,7 +70,7 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('accounts')
         .delete()
-        .eq('id', account.id)
+        .eq('id', accountId)
 
       if (error) throw error
 
@@ -70,10 +85,10 @@ export default function SettingsPage() {
     } finally {
       setIsDeleting(false)
     }
-  }, [account?.id, confirmText, isDeleting, router, signOut])
+  }, [accountId, confirmText, isDeleting, router, signOut])
 
   const currentPlan = useMemo(() => (account as any)?.plans, [account])
-  const deleteDisabled = confirmText !== 'DELETE' || !account?.id || isDeleting
+  const deleteDisabled = confirmText !== 'DELETE' || !accountId || isDeleting
 
   if (loading) {
     return (
