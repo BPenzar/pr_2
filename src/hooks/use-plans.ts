@@ -128,14 +128,19 @@ export function useAccountPlan() {
         console.warn('Error getting response count:', responseError)
       }
 
+      const usageCountersRaw = (accountData as any)?.usage_counters
+      const usageCounters = Array.isArray(usageCountersRaw)
+        ? usageCountersRaw[0]
+        : usageCountersRaw
+
       return {
         account: accountData,
         plan: normalizePlan(accountData.plan),
         usage: {
-          projects: accountData.usage_counters?.projects_count || 0,
-          forms: accountData.usage_counters?.forms_count || 0,
+          projects: usageCounters?.projects_count ?? 0,
+          forms: usageCounters?.forms_count ?? 0,
           responses_this_month: responseCount || 0,
-          qr_codes: accountData.usage_counters?.qr_codes_count || 0,
+          qr_codes: usageCounters?.qr_codes_count ?? 0,
         } as UsageData,
       }
     },

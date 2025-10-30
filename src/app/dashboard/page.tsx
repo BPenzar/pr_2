@@ -12,12 +12,14 @@ import { BarChart3Icon, FileTextIcon, MessageSquareIcon, QrCodeIcon, SettingsIco
 import { checkOnboardingStatus } from '@/lib/onboarding'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase-client'
+import { usePlanLimits } from '@/hooks/use-plans'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { user, account, signOut, loading } = useAuth()
   const { data: projects } = useProjects()
   const { data: analytics } = useAccountAnalytics()
+  const planLimits = usePlanLimits()
   const [hasCreateAccess, setHasCreateAccess] = useState(true)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
 
@@ -90,6 +92,15 @@ export default function DashboardPage() {
     responses: 0,
     qrCodes: 0,
     scans: 0,
+  }
+
+  const memberSince = account?.created_at
+    ? new Date(account.created_at).toLocaleDateString()
+    : '—'
+
+  const formatLimit = (limit?: number | null) => {
+    if (typeof limit !== 'number') return '—'
+    return limit === -1 ? 'Unlimited' : limit
   }
 
   return (
@@ -208,9 +219,38 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2">
                 <p><strong>Plan:</strong> {(account as any)?.plans?.name || 'Free'}</p>
-                <p><strong>Member since:</strong> {new Date(account?.created_at || '').toLocaleDateString()}</p>
+                <p><strong>Member since:</strong> {memberSince}</p>
               </div>
             </div>
+
+            {planLimits && (
+              <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-4 border-t pt-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Projects used</p>
+                  <p className="text-lg font-semibold">
+                    {planLimits.projects.current} / {formatLimit(planLimits.projects.limit)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Forms used</p>
+                  <p className="text-lg font-semibold">
+                    {planLimits.forms.current} / {formatLimit(planLimits.forms.limit)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Responses this month</p>
+                  <p className="text-lg font-semibold">
+                    {planLimits.responses.current} / {formatLimit(planLimits.responses.limit)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">QR codes</p>
+                  <p className="text-lg font-semibold">
+                    {planLimits.qrCodes.current} / {formatLimit(planLimits.qrCodes.limit)}
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
