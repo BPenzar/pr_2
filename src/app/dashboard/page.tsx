@@ -65,7 +65,7 @@ export default function DashboardPage() {
     }
 
     checkProjectCapacity()
-  }, [account?.id])
+  }, [account?.id, projects?.length])
 
   if (loading) {
     return (
