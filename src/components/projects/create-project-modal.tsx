@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCreateProject } from '@/hooks/use-projects'
 import { useCanPerformAction } from '@/hooks/use-plans'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { UpgradePrompt } from '@/components/upgrade/upgrade-prompt'
 import { CrownIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { supabase } from '@/lib/supabase-client'
 
 interface CreateProjectModalProps {
   onClose: () => void
@@ -23,13 +25,52 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
   const [description, setDescription] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
+  const [serverCanCreate, setServerCanCreate] = useState(true)
+  const [isCheckingLimit, setIsCheckingLimit] = useState(false)
 
   const router = useRouter()
+  const { account } = useAuth()
   const createProject = useCreateProject()
   const { canCreateProject, getRemainingQuota } = useCanPerformAction()
 
-  const canCreate = canCreateProject()
+  const allowedByPlan = canCreateProject()
   const remainingProjects = getRemainingQuota('projects')
+  const canCreate = allowedByPlan && serverCanCreate
+
+  useEffect(() => {
+    if (!account?.id) return
+
+    let cancelled = false
+
+    const checkLimit = async () => {
+      setIsCheckingLimit(true)
+      try {
+        const { data, error } = await supabase.rpc('can_create_project', { account_uuid: account.id })
+
+        if (cancelled) return
+
+        if (error) {
+          console.error('Failed to check project capacity:', error)
+          setServerCanCreate(false)
+        } else {
+          setServerCanCreate(Boolean(data))
+        }
+      } catch (rpcError) {
+        if (!cancelled) {
+          console.error('Failed to check project capacity:', rpcError)
+          setServerCanCreate(false)
+        }
+      } finally {
+        if (!cancelled) setIsCheckingLimit(false)
+      }
+    }
+
+    checkLimit()
+
+    return () => {
+      cancelled = true
+    }
+  }, [account?.id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,7 +126,7 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
           <CardDescription>
             Create a project to organize your feedback forms
           </CardDescription>
-          {!canCreate && (
+          {!canCreate && !isCheckingLimit && (
             <Alert className="mt-3">
               <CrownIcon className="h-4 w-4" />
               <AlertDescription>
@@ -157,7 +198,7 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
               ) : (
                 <Button
                   type="submit"
-                  disabled={createProject.isPending || !name.trim()}
+                  disabled={createProject.isPending || !name.trim() || isCheckingLimit}
                   className="flex-1"
                 >
                   {createProject.isPending ? 'Creating...' : 'Create Project'}
