@@ -180,7 +180,7 @@ export function OnboardingWizard({
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
             Step {currentStep + 1} of {steps.length}
           </p>
-          <h1 className="text-2xl font-semibold text-gray-900 mt-1">Let's set up your workspace</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mt-1">Let&apos;s set up your workspace</h1>
         </div>
         {onSkip && (
           <Button variant="ghost" size="sm" onClick={onSkip} disabled={isSubmitting}>
@@ -195,7 +195,7 @@ export function OnboardingWizard({
         <Card>
           <CardHeader>
             <CardTitle>Project basics</CardTitle>
-            <CardDescription>Give your project a clear name and tell us who it's for.</CardDescription>
+            <CardDescription>Give your project a clear name and tell us who it&apos;s for.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
