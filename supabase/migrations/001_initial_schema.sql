@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Plans table (defines subscription plans)
 CREATE TABLE plans (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(50) NOT NULL UNIQUE,
   price INTEGER NOT NULL DEFAULT 0, -- Price in cents
   max_projects INTEGER NOT NULL DEFAULT 1,
@@ -20,7 +20,7 @@ CREATE TABLE plans (
 
 -- Accounts table (one per user, contains plan info)
 CREATE TABLE accounts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   plan_id UUID NOT NULL REFERENCES plans(id),
@@ -31,7 +31,7 @@ CREATE TABLE accounts (
 
 -- Projects table
 CREATE TABLE projects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   description TEXT,
@@ -42,7 +42,7 @@ CREATE TABLE projects (
 
 -- Forms table
 CREATE TABLE forms (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   description TEXT,
@@ -56,7 +56,7 @@ CREATE TYPE question_type AS ENUM ('text', 'textarea', 'rating', 'choice', 'mult
 
 -- Questions table
 CREATE TABLE questions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
   type question_type NOT NULL,
   title VARCHAR(200) NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE questions (
 
 -- QR Codes table
 CREATE TABLE qr_codes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
   short_url VARCHAR(20) NOT NULL UNIQUE,
   full_url TEXT NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE qr_codes (
 
 -- Responses table (main response record)
 CREATE TABLE responses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
   qr_code_id UUID REFERENCES qr_codes(id),
   ip_hash VARCHAR(64), -- SHA-256 hash for GDPR compliance
@@ -92,7 +92,7 @@ CREATE TABLE responses (
 
 -- Response items table (individual question answers)
 CREATE TABLE response_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   response_id UUID NOT NULL REFERENCES responses(id) ON DELETE CASCADE,
   question_id UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
   value TEXT NOT NULL,
@@ -102,7 +102,7 @@ CREATE TABLE response_items (
 
 -- Usage counters table (for tracking plan limits)
 CREATE TABLE usage_counters (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   period_start DATE NOT NULL,
   period_end DATE NOT NULL,
@@ -117,7 +117,7 @@ CREATE TABLE usage_counters (
 
 -- Subscriptions table (for Stripe integration)
 CREATE TABLE subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
   plan_id UUID NOT NULL REFERENCES plans(id),
   stripe_subscription_id VARCHAR(100) UNIQUE,
@@ -131,7 +131,7 @@ CREATE TABLE subscriptions (
 
 -- Audit log table (for security and debugging)
 CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   action VARCHAR(50) NOT NULL,

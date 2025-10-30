@@ -28,7 +28,7 @@ END $$;
 
 -- Plans table (subscription tiers) - MUST BE FIRST
 CREATE TABLE IF NOT EXISTS plans (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(50) NOT NULL UNIQUE,
     price INTEGER NOT NULL DEFAULT 0, -- Price in cents
     max_projects INTEGER NOT NULL DEFAULT 1,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS plans (
 
 -- Accounts table (user accounts with plan info)
 CREATE TABLE IF NOT EXISTS accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     plan_id UUID NOT NULL REFERENCES plans(id),
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 -- Projects table
 CREATE TABLE IF NOT EXISTS projects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS projects (
 
 -- Forms table
 CREATE TABLE IF NOT EXISTS forms (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS forms (
 
 -- Questions table
 CREATE TABLE IF NOT EXISTS questions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
     type question_type NOT NULL,
     title VARCHAR(200) NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS questions (
 
 -- QR codes table
 CREATE TABLE IF NOT EXISTS qr_codes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
     short_url VARCHAR(20) NOT NULL UNIQUE,
     full_url TEXT NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS qr_codes (
 
 -- Responses table
 CREATE TABLE IF NOT EXISTS responses (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     form_id UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
     qr_code_id UUID REFERENCES qr_codes(id),
     ip_hash VARCHAR(64), -- SHA-256 hash for GDPR compliance
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS responses (
 
 -- Response items table (individual answers)
 CREATE TABLE IF NOT EXISTS response_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     response_id UUID NOT NULL REFERENCES responses(id) ON DELETE CASCADE,
     question_id UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
     value TEXT NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS response_items (
 
 -- Usage counters for plan limits (CRITICAL FOR FRONTEND)
 CREATE TABLE IF NOT EXISTS usage_counters (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS usage_counters (
 
 -- Subscriptions table (for Stripe integration)
 CREATE TABLE IF NOT EXISTS subscriptions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     plan_id UUID NOT NULL REFERENCES plans(id),
     stripe_subscription_id VARCHAR(100) UNIQUE,
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 -- Audit log table (for security and debugging)
 CREATE TABLE IF NOT EXISTS audit_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     account_id UUID REFERENCES accounts(id) ON DELETE CASCADE,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     action VARCHAR(50) NOT NULL,
@@ -953,6 +953,9 @@ CREATE POLICY "audit_logs_insert_service" ON audit_logs
 -- STEP 8: CREATE MATERIALIZED VIEWS FOR PERFORMANCE
 -- =============================================================================
 
+-- Ensure pg_cron is available for scheduled refreshes
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
 -- Drop existing materialized views if they exist
 DROP MATERIALIZED VIEW IF EXISTS dashboard_summary CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS form_analytics CASCADE;
@@ -1175,7 +1178,11 @@ WHERE type = 'rating' AND rating_scale IS NULL;
 -- Schedule materialized view refresh (if pg_cron is available)
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+        RETURN;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'refresh-dashboard-views') THEN
         PERFORM cron.schedule(
             'refresh-dashboard-views',
             '*/15 * * * *', -- Every 15 minutes

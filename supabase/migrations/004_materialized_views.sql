@@ -1,6 +1,9 @@
 -- Materialized views for dashboard performance
 -- As mentioned in PRD: "Materijalizirani pogledi za brzi dashboard"
 
+-- Ensure pg_cron extension is available for scheduling background jobs
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
 -- Dashboard summary view for faster dashboard loading
 CREATE MATERIALIZED VIEW dashboard_summary AS
 SELECT
@@ -80,9 +83,17 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to be called by cron job (every 15 minutes)
--- This will be set up in Supabase dashboard or via external cron
-SELECT cron.schedule(
-  'refresh-dashboard-views',
-  '*/15 * * * *', -- Every 15 minutes
-  'SELECT refresh_dashboard_views();'
-);
+-- Guard against duplicate job creation
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM cron.job WHERE jobname = 'refresh-dashboard-views'
+  ) THEN
+    PERFORM cron.schedule(
+      'refresh-dashboard-views',
+      '*/15 * * * *', -- Every 15 minutes
+      'SELECT refresh_dashboard_views();'
+    );
+  END IF;
+END;
+$$;
