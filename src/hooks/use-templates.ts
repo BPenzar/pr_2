@@ -45,7 +45,7 @@ export function useCreateFormFromTemplate() {
           project_id: projectId,
           name: formName,
           description: formDescription,
-          is_active: false, // Start as draft
+          is_active: true, // Forms created from templates go live immediately
         })
         .select()
         .single()
@@ -278,7 +278,7 @@ export function useCompleteOnboarding() {
             project_id: project.id,
             name: data.template.name,
             description: data.template.description,
-            is_active: false, // Start as draft for template
+            is_active: true,
           })
           .select()
           .single()
