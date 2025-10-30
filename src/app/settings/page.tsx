@@ -53,6 +53,8 @@ export default function SettingsPage() {
       if (error) throw error
 
       setAccountAlert({ type: 'success', text: 'Account updated successfully' })
+      // Refresh the route so auth context refetches account data
+      router.refresh()
     } catch (error: any) {
       setAccountAlert({ type: 'error', text: error.message })
     } finally {
