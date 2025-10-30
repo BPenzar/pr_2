@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 
 export default function SettingsPage() {
-  const { user, account, loading } = useAuth()
+  const { user, account, loading, signOut } = useAuth()
   const [accountName, setAccountName] = useState(account?.name || '')
   const [isUpdating, setIsUpdating] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -46,7 +46,34 @@ export default function SettingsPage() {
     }
   }
 
-  const currentPlan = (account as any)?.plans
+  const handleDeleteAccount = async () => {
+    if (!account?.id) return
+
+    const confirmation = window.prompt(
+      'Type DELETE to confirm permanent account deletion. This cannot be undone.'
+    )
+
+    if (!confirmation || confirmation.toUpperCase() !== 'DELETE') {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('id', account.id)
+
+      if (error) throw error
+
+      await signOut()?.catch(() => {})
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Failed to delete account:', error)
+      window.alert('Unable to delete account. Please contact support.')
+    }
+  }
+
+const currentPlan = (account as any)?.plans
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -189,9 +216,12 @@ export default function SettingsPage() {
                 <p className="text-sm text-red-700 mt-1">
                   Permanently delete your account and all associated data. This action cannot be undone.
                 </p>
-                <Button variant="destructive" className="mt-3" disabled>
+                <Button variant="destructive" className="mt-3" onClick={handleDeleteAccount}>
                   Delete Account
                 </Button>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  To delete your entire account, please reach out to support so we can process this with you.
+                </p>
               </div>
             </div>
           </CardContent>
