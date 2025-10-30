@@ -41,7 +41,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
 
   const renderRatingInput = () => {
     const currentRating = parseInt(value as string) || 0
-    const maxRating = question.rating_scale || 5
+    const maxRating = question.rating_scale ?? 10
     const isStarRating = maxRating === 5
     const ratingValues = Array.from({ length: maxRating }, (_, i) => i + 1)
 
