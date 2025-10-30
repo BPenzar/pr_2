@@ -45,15 +45,23 @@ export default function SettingsPage() {
     setAccountAlert(null)
 
     try {
-      const { error } = await supabase
+      const trimmed = accountName.trim()
+      if (!trimmed) {
+        setAccountAlert({ type: 'error', text: 'Account name cannot be empty.' })
+        return
+      }
+
+      const { data, error } = await supabase
         .from('accounts')
-        .update({ name: accountName.trim() })
+        .update({ name: trimmed })
         .eq('id', accountId)
+        .select()
+        .single()
 
       if (error) throw error
 
       setAccountAlert({ type: 'success', text: 'Account updated successfully' })
-      // Refresh the route so auth context refetches account data
+      setAccountName(data.name)
       router.refresh()
     } catch (error: any) {
       setAccountAlert({ type: 'error', text: error.message })
