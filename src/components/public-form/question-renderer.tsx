@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -43,7 +43,7 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
     const currentRating = parseInt(value as string) || 0
     const maxRating = question.rating_scale || 5
     const isStarRating = maxRating === 5
-    const ratingValues = useMemo(() => Array.from({ length: maxRating }, (_, i) => i + 1), [maxRating])
+    const ratingValues = Array.from({ length: maxRating }, (_, i) => i + 1)
 
     if (isStarRating) {
       // 5-star rating with star icons
