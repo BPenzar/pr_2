@@ -1,68 +1,95 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
+import { FORM_TEMPLATES, type FormTemplate } from '@/lib/form-templates'
+import { TemplatePreviewModal } from '@/components/onboarding/template-selector'
 import {
-  CheckIcon,
-  ArrowRightIcon,
   ArrowLeftIcon,
-  SparklesIcon,
-  QrCodeIcon,
-  FileTextIcon,
+  ArrowRightIcon,
   BarChart3Icon,
-  Users2Icon,
-  CoffeeIcon,
-  ShoppingBagIcon,
   BuildingIcon,
-  HeartIcon
+  CheckIcon,
+  CoffeeIcon,
+  FileTextIcon,
+  HeartIcon,
+  SparklesIcon,
+  Users2Icon,
+  QrCodeIcon,
+  ShoppingBagIcon
 } from 'lucide-react'
+
+type SetupOption = 'quick' | 'guided' | 'template'
 
 interface OnboardingWizardProps {
   onComplete: (data: OnboardingData) => void
   onSkip?: () => void
+  onOpenTemplateLibrary?: () => void
+  selectedTemplate: FormTemplate | null
+  onSelectTemplate: (template: FormTemplate | null) => void
+  isSubmitting?: boolean
+  onStateChange?: (state: OnboardingFormState) => void
 }
 
 export interface OnboardingData {
   businessType: string
   primaryUseCase: string
   expectedVolume: string
-  setupOption: 'quick' | 'guided' | 'template'
+  setupOption: SetupOption
+  projectName: string
   selectedTemplate?: string
+}
+
+export interface OnboardingFormState {
+  businessType: string
+  primaryUseCase: string
+  expectedVolume: string
+  projectName: string
+  setupOption: SetupOption | null
+}
+
+const BUSINESS_TYPE_NAMES: Record<string, string> = {
+  restaurant: 'Guest Feedback Hub',
+  retail: 'Store Feedback Hub',
+  corporate: 'Team Insights Hub',
+  healthcare: 'Patient Experience Hub',
+  other: 'Customer Feedback Hub'
 }
 
 const BUSINESS_TYPES = [
   {
     id: 'restaurant',
-    name: 'Restaurant/Food Service',
+    name: 'Restaurant / Food Service',
     icon: CoffeeIcon,
-    description: 'Collect customer feedback on food, service, and ambiance'
+    description: 'Capture feedback on meals, service, and ambiance in minutes.'
   },
   {
     id: 'retail',
-    name: 'Retail/E-commerce',
+    name: 'Retail / E-commerce',
     icon: ShoppingBagIcon,
-    description: 'Get feedback on products, shopping experience, and service'
+    description: 'Measure product satisfaction and in-store experience.'
   },
   {
     id: 'corporate',
-    name: 'Corporate/Office',
+    name: 'Corporate / Office',
     icon: BuildingIcon,
-    description: 'Employee satisfaction, event feedback, and internal surveys'
+    description: 'Collect employee sentiment, event feedback, and internal surveys.'
   },
   {
     id: 'healthcare',
-    name: 'Healthcare/Wellness',
+    name: 'Healthcare / Wellness',
     icon: HeartIcon,
-    description: 'Patient experience, appointment feedback, and service quality'
+    description: 'Understand patient experience after visits or treatments.'
   },
   {
     id: 'other',
-    name: 'Other',
+    name: 'Something else',
     icon: Users2Icon,
-    description: 'Custom feedback collection for your unique needs'
+    description: 'Create a custom feedback flow for your unique use case.'
   }
 ]
 
@@ -70,27 +97,27 @@ const USE_CASES = [
   {
     id: 'customer_satisfaction',
     name: 'Customer Satisfaction',
-    description: 'Measure overall customer happiness and service quality'
+    description: 'Track how happy people are with your overall service.'
   },
   {
     id: 'product_feedback',
     name: 'Product Feedback',
-    description: 'Collect opinions on specific products or services'
+    description: 'Discover what people think about specific products or features.'
   },
   {
     id: 'event_feedback',
     name: 'Event Feedback',
-    description: 'Get feedback from attendees after events or experiences'
+    description: 'Collect reactions right after workshops, meetups, or trainings.'
   },
   {
     id: 'employee_engagement',
     name: 'Employee Engagement',
-    description: 'Internal feedback and satisfaction surveys'
+    description: 'Run quick internal check-ins and pulse surveys.'
   },
   {
     id: 'market_research',
     name: 'Market Research',
-    description: 'Gather insights for business decisions and improvements'
+    description: 'Validate ideas and understand audience preferences.'
   }
 ]
 
@@ -98,87 +125,164 @@ const VOLUME_OPTIONS = [
   {
     id: 'low',
     name: 'Just getting started',
-    description: 'Less than 100 responses per month',
-    recommended: 'Free Plan'
+    description: 'Less than 100 responses each month.',
+    recommendation: 'Perfect for the Free plan.'
   },
   {
     id: 'medium',
-    name: 'Growing business',
-    description: '100-1,000 responses per month',
-    recommended: 'Pro Plan'
+    name: 'Growing momentum',
+    description: 'Between 100 and 1,000 responses per month.',
+    recommendation: 'Pro plan keeps you covered.'
   },
   {
     id: 'high',
-    name: 'High volume',
-    description: '1,000+ responses per month',
-    recommended: 'Pro/Enterprise Plan'
+    name: 'High-volume feedback',
+    description: 'More than 1,000 responses per month.',
+    recommendation: 'Chat with us about scaling confidently.'
   }
 ]
 
-const SETUP_OPTIONS = [
+const SETUP_OPTIONS: Array<{
+  id: SetupOption
+  name: string
+  description: string
+  icon: typeof SparklesIcon
+  duration: string
+}> = [
   {
     id: 'quick',
-    name: 'Quick Setup',
-    description: 'Create a basic feedback form in 2 minutes',
+    name: 'Quick start',
+    description: 'Auto-create a simple form so you can start collecting responses immediately.',
     icon: SparklesIcon,
-    duration: '2 min'
+    duration: '≈2 minutes'
   },
   {
     id: 'template',
-    name: 'Use Template',
-    description: 'Start with a pre-built form template',
+    name: 'Use a template',
+    description: 'Pick a best-practice template tailored to your business type.',
     icon: FileTextIcon,
-    duration: '5 min'
+    duration: '≈5 minutes'
   },
   {
     id: 'guided',
-    name: 'Guided Setup',
-    description: 'Step-by-step walkthrough with best practices',
+    name: 'Build from scratch',
+    description: 'Start with a blank slate and customise every question yourself.',
     icon: Users2Icon,
-    duration: '10 min'
+    duration: '≈10 minutes'
   }
 ]
 
-export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) {
+export function OnboardingWizard({
+  onComplete,
+  onSkip,
+  onOpenTemplateLibrary,
+  selectedTemplate,
+  onSelectTemplate,
+  isSubmitting = false,
+  onStateChange
+}: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState<Partial<OnboardingData>>({})
+  const [projectNameEdited, setProjectNameEdited] = useState(false)
+  const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null)
+  const [formState, setFormState] = useState<OnboardingFormState>({
+    businessType: '',
+    primaryUseCase: '',
+    expectedVolume: '',
+    projectName: 'My Feedback Project',
+    setupOption: null
+  })
 
-  const steps = [
-    'Business Type',
-    'Primary Use Case',
-    'Expected Volume',
-    'Setup Preference',
-    'Summary'
-  ]
-
+  const steps = ['Your business', 'Goals', 'Get started']
   const progress = ((currentStep + 1) / steps.length) * 100
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
-    } else {
-      onComplete(formData as OnboardingData)
+  const recommendedTemplates = useMemo(() => {
+    const matches = FORM_TEMPLATES.filter((template) => {
+      const matchesBusiness = formState.businessType
+        ? template.businessTypes.includes(formState.businessType)
+        : false
+      const matchesUseCase = formState.primaryUseCase
+        ? template.useCases.includes(formState.primaryUseCase)
+        : false
+      return matchesBusiness || matchesUseCase
+    })
+
+    if (matches.length > 0) {
+      return matches
+    }
+
+    return FORM_TEMPLATES.filter((template) => template.popular).concat(
+      FORM_TEMPLATES.slice(0, 3)
+    )
+  }, [formState.businessType, formState.primaryUseCase])
+
+  const handleBusinessTypeSelect = (typeId: string) => {
+    setFormState((prev) => {
+      const projectName =
+        projectNameEdited || !BUSINESS_TYPE_NAMES[typeId]
+          ? prev.projectName
+          : BUSINESS_TYPE_NAMES[typeId]
+
+      return {
+        ...prev,
+        businessType: typeId,
+        projectName
+      }
+    })
+  }
+
+  const handleSetupOptionSelect = (option: SetupOption) => {
+    setFormState((prev) => ({
+      ...prev,
+      setupOption: option
+    }))
+
+    if (option !== 'template' && selectedTemplate) {
+      onSelectTemplate(null)
     }
   }
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
+  useEffect(() => {
+    onStateChange?.(formState)
+  }, [formState, onStateChange])
 
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return !!formData.businessType
+        return Boolean(formState.businessType && formState.projectName.trim())
       case 1:
-        return !!formData.primaryUseCase
+        return Boolean(formState.primaryUseCase && formState.expectedVolume)
       case 2:
-        return !!formData.expectedVolume
-      case 3:
-        return !!formData.setupOption
+        if (!formState.setupOption) return false
+        if (formState.setupOption === 'template') {
+          return Boolean(selectedTemplate)
+        }
+        return true
       default:
         return true
+    }
+  }
+
+  const goNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep((prev) => prev + 1)
+      return
+    }
+
+    if (!formState.setupOption) return
+
+    onComplete({
+      businessType: formState.businessType,
+      primaryUseCase: formState.primaryUseCase,
+      expectedVolume: formState.expectedVolume,
+      setupOption: formState.setupOption,
+      projectName: formState.projectName.trim(),
+      selectedTemplate: formState.setupOption === 'template' ? selectedTemplate?.id : undefined
+    })
+  }
+
+  const goBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1)
     }
   }
 
@@ -186,223 +290,326 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">What type of business do you have?</h2>
-              <p className="text-gray-600">
-                This helps us suggest the best setup for your needs
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold text-gray-900">Tell us about your business</h2>
+              <p className="text-sm text-gray-600 mt-2">
+                We tailor recommendations based on the experience you want to improve.
               </p>
             </div>
+
             <div className="grid gap-3 md:grid-cols-2">
               {BUSINESS_TYPES.map((type) => {
                 const Icon = type.icon
+                const isSelected = formState.businessType === type.id
+
                 return (
                   <Card
                     key={type.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      formData.businessType === type.id
-                        ? 'ring-2 ring-blue-500 border-blue-200'
-                        : ''
+                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
                     }`}
-                    onClick={() => setFormData({ ...formData, businessType: type.id })}
+                    onClick={() => handleBusinessTypeSelect(type.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-blue-100 p-2">
                           <Icon className="h-5 w-5 text-blue-600" />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{type.name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">{type.description}</p>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="font-medium text-gray-900">{type.name}</h3>
+                            {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
+                          </div>
+                          <p className="text-sm text-gray-600">{type.description}</p>
                         </div>
-                        {formData.businessType === type.id && (
-                          <CheckIcon className="h-5 w-5 text-blue-600" />
-                        )}
                       </div>
                     </CardContent>
                   </Card>
                 )
               })}
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-gray-900">
+                  Name your first project
+                </CardTitle>
+                <CardDescription>
+                  You can always rename it later. This is how your workspace will appear on the dashboard.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Input
+                  value={formState.projectName}
+                  onChange={(event) => {
+                    setFormState((prev) => ({
+                      ...prev,
+                      projectName: event.target.value
+                    }))
+                    setProjectNameEdited(true)
+                  }}
+                  placeholder="e.g. Guest Feedback Hub"
+                />
+              </CardContent>
+            </Card>
           </div>
         )
 
       case 1:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">What&apos;s your primary use case?</h2>
-              <p className="text-gray-600">
-                Tell us what you want to achieve with feedback collection
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold text-gray-900">What&apos;s your first goal?</h2>
+              <p className="text-sm text-gray-600 mt-2">
+                Pick the outcome you want from your feedback. We&apos;ll fine-tune recommendations accordingly.
               </p>
             </div>
+
             <div className="space-y-3">
-              {USE_CASES.map((useCase) => (
-                <Card
-                  key={useCase.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    formData.primaryUseCase === useCase.id
-                      ? 'ring-2 ring-blue-500 border-blue-200'
-                      : ''
-                  }`}
-                  onClick={() => setFormData({ ...formData, primaryUseCase: useCase.id })}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{useCase.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{useCase.description}</p>
+              {USE_CASES.map((useCase) => {
+                const isSelected = formState.primaryUseCase === useCase.id
+
+                return (
+                  <Card
+                    key={useCase.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
+                    }`}
+                    onClick={() =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        primaryUseCase: useCase.id
+                      }))
+                    }
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-medium text-gray-900">{useCase.name}</h3>
+                          <p className="text-sm text-gray-600 mt-1">{useCase.description}</p>
+                        </div>
+                        {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
                       </div>
-                      {formData.primaryUseCase === useCase.id && (
-                        <CheckIcon className="h-5 w-5 text-blue-600" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <BarChart3Icon className="h-4 w-4 text-blue-600" />
+                Expected response volume
+              </h3>
+              {VOLUME_OPTIONS.map((option) => {
+                const isSelected = formState.expectedVolume === option.id
+
+                return (
+                  <Card
+                    key={option.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
+                    }`}
+                    onClick={() =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        expectedVolume: option.id
+                      }))
+                    }
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{option.name}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{option.description}</p>
+                          <p className="text-xs text-blue-600 mt-2 font-medium uppercase tracking-wide">
+                            {option.recommendation}
+                          </p>
+                        </div>
+                        {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         )
 
       case 2:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">Expected response volume?</h2>
-              <p className="text-gray-600">
-                This helps us recommend the right plan for you
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold text-gray-900">How do you want to get started?</h2>
+              <p className="text-sm text-gray-600 mt-2">
+                Choose the setup approach that matches your timeline and level of customisation.
               </p>
             </div>
-            <div className="space-y-3">
-              {VOLUME_OPTIONS.map((option) => (
-                <Card
-                  key={option.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    formData.expectedVolume === option.id
-                      ? 'ring-2 ring-blue-500 border-blue-200'
-                      : ''
-                  }`}
-                  onClick={() => setFormData({ ...formData, expectedVolume: option.id })}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-medium">{option.name}</h3>
-                          <Badge variant="outline">{option.recommended}</Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">{option.description}</p>
-                      </div>
-                      {formData.expectedVolume === option.id && (
-                        <CheckIcon className="h-5 w-5 text-blue-600" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )
 
-      case 3:
-        return (
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">How would you like to get started?</h2>
-              <p className="text-gray-600">
-                Choose the setup approach that works best for you
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {SETUP_OPTIONS.map((option) => {
                 const Icon = option.icon
+                const isSelected = formState.setupOption === option.id
+
                 return (
                   <Card
                     key={option.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      formData.setupOption === option.id
-                        ? 'ring-2 ring-blue-500 border-blue-200'
-                        : ''
+                      isSelected ? 'ring-2 ring-blue-500 border-blue-200 bg-blue-50/40' : ''
                     }`}
-                    onClick={() => setFormData({ ...formData, setupOption: option.id as any })}
+                    onClick={() => handleSetupOptionSelect(option.id)}
                   >
-                    <CardContent className="p-4 text-center">
-                      <div className="p-3 bg-blue-100 rounded-lg mx-auto w-fit mb-3">
-                        <Icon className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <h3 className="font-medium mb-2">{option.name}</h3>
-                      <p className="text-sm text-gray-600 mb-3">{option.description}</p>
-                      <Badge variant="secondary">{option.duration}</Badge>
-                      {formData.setupOption === option.id && (
-                        <div className="mt-3">
-                          <CheckIcon className="h-5 w-5 text-blue-600 mx-auto" />
+                    <CardContent className="p-5 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-lg bg-blue-100 p-2">
+                          <Icon className="h-5 w-5 text-blue-600" />
                         </div>
-                      )}
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <h3 className="font-medium text-gray-900">{option.name}</h3>
+                            {isSelected && <CheckIcon className="h-5 w-5 text-blue-600" />}
+                          </div>
+                          <p className="text-sm text-gray-600">{option.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Estimated time</span>
+                        <span className="font-medium text-gray-700">{option.duration}</span>
+                      </div>
                     </CardContent>
                   </Card>
                 )
               })}
             </div>
-          </div>
-        )
 
-      case 4:
-        const businessType = BUSINESS_TYPES.find(t => t.id === formData.businessType)
-        const useCase = USE_CASES.find(u => u.id === formData.primaryUseCase)
-        const volume = VOLUME_OPTIONS.find(v => v.id === formData.expectedVolume)
-        const setup = SETUP_OPTIONS.find(s => s.id === formData.setupOption)
-
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold mb-2">Ready to get started!</h2>
-              <p className="text-gray-600">
-                Review your preferences and let&apos;s create your first feedback form
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Business Type</h4>
-                      <p className="text-sm text-gray-600">{businessType?.name}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Primary Use Case</h4>
-                      <p className="text-sm text-gray-600">{useCase?.name}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Expected Volume</h4>
-                      <p className="text-sm text-gray-600">{volume?.name}</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Setup Preference</h4>
-                      <p className="text-sm text-gray-600">{setup?.name}</p>
-                    </div>
+            {formState.setupOption === 'template' && (
+              <Card className="border-blue-200 bg-blue-50/30">
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-sm font-semibold text-gray-900">
+                      Recommended templates
+                    </CardTitle>
+                    <CardDescription className="text-xs text-gray-600">
+                      Hand-picked based on your industry and goal. Preview or pick one to continue.
+                    </CardDescription>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onOpenTemplateLibrary?.()}
+                  >
+                    Browse all templates
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-3">
+                    {recommendedTemplates.slice(0, 3).map((template) => {
+                      const isActive = selectedTemplate?.id === template.id
+
+                      return (
+                        <Card
+                          key={template.id}
+                          className={`border ${isActive ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-200'}`}
+                        >
+                          <CardHeader className="space-y-2">
+                            <Badge variant="outline" className="w-fit text-xs capitalize">
+                              {template.category}
+                            </Badge>
+                            <CardTitle className="text-base text-gray-900">
+                              {template.name}
+                            </CardTitle>
+                            <CardDescription className="text-xs text-gray-600">
+                              {template.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <QrCodeIcon className="h-4 w-4" />
+                              <span>{template.estimatedTime}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {template.tags.slice(0, 3).map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-[10px] capitalize">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                variant={isActive ? 'default' : 'secondary'}
+                                onClick={() => onSelectTemplate(template)}
+                              >
+                                {isActive ? 'Selected' : 'Use template'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setPreviewTemplate(template)}
+                              >
+                                Preview
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                  {!selectedTemplate && (
+                    <p className="text-xs text-gray-600">
+                      Choose a template above or open the library to continue.
+                    </p>
+                  )}
+                  {selectedTemplate && (
+                    <div className="rounded-md border border-blue-100 bg-white p-3 text-xs text-blue-700">
+                      <span className="font-medium text-blue-800">Selected:</span>{' '}
+                      {selectedTemplate.name}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+            )}
 
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-3">
-                  <SparklesIcon className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <h4 className="font-medium text-blue-900">
-                      {setup?.id === 'quick' && 'Quick Setup Ready'}
-                      {setup?.id === 'template' && 'Template Selected'}
-                      {setup?.id === 'guided' && 'Guided Setup Ready'}
-                    </h4>
-                    <p className="text-sm text-blue-700">
-                      {setup?.id === 'quick' && 'We\'ll create a basic feedback form for you in seconds'}
-                      {setup?.id === 'template' && 'Choose from our curated templates on the next page'}
-                      {setup?.id === 'guided' && 'Follow our step-by-step guide to create the perfect form'}
-                    </p>
-                  </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold text-gray-900">
+                  Launch summary
+                </CardTitle>
+                <CardDescription className="text-xs text-gray-600">
+                  We&apos;ll create your workspace with the following settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
+                <div>
+                  <span className="font-medium text-gray-900">Project name:</span>{' '}
+                  {formState.projectName || '—'}
                 </div>
-              </div>
-            </div>
+                <div>
+                  <span className="font-medium text-gray-900">Business type:</span>{' '}
+                  {formState.businessType ? BUSINESS_TYPES.find(b => b.id === formState.businessType)?.name : '—'}
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900">Goal:</span>{' '}
+                  {formState.primaryUseCase
+                    ? USE_CASES.find(u => u.id === formState.primaryUseCase)?.name
+                    : '—'}
+                </div>
+                <div>
+                  <span className="font-medium text-gray-900">Setup:</span>{' '}
+                  {formState.setupOption
+                    ? SETUP_OPTIONS.find(o => o.id === formState.setupOption)?.name
+                    : '—'}
+                </div>
+                {formState.setupOption === 'template' && (
+                  <div className="md:col-span-2">
+                    <span className="font-medium text-gray-900">Template:</span>{' '}
+                    {selectedTemplate ? selectedTemplate.name : 'Not selected'}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )
 
@@ -412,72 +619,76 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-4xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Welcome to BSP Feedback Tool</CardTitle>
-          <CardDescription>
-            Let&apos;s set up your feedback collection system in just a few steps
-          </CardDescription>
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Step {currentStep + 1} of {steps.length}</span>
-              <span>{Math.round(progress)}% complete</span>
+    <>
+      <div className="space-y-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Let&apos;s get you collecting feedback</h1>
+              <p className="text-sm text-gray-600 mt-2">
+                A three-step setup to launch your first project. You can always change these choices later.
+              </p>
             </div>
-            <Progress value={progress} className="w-full" />
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              {steps.map((step, index) => (
-                <span
-                  key={step}
-                  className={index <= currentStep ? 'text-blue-600 font-medium' : ''}
-                >
-                  {step}
-                </span>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="px-6 pb-6">
-          <div className="min-h-[400px]">
-            {renderStepContent()}
+            {onSkip && (
+              <Button variant="ghost" onClick={onSkip}>
+                Skip for now
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </Button>
+            )}
           </div>
 
-          <div className="flex justify-between items-center pt-6 border-t">
-            <div className="flex space-x-2">
-              {currentStep > 0 && (
-                <Button variant="outline" onClick={handleBack}>
-                  <ArrowLeftIcon className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              )}
-              {onSkip && currentStep === 0 && (
-                <Button variant="ghost" onClick={onSkip}>
-                  Skip setup
-                </Button>
-              )}
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.2em] text-gray-500">
+              <span>{steps[currentStep]}</span>
+              <span>
+                Step {currentStep + 1} of {steps.length}
+              </span>
             </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        </div>
 
+        {renderStepContent()}
+
+        <div className="flex items-center justify-between gap-4">
+          <Button
+            variant="ghost"
+            onClick={goBack}
+            disabled={currentStep === 0 || isSubmitting}
+          >
+            <ArrowLeftIcon className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <div className="flex items-center gap-2">
+            {currentStep === steps.length - 1 && (
+              <Button
+                variant="outline"
+                onClick={() => setPreviewTemplate(selectedTemplate)}
+                disabled={!selectedTemplate || formState.setupOption !== 'template' || isSubmitting}
+              >
+                Preview selected
+              </Button>
+            )}
             <Button
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="bg-blue-600 hover:bg-blue-700"
+              onClick={goNext}
+              disabled={!canProceed() || isSubmitting}
             >
-              {currentStep === steps.length - 1 ? (
-                <>
-                  <SparklesIcon className="h-4 w-4 mr-2" />
-                  Get Started
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRightIcon className="h-4 w-4 ml-2" />
-                </>
-              )}
+              {isSubmitting
+                ? 'Creating...'
+                : currentStep === steps.length - 1
+                  ? 'Launch workspace'
+                  : 'Continue'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+
+      {previewTemplate && (
+        <TemplatePreviewModal
+          template={previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+        />
+      )}
+    </>
   )
 }

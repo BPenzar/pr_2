@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-client'
 import { Form, Question } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
+import { ensureDefaultQRCode } from '@/lib/qr-codes'
 
 export function useForms(projectId?: string) {
   const { account } = useAuth()
@@ -99,6 +100,12 @@ export function useCreateForm() {
         .single()
 
       if (error) throw error
+
+      try {
+        await ensureDefaultQRCode(form.id)
+      } catch (qrError: any) {
+        throw new Error(qrError?.message || 'Failed to generate default QR code')
+      }
       return form
     },
     onSuccess: (data) => {

@@ -2,70 +2,57 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { OnboardingWizard, type OnboardingData } from '@/components/onboarding/onboarding-wizard'
+import {
+  OnboardingWizard,
+  type OnboardingData,
+  type OnboardingFormState
+} from '@/components/onboarding/onboarding-wizard'
 import { TemplateSelector } from '@/components/onboarding/template-selector'
 import { useCompleteOnboarding } from '@/hooks/use-templates'
 import { getTemplateById, type FormTemplate } from '@/lib/form-templates'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckIcon, SparklesIcon, ArrowRightIcon } from 'lucide-react'
+import { CheckIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-type OnboardingStep = 'wizard' | 'template' | 'complete'
+interface CompletionState {
+  setupOption: OnboardingData['setupOption']
+  projectId: string
+  formId?: string
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('wizard')
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
   const completeOnboarding = useCompleteOnboarding()
 
-  const handleWizardComplete = (data: OnboardingData) => {
-    setErrorMessage(null)
-    setOnboardingData(data)
+  const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null)
+  const [wizardState, setWizardState] = useState<OnboardingFormState | null>(null)
+  const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [completionState, setCompletionState] = useState<CompletionState | null>(null)
 
-    if (data.setupOption === 'template') {
-      setCurrentStep('template')
-    } else {
-      handleFinishOnboarding(data)
-    }
-  }
-
-  const handleTemplateSelected = (template: FormTemplate) => {
-    setErrorMessage(null)
-    setSelectedTemplate(template)
-    if (onboardingData) {
-      const updatedData = { ...onboardingData, selectedTemplate: template.id }
-      handleFinishOnboarding(updatedData, template)
-    }
-  }
-
-  const handleFinishOnboarding = async (data: OnboardingData, template?: FormTemplate) => {
+  const handleWizardComplete = async (data: OnboardingData) => {
     try {
       setErrorMessage(null)
-      // Generate project name based on business type
-      const businessTypeNames = {
-        restaurant: 'Restaurant Feedback',
-        retail: 'Store Feedback',
-        corporate: 'Company Feedback',
-        healthcare: 'Patient Feedback',
-        other: 'Customer Feedback'
-      }
 
-      const projectName = businessTypeNames[data.businessType as keyof typeof businessTypeNames] || 'My Feedback Project'
+      const template =
+        data.setupOption === 'template'
+          ? getTemplateById(data.selectedTemplate ?? selectedTemplate?.id ?? '') ?? selectedTemplate ?? undefined
+          : undefined
 
       const result = await completeOnboarding.mutateAsync({
-        projectName,
+        projectName: data.projectName,
         projectDescription: `Feedback collection for ${data.businessType} business`,
-        template: template || (data.selectedTemplate ? getTemplateById(data.selectedTemplate) : undefined),
+        template,
         setupOption: data.setupOption,
         businessType: data.businessType
       })
 
-      setCurrentStep('complete')
+      setCompletionState({
+        setupOption: data.setupOption,
+        projectId: result.project.id,
+        formId: result.form?.id
+      })
 
-      // Redirect after showing success
       setTimeout(() => {
         if (result.form) {
           router.push(`/forms/${result.form.id}`)
@@ -73,7 +60,6 @@ export default function OnboardingPage() {
           router.push(`/projects/${result.project.id}`)
         }
       }, 2000)
-
     } catch (error) {
       const serializedError =
         error && typeof error === 'object'
@@ -94,11 +80,12 @@ export default function OnboardingPage() {
     router.push('/dashboard')
   }
 
-  const handleBackToWizard = () => {
-    setCurrentStep('wizard')
+  const handleTemplateSelected = (template: FormTemplate) => {
+    setSelectedTemplate(template)
+    setShowTemplateLibrary(false)
   }
 
-  if (currentStep === 'complete') {
+  if (completionState) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -108,56 +95,60 @@ export default function OnboardingPage() {
             </div>
             <h2 className="text-xl font-bold mb-2">You&apos;re all set!</h2>
             <p className="text-gray-600 mb-4">
-              Your project and form have been created successfully.
+              Your project{completionState.setupOption !== 'guided' ? ' and form have' : ' has'} been created successfully.
             </p>
             <div className="space-y-2 text-sm text-gray-500">
               <p>✅ Project created</p>
-              {onboardingData?.setupOption !== 'guided' && <p>✅ Form created</p>}
+              {completionState.setupOption !== 'guided' && <p>✅ Form created</p>}
               <p>✅ Ready to collect feedback</p>
             </div>
             <p className="text-xs text-gray-500 mt-4">
-              Redirecting you to your {onboardingData?.setupOption === 'guided' ? 'project' : 'form'}...
+              Redirecting you to your {completionState.setupOption === 'guided' ? 'project' : 'form'}...
             </p>
+            <Button variant="link" className="mt-4 text-xs" onClick={() => {
+              if (completionState.formId) {
+                router.push(`/forms/${completionState.formId}`)
+              } else {
+                router.push(`/projects/${completionState.projectId}`)
+              }
+            }}>
+              Go now
+            </Button>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  if (currentStep === 'template') {
-    return (
+  return (
+    <>
       <div className="space-y-4">
         {errorMessage && (
           <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errorMessage}
           </div>
         )}
-        <TemplateSelector
-          businessType={onboardingData?.businessType}
-          useCase={onboardingData?.primaryUseCase}
-          onSelectTemplate={handleTemplateSelected}
-          onBack={handleBackToWizard}
-          onSkip={() => {
-            if (onboardingData) {
-              handleFinishOnboarding({ ...onboardingData, setupOption: 'guided' })
-            }
-          }}
+        <OnboardingWizard
+          onComplete={handleWizardComplete}
+          onSkip={handleSkipOnboarding}
+          onOpenTemplateLibrary={() => setShowTemplateLibrary(true)}
+          selectedTemplate={selectedTemplate}
+          onSelectTemplate={setSelectedTemplate}
+          isSubmitting={completeOnboarding.isPending}
+          onStateChange={setWizardState}
         />
       </div>
-    )
-  }
 
-  return (
-    <div className="space-y-4">
-      {errorMessage && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {errorMessage}
+      {showTemplateLibrary && (
+        <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+          <TemplateSelector
+            businessType={wizardState?.businessType}
+            useCase={wizardState?.primaryUseCase}
+            onSelectTemplate={handleTemplateSelected}
+            onBack={() => setShowTemplateLibrary(false)}
+          />
         </div>
       )}
-      <OnboardingWizard
-        onComplete={handleWizardComplete}
-        onSkip={handleSkipOnboarding}
-      />
-    </div>
+    </>
   )
 }

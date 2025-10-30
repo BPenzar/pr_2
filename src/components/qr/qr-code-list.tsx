@@ -1,14 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
 import { useQRCodes, useDeleteQRCode } from '@/hooks/use-qr-codes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { QRCodeGenerator } from './qr-code-generator'
 import { QrCodeIcon, PlusIcon, TrashIcon, EyeIcon, DownloadIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { ensureDefaultQRCode } from '@/lib/qr-codes'
 
 interface QRCodeListProps {
   formId: string
@@ -21,6 +24,42 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
   const deleteQRCode = useDeleteQRCode()
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [isEnsuringDefault, setIsEnsuringDefault] = useState(false)
+  const [ensureError, setEnsureError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const autoEnsureRef = useRef(false)
+
+  const handleEnsureDefault = useCallback(async () => {
+    if (isEnsuringDefault) return
+
+    setIsEnsuringDefault(true)
+    setEnsureError(null)
+
+    try {
+      await ensureDefaultQRCode(formId)
+      await queryClient.invalidateQueries({ queryKey: ['qr-codes', formId] })
+    } catch (error: any) {
+      const message = error?.message ?? 'Failed to generate default QR code'
+      setEnsureError(message)
+    } finally {
+      setIsEnsuringDefault(false)
+    }
+  }, [formId, isEnsuringDefault, queryClient])
+
+  useEffect(() => {
+    if (isLoading) return
+    if (qrCodes && qrCodes.length > 0) return
+    if (autoEnsureRef.current) return
+
+    autoEnsureRef.current = true
+    void handleEnsureDefault()
+  }, [handleEnsureDefault, isLoading, qrCodes])
+
+  useEffect(() => {
+    if (qrCodes && qrCodes.length > 0) {
+      autoEnsureRef.current = false
+    }
+  }, [qrCodes])
 
   useEffect(() => {
     if (!copiedId) return
@@ -120,11 +159,38 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             Manage QR codes for {formName}
           </p>
         </div>
-        <Button onClick={() => setShowGenerator(true)}>
+        <Button
+          onClick={() => setShowGenerator(true)}
+          disabled={isEnsuringDefault}
+        >
           <PlusIcon className="w-4 h-4 mr-2" />
-          Generate QR Code
+          {qrCodes && qrCodes.length > 0 ? 'Generate Additional QR Code' : 'Generate QR Code'}
         </Button>
       </div>
+
+      {isEnsuringDefault && (
+        <Alert>
+          <AlertDescription>
+            Generating a default QR code for this form...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {ensureError && (
+        <Alert variant="destructive">
+          <AlertDescription className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <span>{ensureError}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleEnsureDefault}
+              disabled={isEnsuringDefault}
+            >
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {!qrCodes || qrCodes.length === 0 ? (
         <Card className="border-dashed border-2">

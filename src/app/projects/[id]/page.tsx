@@ -71,9 +71,11 @@ export default function ProjectPage() {
               </div>
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
-                <SettingsIcon className="w-4 h-4 mr-2" />
-                Settings
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/projects/${projectId}/settings`}>
+                  <SettingsIcon className="w-4 h-4 mr-2" />
+                  Settings
+                </Link>
               </Button>
               <Button size="sm" onClick={() => setShowCreateFormModal(true)}>
                 <PlusIcon className="w-4 h-4 mr-2" />

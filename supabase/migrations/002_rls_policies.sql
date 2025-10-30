@@ -54,6 +54,9 @@ CREATE POLICY "Users can create their own account" ON accounts
 CREATE POLICY "Users can update their own account" ON accounts
   FOR UPDATE TO authenticated USING (user_id = auth.uid());
 
+CREATE POLICY "Users can delete their own account" ON accounts
+  FOR DELETE TO authenticated USING (user_id = auth.uid());
+
 -- Projects policies
 CREATE POLICY "Users can read their account's projects" ON projects
   FOR SELECT TO authenticated USING (account_id = get_user_account_id());

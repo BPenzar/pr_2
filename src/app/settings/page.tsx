@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,12 +10,19 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { supabase } from '@/lib/supabase-client'
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+
+type AlertMessage = { type: 'success' | 'error'; text: string } | null
 
 export default function SettingsPage() {
+  const router = useRouter()
   const { user, account, loading, signOut } = useAuth()
   const [accountName, setAccountName] = useState(account?.name || '')
   const [isUpdating, setIsUpdating] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [accountAlert, setAccountAlert] = useState<AlertMessage>(null)
+  const [deleteAlert, setDeleteAlert] = useState<AlertMessage>(null)
+  const [confirmText, setConfirmText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   if (loading) {
     return (
@@ -28,7 +35,7 @@ export default function SettingsPage() {
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsUpdating(true)
-    setMessage(null)
+    setAccountAlert(null)
 
     try {
       const { error } = await supabase
@@ -38,24 +45,19 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'Account updated successfully' })
+      setAccountAlert({ type: 'success', text: 'Account updated successfully' })
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message })
+      setAccountAlert({ type: 'error', text: error.message })
     } finally {
       setIsUpdating(false)
     }
   }
 
-  const handleDeleteAccount = async () => {
-    if (!account?.id) return
+  const handleDeleteAccount = useCallback(async () => {
+    if (!account?.id || confirmText !== 'DELETE' || isDeleting) return
 
-    const confirmation = window.prompt(
-      'Type DELETE to confirm permanent account deletion. This cannot be undone.'
-    )
-
-    if (!confirmation || confirmation.toUpperCase() !== 'DELETE') {
-      return
-    }
+    setIsDeleting(true)
+    setDeleteAlert(null)
 
     try {
       const { error } = await supabase
@@ -65,15 +67,21 @@ export default function SettingsPage() {
 
       if (error) throw error
 
-      await signOut()?.catch(() => {})
-      window.location.href = '/'
-    } catch (error) {
+      await signOut()
+      router.replace('/')
+    } catch (error: any) {
       console.error('Failed to delete account:', error)
-      window.alert('Unable to delete account. Please contact support.')
+      setDeleteAlert({
+        type: 'error',
+        text: error?.message || 'Unable to delete account right now. Please try again or contact support.'
+      })
+    } finally {
+      setIsDeleting(false)
     }
-  }
+  }, [account?.id, confirmText, isDeleting, router, signOut])
 
-const currentPlan = (account as any)?.plans
+  const currentPlan = useMemo(() => (account as any)?.plans, [account])
+  const deleteDisabled = confirmText !== 'DELETE' || !account?.id || isDeleting
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -102,9 +110,9 @@ const currentPlan = (account as any)?.plans
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateAccount} className="space-y-4">
-              {message && (
-                <Alert variant={message.type === 'error' ? 'destructive' : 'default'}>
-                  <AlertDescription>{message.text}</AlertDescription>
+              {accountAlert && (
+                <Alert variant={accountAlert.type === 'error' ? 'destructive' : 'default'}>
+                  <AlertDescription>{accountAlert.text}</AlertDescription>
                 </Alert>
               )}
 
@@ -216,12 +224,36 @@ const currentPlan = (account as any)?.plans
                 <p className="text-sm text-red-700 mt-1">
                   Permanently delete your account and all associated data. This action cannot be undone.
                 </p>
-                <Button variant="destructive" className="mt-3" onClick={handleDeleteAccount}>
-                  Delete Account
-                </Button>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  To delete your entire account, please reach out to support so we can process this with you.
-                </p>
+                <div className="mt-4 space-y-3">
+                  {deleteAlert && (
+                    <Alert variant={deleteAlert.type === 'error' ? 'destructive' : 'default'}>
+                      <AlertDescription>{deleteAlert.text}</AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-delete" className="text-sm text-red-800">
+                      Type <span className="font-semibold">DELETE</span> to confirm
+                    </Label>
+                    <Input
+                      id="confirm-delete"
+                      value={confirmText}
+                      onChange={(event) => setConfirmText(event.target.value.toUpperCase())}
+                      placeholder="DELETE"
+                      disabled={isDeleting}
+                      aria-describedby="delete-instructions"
+                    />
+                    <p id="delete-instructions" className="text-xs text-muted-foreground">
+                      This will sign you out and remove all projects, forms, and responses associated with your account.
+                    </p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    disabled={deleteDisabled}
+                    onClick={handleDeleteAccount}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete Account'}
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>

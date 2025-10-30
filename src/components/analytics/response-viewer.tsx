@@ -208,32 +208,40 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
         </Card>
       ) : (
         <div className="space-y-4">
-          {responses.map((response) => (
-            <Card key={response.id} className="overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span>
-                        {formatDistanceToNow(new Date(response.submitted_at))} ago
-                      </span>
-                      {response.qr_codes?.location_name && (
-                        <>
-                          <span>•</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {response.qr_codes.location_name}
-                          </Badge>
-                        </>
-                      )}
-                      {response.qr_codes?.short_url && (
-                        <>
-                          <span>•</span>
-                          <span className="font-mono text-xs">
-                            {response.qr_codes.short_url}
-                          </span>
-                        </>
-                      )}
-                    </div>
+          {responses.map((response) => {
+            const submittedAt = new Date(response.submitted_at)
+            const relativeSubmitted = formatDistanceToNow(submittedAt)
+            const formattedSubmitted = submittedAt.toLocaleString()
+
+            return (
+              <Card key={response.id} className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <span>
+                          {relativeSubmitted} ago
+                        </span>
+                        {response.qr_codes?.location_name && (
+                          <>
+                            <span>•</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {response.qr_codes.location_name}
+                            </Badge>
+                          </>
+                        )}
+                        {response.qr_codes?.short_url && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-xs">
+                              {response.qr_codes.short_url}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Submitted {formattedSubmitted}
+                      </div>
                   </div>
                   <Button
                     variant="ghost"
@@ -268,7 +276,8 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

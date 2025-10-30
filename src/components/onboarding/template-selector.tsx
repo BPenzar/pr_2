@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { FORM_TEMPLATES, type FormTemplate } from '@/lib/form-templates'
+import { QuestionRenderer } from '@/components/public-form/question-renderer'
+import type { Question } from '@/types/database'
 import {
   SearchIcon,
   ClockIcon,
@@ -13,6 +15,93 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon
 } from 'lucide-react'
+
+interface TemplatePreviewModalProps {
+  template: FormTemplate
+  onClose: () => void
+}
+
+export function TemplatePreviewModal({ template, onClose }: TemplatePreviewModalProps) {
+  const mockQuestions = useMemo(() => {
+    return template.questions.map((question, index) => {
+      const id = `template-${template.id}-q${index}`
+      return {
+        id,
+        form_id: 'template-preview',
+        type: question.type,
+        title: question.title,
+        description: question.description,
+        required: question.required,
+        options: question.options,
+        rating_scale: question.rating_scale,
+        order_index: question.order_index,
+        created_at: new Date().toISOString(),
+      } as Question
+    })
+  }, [template])
+
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>(() => {
+    const initial: Record<string, string | string[]> = {}
+    template.questions.forEach((question, index) => {
+      const id = `template-${template.id}-q${index}`
+      initial[id] = question.type === 'multiselect' ? [] : ''
+    })
+    return initial
+  })
+
+  useEffect(() => {
+    const reset: Record<string, string | string[]> = {}
+    template.questions.forEach((question, index) => {
+      const id = `template-${template.id}-q${index}`
+      reset[id] = question.type === 'multiselect' ? [] : ''
+    })
+    setAnswers(reset)
+  }, [template])
+
+  const handleChange = (id: string, value: string | string[]) => {
+    setAnswers((prev) => ({ ...prev, [id]: value }))
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <Card className="w-full max-w-3xl max-h-[90vh] overflow-hidden">
+        <CardHeader className="border-b bg-white shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl text-gray-900">{template.name}</CardTitle>
+              <CardDescription className="text-sm text-gray-600">
+                {template.description}
+              </CardDescription>
+            </div>
+            <Button size="sm" variant="ghost" onClick={onClose}>
+              ✕
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="max-h-[80vh] overflow-y-auto bg-gray-50 p-6">
+          <div className="mb-6 flex items-center gap-3 rounded-md bg-white p-4 shadow-sm">
+            <ClockIcon className="h-4 w-4 text-gray-500" />
+            <span className="text-sm text-gray-600">
+              Estimated completion time: {template.estimatedTime}
+            </span>
+          </div>
+
+          <div className="space-y-6">
+            {mockQuestions.map((question) => (
+              <div key={question.id} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <QuestionRenderer
+                  question={question}
+                  value={answers[question.id] ?? (question.type === 'multiselect' ? [] : '')}
+                  onChange={(value) => handleChange(question.id, value)}
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 interface TemplateSelectorProps {
   businessType?: string
@@ -23,6 +112,8 @@ interface TemplateSelectorProps {
 }
 
 export function TemplateSelector({
+  businessType,
+  useCase,
   onSelectTemplate,
   onBack,
   onSkip
@@ -30,63 +121,27 @@ export function TemplateSelector({
   const [searchQuery, setSearchQuery] = useState('')
   const [previewTemplate, setPreviewTemplate] = useState<FormTemplate | null>(null)
 
-  const filteredTemplates = FORM_TEMPLATES.filter(template => {
-    if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    return (
-      template.name.toLowerCase().includes(query) ||
-      template.description.toLowerCase().includes(query) ||
-      template.tags.some(tag => tag.toLowerCase().includes(query))
-    )
-  })
+  const filteredTemplates = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim()
+    const scored = FORM_TEMPLATES.map((template) => {
+      let score = 0
+      if (businessType && template.businessTypes.includes(businessType)) score += 2
+      if (useCase && template.useCases.includes(useCase)) score += 2
+      if (template.popular) score += 1
+      if (query) {
+        const matchesQuery =
+          template.name.toLowerCase().includes(query) ||
+          template.description.toLowerCase().includes(query) ||
+          template.tags.some(tag => tag.toLowerCase().includes(query))
+        if (!matchesQuery) return null
+        score += 3
+      }
+      return { template, score }
+    }).filter(Boolean) as { template: FormTemplate; score: number }[]
 
-  const TemplatePreview = ({ template }: { template: FormTemplate }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <Card className="w-full max-w-2xl max-h-[85vh] overflow-hidden">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl">{template.name}</CardTitle>
-              <CardDescription>{template.description}</CardDescription>
-            </div>
-            <Button size="sm" variant="ghost" onClick={() => setPreviewTemplate(null)}>
-              ✕
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="max-h-[70vh] space-y-4 overflow-y-auto">
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <ClockIcon className="h-4 w-4" />
-            <span>{template.estimatedTime}</span>
-          </div>
-          <div className="space-y-3">
-            {template.questions.map((question, index) => (
-              <Card key={index} className="border border-gray-100 bg-gray-50">
-                <CardContent className="space-y-2 p-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-gray-800">
-                      {index + 1}. {question.title}
-                    </h4>
-                    <Badge variant="outline" className="text-xs capitalize">
-                      {question.type}
-                    </Badge>
-                  </div>
-                  {question.description && (
-                    <p className="text-xs text-gray-600">{question.description}</p>
-                  )}
-                  {question.options && (
-                    <p className="text-xs text-gray-500">
-                      Options: {question.options.join(', ')}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    scored.sort((a, b) => b.score - a.score)
+    return scored.map(({ template }) => template)
+  }, [businessType, useCase, searchQuery])
 
   return (
     <>
@@ -205,7 +260,12 @@ export function TemplateSelector({
         </div>
       </div>
 
-      {previewTemplate && <TemplatePreview template={previewTemplate} />}
+      {previewTemplate && (
+        <TemplatePreviewModal
+          template={previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+        />
+      )}
     </>
   )
 }

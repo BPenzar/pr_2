@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-client'
 import { useAuth } from '@/contexts/auth-context'
 import { type FormTemplate } from '@/lib/form-templates'
+import { ensureDefaultQRCode } from '@/lib/qr-codes'
 
 interface CreateFormFromTemplateParams {
   template: FormTemplate
@@ -51,6 +52,13 @@ export function useCreateFormFromTemplate() {
         .single()
 
       if (formError) throw formError
+
+      try {
+        await ensureDefaultQRCode(form.id)
+      } catch (qrError: any) {
+        await supabase.from('forms').delete().eq('id', form.id)
+        throw new Error(qrError?.message || 'Failed to generate default QR code')
+      }
 
       // Create questions from template
       const questions = template.questions.map(q => ({
@@ -120,6 +128,13 @@ export function useCreateQuickSetupForm() {
         .single()
 
       if (formError) throw formError
+
+      try {
+        await ensureDefaultQRCode(form.id)
+      } catch (qrError: any) {
+        await supabase.from('forms').delete().eq('id', form.id)
+        throw new Error(qrError?.message || 'Failed to generate default QR code')
+      }
 
       // Create basic questions
       const basicQuestions = [
@@ -239,6 +254,13 @@ export function useCompleteOnboarding() {
 
         if (quickError) throw quickError
 
+        try {
+          await ensureDefaultQRCode(quickForm.id)
+        } catch (qrError: any) {
+          await supabase.from('forms').delete().eq('id', quickForm.id)
+          throw new Error(qrError?.message || 'Failed to generate default QR code')
+        }
+
         // Create basic questions
         const basicQuestions = [
           {
@@ -293,6 +315,13 @@ export function useCompleteOnboarding() {
           .single()
 
         if (templateError) throw templateError
+
+        try {
+          await ensureDefaultQRCode(templateForm.id)
+        } catch (qrError: any) {
+          await supabase.from('forms').delete().eq('id', templateForm.id)
+          throw new Error(qrError?.message || 'Failed to generate default QR code')
+        }
 
         // Create questions from template
         const questions = data.template.questions.map(q => ({

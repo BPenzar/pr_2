@@ -628,6 +628,7 @@ DROP POLICY IF EXISTS "plans_select_all" ON plans;
 DROP POLICY IF EXISTS "accounts_select_own" ON accounts;
 DROP POLICY IF EXISTS "accounts_insert_own" ON accounts;
 DROP POLICY IF EXISTS "accounts_update_own" ON accounts;
+DROP POLICY IF EXISTS "accounts_delete_own" ON accounts;
 DROP POLICY IF EXISTS "projects_select_own" ON projects;
 DROP POLICY IF EXISTS "projects_insert_own" ON projects;
 DROP POLICY IF EXISTS "projects_update_own" ON projects;
@@ -670,6 +671,9 @@ CREATE POLICY "accounts_insert_own" ON accounts
 
 CREATE POLICY "accounts_update_own" ON accounts
     FOR UPDATE USING (user_id = auth.uid());
+
+CREATE POLICY "accounts_delete_own" ON accounts
+    FOR DELETE USING (user_id = auth.uid());
 
 -- Projects: users can manage projects in their account
 CREATE POLICY "projects_select_own" ON projects
