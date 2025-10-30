@@ -128,6 +128,19 @@ export function useAccountPlan() {
         console.warn('Error getting response count:', responseError)
       }
 
+      const { data: projectSummaries, error: summaryError } = await supabase
+        .from('dashboard_summary')
+        .select('forms_count, qr_codes_count')
+        .eq('account_id', account.id)
+
+      if (summaryError) {
+        console.warn('Error getting usage summary:', summaryError)
+      }
+
+      const projectsActual = projectSummaries?.length ?? 0
+      const formsActual = projectSummaries?.reduce((acc: number, row: any) => acc + (row.forms_count ?? 0), 0) ?? 0
+      const qrActual = projectSummaries?.reduce((acc: number, row: any) => acc + (row.qr_codes_count ?? 0), 0) ?? 0
+
       const usageCountersRaw = (accountData as any)?.usage_counters
       const usageCounters = Array.isArray(usageCountersRaw)
         ? usageCountersRaw[0]
@@ -137,10 +150,10 @@ export function useAccountPlan() {
         account: accountData,
         plan: normalizePlan(accountData.plan),
         usage: {
-          projects: usageCounters?.projects_count ?? 0,
-          forms: usageCounters?.forms_count ?? 0,
+          projects: projectsActual,
+          forms: formsActual,
           responses_this_month: responseCount || 0,
-          qr_codes: usageCounters?.qr_codes_count ?? 0,
+          qr_codes: qrActual,
         } as UsageData,
       }
     },

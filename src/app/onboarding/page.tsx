@@ -13,6 +13,8 @@ import { getTemplateById, type FormTemplate } from '@/lib/form-templates'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
+import { markOnboardingCompleted } from '@/lib/onboarding'
 
 interface CompletionState {
   setupOption: OnboardingData['setupOption']
@@ -21,6 +23,7 @@ interface CompletionState {
 export default function OnboardingPage() {
   const router = useRouter()
   const completeOnboarding = useCompleteOnboarding()
+  const { account } = useAuth()
 
   const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null)
   const [wizardState, setWizardState] = useState<OnboardingFormState | null>(null)
@@ -45,6 +48,10 @@ export default function OnboardingPage() {
         businessType: data.businessType
       })
 
+      if (account?.id) {
+        await markOnboardingCompleted(account.id)
+      }
+
       setCompletionState({
         setupOption: data.setupOption
       })
@@ -68,8 +75,11 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleSkipOnboarding = () => {
-    router.push('/dashboard')
+  const handleSkipOnboarding = async () => {
+    if (account?.id) {
+      await markOnboardingCompleted(account.id)
+    }
+    router.replace('/dashboard')
   }
 
   const handleTemplateSelected = (template: FormTemplate) => {

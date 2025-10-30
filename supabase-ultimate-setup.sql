@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     plan_id UUID NOT NULL REFERENCES plans(id),
+    onboarding_completed BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id)

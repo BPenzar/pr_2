@@ -9,6 +9,20 @@ export async function checkOnboardingStatus(accountId: string): Promise<{
   projectCount: number
 }> {
   try {
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
+      .select('onboarding_completed')
+      .eq('id', accountId)
+      .single()
+
+    if (accountError) {
+      console.error('Error loading account status:', accountError)
+    }
+
+    if (account?.onboarding_completed) {
+      return { needsOnboarding: false, projectCount: 0 }
+    }
+
     const { data: projects, error } = await supabase
       .from('projects')
       .select('id')
@@ -37,6 +51,7 @@ export async function markOnboardingCompleted(accountId: string): Promise<void> 
     const { error } = await supabase
       .from('accounts')
       .update({
+        onboarding_completed: true,
         updated_at: new Date().toISOString()
       })
       .eq('id', accountId)
