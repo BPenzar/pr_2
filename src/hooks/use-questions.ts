@@ -147,6 +147,7 @@ export function useReorderQuestions() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['form', variables.formId] })
+      queryClient.invalidateQueries({ queryKey: ['questions', variables.formId] })
     },
   })
 }

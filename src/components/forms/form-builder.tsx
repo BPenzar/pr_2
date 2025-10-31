@@ -1,12 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useUpdateForm } from '@/hooks/use-forms'
 import { useQRCodes } from '@/hooks/use-qr-codes'
+import { useReorderQuestions } from '@/hooks/use-questions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QuestionEditor } from './question-editor'
-import { PlusIcon, SaveIcon, EyeIcon, SettingsIcon, QrCodeIcon, BarChart3Icon } from 'lucide-react'
+import {
+  PlusIcon,
+  SaveIcon,
+  EyeIcon,
+  SettingsIcon,
+  QrCodeIcon,
+  BarChart3Icon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+} from 'lucide-react'
 import Link from 'next/link'
 
 interface FormBuilderProps {
@@ -19,6 +29,24 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const { data: form, isLoading, error } = useForm(formId)
   const { data: qrCodes } = useQRCodes(formId)
   const updateForm = useUpdateForm()
+  const reorderQuestions = useReorderQuestions()
+
+  const questions = useMemo(() => {
+    if (!form?.questions) {
+      return []
+    }
+    return [...form.questions].sort((a: any, b: any) => a.order_index - b.order_index)
+  }, [form?.questions])
+  const [orderedQuestions, setOrderedQuestions] = useState(questions)
+
+  useEffect(() => {
+    setOrderedQuestions((prev) => {
+      if (prev.length === questions.length && prev.every((q, idx) => q.id === questions[idx]?.id)) {
+        return prev
+      }
+      return questions
+    })
+  }, [questions])
 
   if (isLoading) {
     return (
@@ -36,8 +64,6 @@ export function FormBuilder({ formId }: FormBuilderProps) {
       </div>
     )
   }
-
-  const questions = form.questions?.sort((a: any, b: any) => a.order_index - b.order_index) || []
 
   const handleAddQuestion = () => {
     setIsAddingQuestion(true)
@@ -57,6 +83,33 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const handleCancelEdit = () => {
     setIsAddingQuestion(false)
     setEditingQuestionId(null)
+  }
+
+  const handleMoveQuestion = (questionId: string, direction: 'up' | 'down') => {
+    setOrderedQuestions((prev) => {
+      const index = prev.findIndex((q) => q.id === questionId)
+      if (index === -1) return prev
+
+      const targetIndex = direction === 'up' ? index - 1 : index + 1
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev
+
+      const updated = [...prev]
+      ;[updated[index], updated[targetIndex]] = [updated[targetIndex], updated[index]]
+
+      reorderQuestions.mutate(
+        {
+          formId,
+          questions: updated.map((q, idx) => ({ id: q.id, orderIndex: idx })),
+        },
+        {
+          onError: () => {
+            setOrderedQuestions(prev)
+          },
+        }
+      )
+
+      return updated
+    })
   }
 
   return (
@@ -129,7 +182,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>{questions.length} questions</span>
+              <span>{orderedQuestions.length} questions</span>
               <span>•</span>
               <span>0 responses</span>
               <span>•</span>
@@ -155,59 +208,95 @@ export function FormBuilder({ formId }: FormBuilderProps) {
 
       {/* Questions List */}
       <div className="space-y-4">
-        {questions.map((question: any, index: number) => (
-          <div key={question.id}>
-            {editingQuestionId === question.id ? (
-              <QuestionEditor
-                formId={formId}
-                question={question}
-                orderIndex={index}
-                onSave={handleQuestionSaved}
-                onCancel={handleCancelEdit}
-                onDelete={handleQuestionSaved}
-              />
-            ) : (
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1" onClick={() => handleEditQuestion(question.id)}>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-sm font-medium text-gray-500">
-                          Question {index + 1}
-                        </span>
-                        <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
-                          {question.type}
-                        </span>
-                        {question.required && (
-                          <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">
-                            Required
+        {orderedQuestions.map((question: any, index: number) => {
+          const canMoveUp = index > 0
+          const canMoveDown = index < orderedQuestions.length - 1
+
+          return (
+            <div key={question.id}>
+              {editingQuestionId === question.id ? (
+                <QuestionEditor
+                  formId={formId}
+                  question={question}
+                  orderIndex={index}
+                  onSave={handleQuestionSaved}
+                  onCancel={handleCancelEdit}
+                  onDelete={handleQuestionSaved}
+                />
+              ) : (
+                <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1" onClick={() => handleEditQuestion(question.id)}>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-sm font-medium text-gray-500">
+                            Question {index + 1}
                           </span>
+                          <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
+                            {question.type}
+                          </span>
+                          {question.required && (
+                            <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                              Required
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-medium">{question.title}</h3>
+                        {question.description && (
+                          <p className="text-sm text-gray-600 mt-1">{question.description}</p>
                         )}
                       </div>
-                      <h3 className="font-medium">{question.title}</h3>
-                      {question.description && (
-                        <p className="text-sm text-gray-600 mt-1">{question.description}</p>
-                      )}
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleMoveQuestion(question.id, 'up')
+                          }}
+                          disabled={!canMoveUp || reorderQuestions.isPending}
+                          className="h-8 w-8 text-gray-500 hover:text-gray-900 disabled:opacity-40"
+                          aria-label="Move question up"
+                        >
+                          <ArrowUpIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleMoveQuestion(question.id, 'down')
+                          }}
+                          disabled={!canMoveDown || reorderQuestions.isPending}
+                          className="h-8 w-8 text-gray-500 hover:text-gray-900 disabled:opacity-40"
+                          aria-label="Move question down"
+                        >
+                          <ArrowDownIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleEditQuestion(question.id)
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditQuestion(question.id)}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )
+        })}
 
         {/* Add Question */}
         {isAddingQuestion ? (
           <QuestionEditor
             formId={formId}
-            orderIndex={questions.length}
+            orderIndex={orderedQuestions.length}
             onSave={handleQuestionSaved}
             onCancel={handleCancelEdit}
           />
@@ -226,7 +315,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
       </div>
 
       {/* Empty State */}
-      {questions.length === 0 && !isAddingQuestion && (
+      {orderedQuestions.length === 0 && !isAddingQuestion && (
         <Card className="border-dashed border-2">
           <CardContent className="p-12">
             <div className="text-center">
