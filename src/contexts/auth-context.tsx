@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('user_id', userId)
       .single()
 
-    let timeoutId: ReturnType<typeof window.setTimeout> | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     try {
       const result = await Promise.race([
         fetchPromise,
