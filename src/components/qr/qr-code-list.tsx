@@ -67,6 +67,8 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
     return () => clearTimeout(timer)
   }, [copiedId])
 
+  const totalCodes = qrCodes?.length ?? 0
+
   const handleDelete = async (qrCodeId: string) => {
     try {
       await deleteQRCode.mutateAsync({ id: qrCodeId, formId })
@@ -176,6 +178,14 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
         </Alert>
       )}
 
+      {totalCodes === 1 && !isEnsuringDefault && !ensureError && (
+        <Alert>
+          <AlertDescription>
+            Each form keeps one default QR code so links you have shared stay active. Generate additional QR codes for different locations—any extra code can be removed later.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {ensureError && (
         <Alert variant="destructive">
           <AlertDescription className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -210,124 +220,137 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {qrCodes.map((qrCode) => (
-            <Card key={qrCode.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-base">
-                      {qrCode.location_name || 'Unnamed Location'}
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      {qrCode.short_url}
-                    </CardDescription>
-                  </div>
-                  {confirmDeleteId === qrCode.id ? (
-                    <div className="flex space-x-2">
+          {qrCodes.map((qrCode) => {
+            const isOnlyQRCode = totalCodes === 1
+
+            return (
+              <Card key={qrCode.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-base">
+                        {qrCode.location_name || 'Unnamed Location'}
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {qrCode.short_url}
+                      </CardDescription>
+                    </div>
+                    {isOnlyQRCode ? (
+                      <Badge variant="outline" className="text-xs uppercase tracking-wide">
+                        Default
+                      </Badge>
+                    ) : confirmDeleteId === qrCode.id ? (
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(qrCode.id)}
+                          disabled={deleteQRCode.isPending}
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setConfirmDeleteId(null)}
+                          disabled={deleteQRCode.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(qrCode.id)}
+                        onClick={() => setConfirmDeleteId(qrCode.id)}
                         disabled={deleteQRCode.isPending}
+                        className="text-red-600 hover:text-red-700"
                       >
-                        Confirm
+                        <TrashIcon className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* QR Code Visual */}
+                    <div className="flex justify-center bg-white p-4 rounded-lg border">
+                      <QRCodeSVG
+                        id={`qr-${qrCode.id}`}
+                        value={qrCode.full_url}
+                        size={160}
+                        level="M"
+                        includeMargin={true}
+                      />
+                    </div>
+
+                    {/* QR Code Stats */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Scans</span>
+                      <Badge variant="secondary">
+                        {qrCode.scan_count}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Created</span>
+                      <span className="text-sm">
+                        {formatDistanceToNow(new Date(qrCode.created_at))} ago
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(qrCode.full_url, '_blank')}
+                        className="flex-1"
+                      >
+                        <EyeIcon className="w-4 h-4 mr-1" />
+                        Preview
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setConfirmDeleteId(null)}
-                        disabled={deleteQRCode.isPending}
+                        onClick={() => handleDownloadQR(qrCode)}
+                        className="flex-1"
                       >
-                        Cancel
+                        <DownloadIcon className="w-4 h-4 mr-1" />
+                        Download
                       </Button>
                     </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConfirmDeleteId(qrCode.id)}
-                      disabled={deleteQRCode.isPending}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* QR Code Visual */}
-                  <div className="flex justify-center bg-white p-4 rounded-lg border">
-                    <QRCodeSVG
-                      id={`qr-${qrCode.id}`}
-                      value={qrCode.full_url}
-                      size={160}
-                      level="M"
-                      includeMargin={true}
-                    />
-                  </div>
 
-                  {/* QR Code Stats */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Scans</span>
-                    <Badge variant="secondary">
-                      {qrCode.scan_count}
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Created</span>
-                    <span className="text-sm">
-                      {formatDistanceToNow(new Date(qrCode.created_at))} ago
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(qrCode.full_url, '_blank')}
-                      className="flex-1"
-                    >
-                      <EyeIcon className="w-4 h-4 mr-1" />
-                      Preview
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadQR(qrCode)}
-                      className="flex-1"
-                    >
-                      <DownloadIcon className="w-4 h-4 mr-1" />
-                      Download
-                    </Button>
-                  </div>
-
-                  {/* URL Display */}
-                  <div className="text-xs text-muted-foreground font-mono bg-gray-50 p-2 rounded truncate">
-                    {qrCode.full_url}
-                  </div>
-                  {copiedId === qrCode.id && (
-                    <div className="text-xs text-green-600">Link copied to clipboard</div>
-                  )}
-                  {confirmDeleteId === qrCode.id && (
-                    <div className="text-xs text-red-600">
-                      Deleting removes this QR code permanently. Printed codes will stop working.
+                    {/* URL Display */}
+                    <div className="text-xs text-muted-foreground font-mono bg-gray-50 p-2 rounded truncate">
+                      {qrCode.full_url}
                     </div>
-                  )}
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleCopyUrl(qrCode.id, qrCode.full_url)}
-                    className="w-full"
-                  >
-                    Copy Link
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    {copiedId === qrCode.id && (
+                      <div className="text-xs text-green-600">Link copied to clipboard</div>
+                    )}
+                    {confirmDeleteId === qrCode.id && (
+                      <div className="text-xs text-red-600">
+                        Deleting removes this QR code permanently. Printed codes will stop working.
+                      </div>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleCopyUrl(qrCode.id, qrCode.full_url)}
+                      className="w-full"
+                    >
+                      Copy Link
+                    </Button>
+                    {isOnlyQRCode && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        This default QR code stays active so your shared links keep working. Create additional codes for different locations and delete those extras any time.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
