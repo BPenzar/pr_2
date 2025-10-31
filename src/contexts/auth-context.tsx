@@ -129,19 +129,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('user_id', userId)
       .single()
 
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
     try {
       const result = await Promise.race([
         fetchPromise,
         new Promise<never>((_, reject) => {
-          timeoutId = window.setTimeout(() => {
+          timeoutId = setTimeout(() => {
             reject(new Error('Account fetch timed out'))
           }, 4000)
         }),
       ])
 
       if (timeoutId) {
-        window.clearTimeout(timeoutId)
+        clearTimeout(timeoutId)
       }
 
       const { data, error } = result as Awaited<typeof fetchPromise>
@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true
     } catch (error) {
       if (timeoutId) {
-        window.clearTimeout(timeoutId)
+        clearTimeout(timeoutId)
       }
       console.error('Error fetching account:', error)
       return false
