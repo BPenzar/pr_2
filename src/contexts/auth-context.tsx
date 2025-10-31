@@ -224,6 +224,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const variants = [baseKey, `${baseKey}#D`, `${baseKey}#d`]
 
       try {
+        const cookieNames = [
+          `${baseKey}`,
+          `${baseKey}#D`,
+          `${baseKey}#d`,
+          `${baseKey}-refresh-token`,
+          `${baseKey}-access-token`,
+          `${baseKey}#D-refresh-token`,
+          `${baseKey}#d-refresh-token`
+        ]
+
+        const expireCookie = (name: string) => {
+          document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`
+        }
+
+        cookieNames.forEach(expireCookie)
+      } catch (cookieError) {
+        console.warn('Failed to clear cached Supabase cookie session.', cookieError)
+      }
+
+      try {
         for (const key of variants) {
           window.localStorage.removeItem(key)
           window.sessionStorage.removeItem(key)
@@ -234,7 +254,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { error } = await supabase.auth.signOut({ scope: 'global' })
+      const { data, error } = await supabase.auth.signOut()
+      if (error?.message === 'Auth session missing!') {
+        console.warn('Supabase signOut reported missing session; forcing cleanup and treating as success.')
+        clearPersistedSession()
+        setSession(null)
+        setUser(null)
+        setAccount(null)
+        setInitializing(false)
+        setAuthLoading(false)
+        return { error: null }
+      }
+      if (data?.session) {
+        console.warn('Supabase signOut returned a session, forcing cleanup.')
+        clearPersistedSession()
+      }
       if (error) {
         console.warn('Supabase signOut returned an error; clearing local session anyway.', error)
         errorResult = error
@@ -242,14 +276,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Unexpected sign-out error; clearing local session anyway.', error)
       errorResult = error
-    }
-
-    try {
-      await supabase.auth.signOut({ scope: 'local' })
-    } catch (localError) {
-      console.warn('Local sign-out attempt raised an error; removing storage manually.', localError)
     } finally {
       clearPersistedSession()
+      userIdRef.current = null
       setSession(null)
       setUser(null)
       setAccount(null)
