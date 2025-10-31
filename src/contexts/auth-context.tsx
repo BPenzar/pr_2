@@ -254,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut()
       if (error?.message === 'Auth session missing!') {
         console.warn('Supabase signOut reported missing session; forcing cleanup and treating as success.')
         clearPersistedSession()
@@ -264,10 +264,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setInitializing(false)
         setAuthLoading(false)
         return { error: null }
-      }
-      if (data?.session) {
-        console.warn('Supabase signOut returned a session, forcing cleanup.')
-        clearPersistedSession()
       }
       if (error) {
         console.warn('Supabase signOut returned an error; clearing local session anyway.', error)
