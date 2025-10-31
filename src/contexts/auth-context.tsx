@@ -39,6 +39,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(false)
   const userIdRef = useRef<string | null>(null)
 
+  const fetchAccount = useCallback(async (userId: string) => {
+    const fetchPromise = supabase
+      .from('accounts')
+      .select(
+        `
+          *,
+          plans (
+            id,
+            name,
+            max_projects,
+            max_forms_per_project,
+            max_responses_per_form,
+            features
+          )
+        `
+      )
+      .eq('user_id', userId)
+      .single()
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    try {
+      const result = await Promise.race([
+        fetchPromise,
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Account fetch timed out'))
+          }, 4000)
+        }),
+      ])
+
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+
+      const { data, error } = result as Awaited<typeof fetchPromise>
+
+      if (error) {
+        throw error
+      }
+
+      if (userIdRef.current !== userId) {
+        return true
+      }
+
+      setAccount(data as any)
+      return true
+    } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      console.error('Error fetching account:', error)
+      return false
+    }
+  }, [])
+
   useEffect(() => {
     userIdRef.current = user?.id ?? null
   }, [user])
@@ -114,61 +169,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe()
     }
   }, [fetchAccount])
-
-  const fetchAccount = useCallback(async (userId: string) => {
-    const fetchPromise = supabase
-      .from('accounts')
-      .select(
-        `
-          *,
-          plans (
-            id,
-            name,
-            max_projects,
-            max_forms_per_project,
-            max_responses_per_form,
-            features
-          )
-        `
-      )
-      .eq('user_id', userId)
-      .single()
-
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-    try {
-      const result = await Promise.race([
-        fetchPromise,
-        new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error('Account fetch timed out'))
-          }, 4000)
-        }),
-      ])
-
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
-
-      const { data, error } = result as Awaited<typeof fetchPromise>
-
-      if (error) {
-        throw error
-      }
-
-      if (userIdRef.current !== userId) {
-        return true
-      }
-
-      setAccount(data as any)
-      return true
-    } catch (error) {
-      if (timeoutId) {
-        clearTimeout(timeoutId)
-      }
-      console.error('Error fetching account:', error)
-      return false
-    }
-  }, [])
   const refreshAccount = async () => {
     if (!user?.id) return
     await fetchAccount(user.id)
