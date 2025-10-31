@@ -1,3 +1,7 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 
 const socialLinks: Array<{
@@ -54,6 +58,41 @@ const socialLinks: Array<{
 
 export function Footer() {
   const year = new Date().getFullYear()
+  const pathname = usePathname()
+  const isPublicForm = pathname?.startsWith('/f/')
+  const publicLinks = socialLinks.filter((link) => link.label !== 'Email')
+
+  if (isPublicForm) {
+    return (
+      <footer className="mt-auto border-t bg-gray-50 py-8">
+        <div className="mx-auto w-full max-w-3xl px-4 text-center sm:px-6">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
+          >
+            Business Feedback Tool
+          </Link>
+          <p className="mt-2 text-sm text-gray-600">
+            © {year} BSP Lab • Bruno Penzar
+          </p>
+          <div className="mt-4 flex justify-center gap-4 text-gray-500">
+            {publicLinks.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={social.label}
+                className="text-gray-500 transition-colors hover:text-gray-900"
+              >
+                {social.icon}
+              </a>
+            ))}
+          </div>
+        </div>
+      </footer>
+    )
+  }
 
   return (
     <footer className="mt-auto border-t bg-gray-50 py-8">
