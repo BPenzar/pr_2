@@ -60,7 +60,7 @@ export function Footer() {
   const year = new Date().getFullYear()
   const pathname = usePathname()
   const isPublicForm = pathname?.startsWith('/f/')
-  const publicLinks = socialLinks.filter((link) => link.label !== 'Email')
+  const publicLinks = socialLinks
 
   if (isPublicForm) {
     return (
@@ -73,7 +73,16 @@ export function Footer() {
             Business Feedback Tool
           </Link>
           <p className="mt-2 text-sm text-gray-600">
-            © {year} BSP Lab • Bruno Penzar
+            © {year}{' '}
+            <a
+              href="https://www.bsp-lab.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-gray-900 transition-colors hover:text-primary"
+            >
+              BSP Lab
+            </a>{' '}
+            • Bruno Penzar
           </p>
           <div className="mt-4 flex justify-center gap-4 text-gray-500">
             {publicLinks.map((social) => (
