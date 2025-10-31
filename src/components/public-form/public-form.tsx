@@ -185,11 +185,6 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
             <CheckCircleIcon className="w-16 h-16 mx-auto text-green-500" />
             <h2 className="text-xl font-semibold">Thank you!</h2>
             <p className="text-gray-600">Your feedback has been submitted successfully.</p>
-            {formData.locationName && (
-              <p className="text-sm text-gray-500">
-                Location: {formData.locationName}
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -214,9 +209,6 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
                 <CardDescription className="text-base text-gray-600">
                   {formDescription}
                 </CardDescription>
-              )}
-              {formData.locationName && (
-                <p className="text-sm font-medium text-gray-500">Location: {formData.locationName}</p>
               )}
             </div>
 
