@@ -1,8 +1,8 @@
-# BSP Feedback Tool 🎯
+# Business Feedback Tool 🎯
 
 A comprehensive QR code feedback platform built with Next.js, TypeScript, and Supabase. Collect, analyze, and act on customer feedback efficiently with QR codes, analytics, and multi-tenant SaaS architecture.
 
-![BSP Feedback Tool](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Supabase](https://img.shields.io/badge/Supabase-enabled-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-blue)
+![Business Feedback Tool](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Supabase](https://img.shields.io/badge/Supabase-enabled-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-blue)
 
 ## 🚀 Features
 
@@ -243,4 +243,4 @@ For support, email support@bspfeedback.com or join our Discord community.
 
 ---
 
-**Made with ❤️ by the BSP Feedback Tool team**
+**Made with ❤️ by the Business Feedback Tool team**
