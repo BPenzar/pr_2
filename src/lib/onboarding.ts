@@ -48,16 +48,18 @@ export async function checkOnboardingStatus(accountId: string): Promise<{
  */
 export async function markOnboardingCompleted(accountId: string): Promise<void> {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('accounts')
       .update({
         onboarding_completed: true,
         updated_at: new Date().toISOString()
       })
       .eq('id', accountId)
+      .select('id')
+      .maybeSingle()
 
-    if (error) {
-      console.error('Error marking onboarding as completed:', error)
+    if (error || !data) {
+      console.error('Error marking onboarding as completed:', error ?? 'No rows updated')
     }
   } catch (error) {
     console.error('Error marking onboarding as completed:', error)

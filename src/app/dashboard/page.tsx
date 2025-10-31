@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { useProjects } from '@/hooks/use-projects'
-import { useAccountAnalytics } from '@/hooks/use-responses'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ProjectList } from '@/components/projects/project-list'
-import { BarChart3Icon, FileTextIcon, MessageSquareIcon, QrCodeIcon, SettingsIcon, TrendingUpIcon, SparklesIcon } from 'lucide-react'
+import { SettingsIcon, TrendingUpIcon, SparklesIcon, Menu, X } from 'lucide-react'
 import { checkOnboardingStatus } from '@/lib/onboarding'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase-client'
@@ -18,10 +17,11 @@ export default function DashboardPage() {
   const router = useRouter()
   const { user, account, signOut, loading } = useAuth()
   const { data: projects } = useProjects()
-  const { data: analytics } = useAccountAnalytics()
   const planLimits = usePlanLimits()
   const [hasCreateAccess, setHasCreateAccess] = useState(true)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false)
 
   // Check if user needs onboarding
   useEffect(() => {
@@ -44,6 +44,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!account?.id) {
       setHasCreateAccess(false)
+      setMobileActionsOpen(false)
       return
     }
 
@@ -78,6 +79,7 @@ export default function DashboardPage() {
   }
 
   const handleSignOut = async () => {
+    setMobileActionsOpen(false)
     const { error } = await signOut()
     if (error) {
       console.error('Failed to sign out:', error)
@@ -86,176 +88,153 @@ export default function DashboardPage() {
     router.replace('/')
   }
 
-  const stats = analytics?.totals || {
-    projects: projects?.length || 0,
-    forms: 0,
-    responses: 0,
-    qrCodes: 0,
-    scans: 0,
-  }
-
-  const memberSince = account?.created_at
-    ? new Date(account.created_at).toLocaleDateString()
-    : '—'
-
   const formatLimit = (limit?: number | null) => {
     if (typeof limit !== 'number') return '—'
     return limit === -1 ? 'Unlimited' : limit
   }
 
+  const projectUsage = planLimits?.projects
+  const projectsCount = projectUsage?.current ?? projects?.length ?? 0
+  const projectLimitValue = projectUsage?.limit ?? null
+  const projectLimitLabel =
+    projectLimitValue === null
+      ? '—'
+      : projectLimitValue === -1
+      ? 'Unlimited'
+      : projectLimitValue
+  const reachedProjectLimit =
+    projectLimitValue !== null &&
+    projectLimitValue !== -1 &&
+    projectsCount >= projectLimitValue
+  const canCreateProject = hasCreateAccess && !reachedProjectLimit
+
+  const handleCreateProjectClick = () => {
+    setMobileActionsOpen(false)
+    if (!canCreateProject) {
+      setShowCreateModal(false)
+      return
+    }
+    setShowCreateModal(true)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {user?.email}</p>
-            </div>
-            <div className="flex space-x-4">
-              {!hasCreateAccess && (
-                <Link href="/billing">
-                  <Button variant="outline" size="sm">
-                    <TrendingUpIcon className="w-4 h-4 mr-2" />
-                    Upgrade for more projects
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+                <p className="text-sm text-muted-foreground">
+                  Account email: {user?.email}
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                <div className="hidden sm:flex items-center gap-3">
+                  <Link href="/billing" className="self-center">
+                    <Button
+                      variant={reachedProjectLimit ? 'default' : 'outline'}
+                      size="sm"
+                      className={`h-9 items-center ${reachedProjectLimit ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}`}
+                    >
+                      <TrendingUpIcon className="w-4 h-4 mr-2" />
+                      {reachedProjectLimit ? 'Upgrade plan' : 'Your Plan'}
+                    </Button>
+                  </Link>
+                  <Link href="/settings" className="self-center">
+                    <Button variant="outline" size="sm" className="h-9 items-center">
+                      <SettingsIcon className="w-4 h-4 mr-2" />
+                      Account Settings
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={handleSignOut}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 items-center border-slate-300 text-slate-700 hover:bg-slate-100"
+                  >
+                    Sign Out
                   </Button>
-                </Link>
-              )}
-              {hasCreateAccess && (
-                <Link href="/onboarding">
-                  <Button size="sm">
-                    <SparklesIcon className="w-4 h-4 mr-2" />
-                    Create New Form
+                </div>
+                <div className="relative sm:hidden">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMobileActionsOpen((prev) => !prev)}
+                    aria-label="Toggle account menu"
+                  >
+                    {mobileActionsOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                   </Button>
-                </Link>
-              )}
-              <Link href="/billing">
-                <Button variant="outline" size="sm">
-                  <TrendingUpIcon className="w-4 h-4 mr-2" />
-                  Billing
-                </Button>
-              </Link>
-              <Link href="/settings">
-                <Button variant="outline" size="sm">
-                  <SettingsIcon className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                Sign Out
-              </Button>
+                  {mobileActionsOpen && (
+                    <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                      <Link href="/billing" onClick={() => setMobileActionsOpen(false)}>
+                        <Button variant="ghost" size="sm" className="w-full justify-start">
+                          <TrendingUpIcon className="w-4 h-4 mr-2" />
+                          Your Plan
+                        </Button>
+                      </Link>
+                      <Link href="/settings" onClick={() => setMobileActionsOpen(false)}>
+                        <Button variant="ghost" size="sm" className="w-full justify-start">
+                          <SettingsIcon className="w-4 h-4 mr-2" />
+                          Account Settings
+                        </Button>
+                      </Link>
+                      <Button
+                        onClick={handleSignOut}
+                        variant="outline"
+                        size="sm"
+                        className="mt-1 w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-100"
+                      >
+                        Sign Out
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+            {!canCreateProject && reachedProjectLimit && null}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Quick Stats */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projects</CardTitle>
-              <BarChart3Icon className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Projects</CardTitle>
+              <div className="text-2xl font-semibold text-slate-900">{projectsCount}</div>
+              <CardDescription>Active projects</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.projects}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.projects === 1 ? 'Active project' : 'Active projects'}
-              </p>
-            </CardContent>
           </Card>
-
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Forms</CardTitle>
-              <FileTextIcon className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Forms</CardTitle>
+              <div className="text-2xl font-semibold text-slate-900">{planLimits?.forms.current ?? 0}</div>
+              <CardDescription>Across all projects</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.forms}</div>
-              <p className="text-xs text-muted-foreground">
-                Across all projects
-              </p>
-            </CardContent>
           </Card>
-
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Responses</CardTitle>
-              <MessageSquareIcon className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Responses</CardTitle>
+              <div className="text-2xl font-semibold text-slate-900">{planLimits?.responses.current ?? 0}</div>
+              <CardDescription>This month</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.responses}</div>
-              <p className="text-xs text-muted-foreground">
-                Total feedback received
-              </p>
-            </CardContent>
           </Card>
-
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">QR Scans</CardTitle>
-              <QrCodeIcon className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-sm font-medium text-muted-foreground">QR Codes</CardTitle>
+              <div className="text-2xl font-semibold text-slate-900">{planLimits?.qrCodes.current ?? 0}</div>
+              <CardDescription>Generated to date</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.scans}</div>
-              <p className="text-xs text-muted-foreground">
-                Total QR code scans
-              </p>
-            </CardContent>
           </Card>
         </div>
-
-        {/* Account Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>Your account details and current plan</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <p><strong>Email:</strong> {user?.email}</p>
-                <p><strong>Account Name:</strong> {account?.name}</p>
-              </div>
-              <div className="space-y-2">
-                <p><strong>Plan:</strong> {(account as any)?.plans?.name || 'Free'}</p>
-                <p><strong>Member since:</strong> {memberSince}</p>
-              </div>
-            </div>
-
-            {planLimits && (
-              <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-4 border-t pt-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Projects used</p>
-                  <p className="text-lg font-semibold">
-                    {planLimits.projects.current} / {formatLimit(planLimits.projects.limit)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Forms used</p>
-                  <p className="text-lg font-semibold">
-                    {planLimits.forms.current} / {formatLimit(planLimits.forms.limit)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Responses this month</p>
-                  <p className="text-lg font-semibold">
-                    {planLimits.responses.current} / {formatLimit(planLimits.responses.limit)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">QR codes</p>
-                  <p className="text-lg font-semibold">
-                    {planLimits.qrCodes.current} / {formatLimit(planLimits.qrCodes.limit)}
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Projects Section */}
-        <ProjectList />
+        <ProjectList
+          canCreateProject={canCreateProject}
+          projectsCount={projectsCount}
+          reachedProjectLimit={reachedProjectLimit}
+          showCreateModal={showCreateModal}
+          onShowCreateModalChange={setShowCreateModal}
+        />
       </div>
     </div>
   )

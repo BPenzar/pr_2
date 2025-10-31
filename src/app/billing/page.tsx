@@ -1,25 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAccountPlan, usePlans, useUpgradePlan, usePlanLimits } from '@/hooks/use-plans'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { UsageMeter } from '@/components/upgrade/usage-meter'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UsageMeter } from '@/components/upgrade/usage-meter'
 import {
   CrownIcon,
   CheckIcon,
-  ZapIcon,
   SparklesIcon,
   CreditCardIcon,
-  CalendarIcon,
   TrendingUpIcon,
-  InfoIcon
+  InfoIcon,
+  SettingsIcon,
+  ArrowLeftIcon
 } from 'lucide-react'
 import Link from 'next/link'
+
+const PLAN_ORDER = ['Free', 'Starter', 'Professional'] as const
+const UNIVERSAL_FEATURES = [
+  'Unlimited QR codes per form',
+  'Advanced Analytics',
+  'QR Codes',
+  'Export CSV',
+  'Custom Branding'
+] as const
 
 export default function BillingPage() {
   const { data: accountData, isLoading: isLoadingAccount } = useAccountPlan()
@@ -27,6 +36,40 @@ export default function BillingPage() {
   const planLimits = usePlanLimits()
   const upgradePlan = useUpgradePlan()
   const [isYearly, setIsYearly] = useState(false)
+
+  const orderedPlans = useMemo(() => {
+    if (!plans?.length) return []
+
+    const prioritized = PLAN_ORDER
+      .map((name) => plans.find((plan) => plan.name === name))
+      .filter((plan): plan is NonNullable<typeof plan> => Boolean(plan))
+
+    return prioritized.length ? prioritized : plans
+  }, [plans])
+
+  const currentPlan = useMemo(() => {
+    if (!accountData?.plan) return null
+    return orderedPlans.find((plan) => plan.id === accountData.plan.id) ?? accountData.plan
+  }, [orderedPlans, accountData?.plan])
+
+  const nextPlanForUpgrade = useMemo(() => {
+    if (!orderedPlans.length || !currentPlan) return null
+
+    return orderedPlans
+      .filter((plan) => plan.price_monthly > currentPlan.price_monthly)
+      .sort((a, b) => a.price_monthly - b.price_monthly)[0] ?? null
+  }, [orderedPlans, currentPlan])
+
+  const formatPrice = (amount: number) => {
+    if (!Number.isFinite(amount)) return '€0'
+    const hasFraction = Math.abs(amount % 1) > 0
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: hasFraction ? 2 : 0
+    }).format(amount)
+  }
 
   const handleUpgrade = async (planId: string) => {
     try {
@@ -55,14 +98,6 @@ export default function BillingPage() {
     )
   }
 
-  const currentPlan = accountData?.plan
-  const usage = planLimits ? {
-    projects: planLimits.projects,
-    forms: planLimits.forms,
-    responses: planLimits.responses,
-    qrCodes: planLimits.qrCodes
-  } : null
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
@@ -72,10 +107,17 @@ export default function BillingPage() {
               <h1 className="text-2xl font-bold text-gray-900">Billing & Plans</h1>
               <p className="text-gray-600">Manage your subscription and usage</p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <Link href="/dashboard">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <ArrowLeftIcon className="h-4 w-4" />
                   Back to Dashboard
+                </Button>
+              </Link>
+              <Link href="/settings">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <SettingsIcon className="h-4 w-4" />
+                  Account Settings
                 </Button>
               </Link>
             </div>
@@ -101,79 +143,88 @@ export default function BillingPage() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Current Plan */}
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center">
-                      <CrownIcon className="h-5 w-5 mr-2" />
-                      Current Plan
-                    </CardTitle>
-                    <CardDescription>
-                      Your active subscription and features
-                    </CardDescription>
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full bg-slate-200 p-2">
+                    <CrownIcon className="h-5 w-5 text-slate-700" />
                   </div>
-                  <Badge variant={currentPlan?.name === 'Free' ? 'secondary' : 'default'}>
+                  <div>
+                    <CardTitle className="text-lg">Current plan</CardTitle>
+                    <CardDescription>Stay on top of your subscription details</CardDescription>
+                  </div>
+                  <Badge variant={currentPlan?.name === 'Free' ? 'secondary' : 'default'} className="ml-auto">
                     {currentPlan?.name}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-2xl font-bold">
-                      ${currentPlan?.price_monthly || 0}
-                      <span className="text-sm font-normal text-gray-600">/month</span>
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {currentPlan?.name === 'Free' ? 'No payment required' : 'Billed monthly'}
-                    </p>
+              <CardContent className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <p className="text-3xl font-bold text-slate-900">
+                    ${currentPlan?.price_monthly || 0}
+                    <span className="text-base font-normal text-gray-600">/month</span>
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <CheckIcon className="h-4 w-4 text-green-500" />
+                      {currentPlan?.max_projects === -1 ? 'Unlimited projects' : `${currentPlan?.max_projects} projects`}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckIcon className="h-4 w-4 text-green-500" />
+                      {currentPlan?.max_forms_per_project === -1 ? 'Unlimited forms/project' : `${currentPlan?.max_forms_per_project} forms/project`}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckIcon className="h-4 w-4 text-green-500" />
+                      {currentPlan?.max_responses_per_month === -1 ? 'Unlimited responses/month' : `${currentPlan?.max_responses_per_month.toLocaleString()} responses/month`}
+                    </div>
                   </div>
-                  {currentPlan?.name === 'Free' && (
-                    <Button onClick={() => handleUpgrade('pro')} className="bg-orange-600 hover:bg-orange-700">
-                      <SparklesIcon className="h-4 w-4 mr-2" />
-                      Upgrade to Pro
-                    </Button>
-                  )}
                 </div>
+                <Button
+                  onClick={() => {
+                    if (currentPlan?.name === 'Free' && nextPlanForUpgrade) {
+                      handleUpgrade(nextPlanForUpgrade.id)
+                    }
+                  }}
+                  variant={currentPlan?.name === 'Free' ? 'default' : 'outline'}
+                  className={currentPlan?.name === 'Free' ? 'bg-orange-600 hover:bg-orange-700 sm:w-auto' : 'sm:w-auto'}
+                  disabled={upgradePlan.isPending || (currentPlan?.name === 'Free' && !nextPlanForUpgrade)}
+                >
+                  <SparklesIcon className="h-4 w-4 mr-2" />
+                  {currentPlan?.name === 'Free' ? 'Upgrade plan' : 'Manage plan'}
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Usage Overview */}
-            {usage && (
-              <UsageMeter
-                usage={usage}
-                planName={currentPlan?.name || 'Free'}
-                onUpgrade={() => handleUpgrade('pro')}
-                showUpgradePrompts={true}
-              />
+            {planLimits && (
+              <Card className="border border-slate-200 shadow-sm">
+                <CardContent className="px-6 pb-6 pt-8">
+                  <UsageMeter
+                    usage={planLimits}
+                    planName={currentPlan?.name || 'Free'}
+                  />
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
           <TabsContent value="plans" className="space-y-6">
-            {/* Billing Toggle */}
-            <div className="flex justify-center">
-              <div className="flex items-center space-x-4 p-1 bg-gray-100 rounded-lg">
-                <span className={`text-sm ${!isYearly ? 'font-medium' : 'text-gray-600'}`}>
-                  Monthly
-                </span>
-                <Switch
-                  checked={isYearly}
-                  onCheckedChange={setIsYearly}
-                />
-                <span className={`text-sm ${isYearly ? 'font-medium' : 'text-gray-600'}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-lg">Compare plans</CardTitle>
+                <CardDescription>Pick the plan that fits your current workload.</CardDescription>
+              </div>
+              <div className="flex items-center space-x-3 rounded-full border border-slate-200 px-3 py-1.5 text-sm">
+                <span className={!isYearly ? 'font-semibold text-slate-900' : 'text-slate-500'}>Monthly</span>
+                <Switch checked={isYearly} onCheckedChange={setIsYearly} className="scale-90" />
+                <span className={isYearly ? 'font-semibold text-slate-900' : 'text-slate-500'}>
                   Yearly
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    Save 20%
-                  </Badge>
+                  <Badge variant="secondary" className="ml-2 text-xs">Save 20%</Badge>
                 </span>
               </div>
             </div>
 
-            {/* Plan Cards */}
             <div className="grid gap-6 lg:grid-cols-3">
-              {plans?.map((plan) => {
+              {orderedPlans.map((plan) => {
                 const isCurrentPlan = plan.id === currentPlan?.id
                 const price = isYearly ? plan.price_yearly : plan.price_monthly
                 const yearlyDiscount = plan.price_yearly < (plan.price_monthly * 12)
@@ -182,10 +233,10 @@ export default function BillingPage() {
                   <Card
                     key={plan.id}
                     className={`relative ${
-                      plan.name === 'Pro' ? 'border-2 border-orange-200 shadow-lg' : ''
+                      plan.name === 'Starter' ? 'border-2 border-orange-200 shadow-lg' : ''
                     } ${isCurrentPlan ? 'ring-2 ring-blue-200' : ''}`}
                   >
-                    {plan.name === 'Pro' && (
+                    {plan.name === 'Starter' && (
                       <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-orange-600">
                         Most Popular
                       </Badge>
@@ -199,53 +250,60 @@ export default function BillingPage() {
                     <CardHeader className="text-center">
                       <CardTitle className="text-xl">{plan.name}</CardTitle>
                       <div className="text-3xl font-bold">
-                        ${price}
+                        {formatPrice(price)}
                         <span className="text-sm font-normal text-gray-600">
                           /{isYearly ? 'year' : 'month'}
                         </span>
                       </div>
                       {isYearly && yearlyDiscount && (
                         <p className="text-sm text-green-600">
-                          Save ${(plan.price_monthly * 12) - plan.price_yearly}/year
+                          Save {formatPrice((plan.price_monthly * 12) - plan.price_yearly)}/year
                         </p>
                       )}
                       <CardDescription>
-                        {plan.name === 'Free' && 'Perfect for getting started'}
-                        {plan.name === 'Pro' && 'For growing businesses'}
-                        {plan.name === 'Enterprise' && 'For large organizations'}
+                        {plan.name === 'Free' && 'Perfect for trying out the platform.'}
+                        {plan.name === 'Starter' && 'Everything you need to launch your first projects.'}
+                        {plan.name === 'Professional' && 'Enough feedback capability for multiple projects.'}
                       </CardDescription>
                     </CardHeader>
 
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
                       <ul className="space-y-2 text-sm">
-                        {/* Limits */}
                         <li className="flex items-center">
                           <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                          {plan.max_projects === -1 ? 'Unlimited' : plan.max_projects} projects
+                          {plan.max_projects === -1
+                            ? 'Unlimited projects'
+                            : `${plan.max_projects} project${plan.max_projects === 1 ? '' : 's'}`}
                         </li>
                         <li className="flex items-center">
                           <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                          {plan.max_forms_per_project === -1 ? 'Unlimited' : plan.max_forms_per_project} forms per project
+                          {plan.max_forms_per_project === -1
+                            ? 'Unlimited forms per project'
+                            : `${plan.max_forms_per_project} forms per project`}
                         </li>
                         <li className="flex items-center">
                           <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                          {plan.max_responses_per_month === -1 ? 'Unlimited' : plan.max_responses_per_month.toLocaleString()} responses/month
+                          {plan.max_responses_per_month === -1
+                            ? 'Unlimited responses per month'
+                            : `${plan.max_responses_per_month.toLocaleString()} responses per month`}
                         </li>
-                        <li className="flex items-center">
-                          <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                          {plan.max_qr_codes_per_form === -1 ? 'Unlimited' : plan.max_qr_codes_per_form} QR codes per form
-                        </li>
-
-                        {/* Features */}
-                        {plan.features.map((feature, index) => (
-                          <li key={index} className="flex items-center">
-                            <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                            {feature}
-                          </li>
-                        ))}
                       </ul>
 
-                      <div className="pt-4">
+                      <div className="border-t border-slate-200 pt-4">
+                        <p className="text-sm font-semibold text-slate-700 mb-3">
+                          Included in every plan
+                        </p>
+                        <ul className="space-y-2 text-sm">
+                          {UNIVERSAL_FEATURES.map((feature) => (
+                            <li key={feature} className="flex items-center">
+                              <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="pt-2">
                         {isCurrentPlan ? (
                           <Button disabled className="w-full">
                             Current Plan
@@ -259,7 +317,7 @@ export default function BillingPage() {
                             onClick={() => handleUpgrade(plan.id)}
                             disabled={upgradePlan.isPending}
                             className={`w-full ${
-                              plan.name === 'Pro'
+                              plan.name === 'Starter'
                                 ? 'bg-orange-600 hover:bg-orange-700'
                                 : ''
                             }`}

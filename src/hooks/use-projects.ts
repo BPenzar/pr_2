@@ -13,18 +13,27 @@ export function useProjects() {
     queryFn: async () => {
       if (!account?.id) return []
 
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          forms:forms(count)
-        `)
-        .eq('account_id', account.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
+      const [projectsResponse, usageResponse] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('*')
+          .eq('account_id', account.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false }),
+        supabase.rpc('get_project_usage_summary', { account_uuid: account.id }),
+      ])
 
-      if (error) throw error
-      return data as (Project & { forms: { count: number }[] })[]
+      if (projectsResponse.error) throw projectsResponse.error
+      if (usageResponse.error) throw usageResponse.error
+
+      const usageMap = new Map(
+        (usageResponse.data ?? []).map((entry: any) => [entry.project_id, entry])
+      )
+
+      return (projectsResponse.data ?? []).map((project: Project) => ({
+        ...project,
+        usage: usageMap.get(project.id) ?? { forms_count: 0, qr_codes_count: 0 },
+      })) as Array<Project & { usage: { forms_count: number; qr_codes_count: number } }>
     },
     enabled: !!account?.id,
   })

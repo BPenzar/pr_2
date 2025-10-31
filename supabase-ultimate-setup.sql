@@ -255,6 +255,30 @@ END;
 $$ LANGUAGE plpgsql
 SET search_path = public;
 
+-- Function: Reorder questions atomically without violating unique constraint
+CREATE OR REPLACE FUNCTION reorder_questions(
+    form_uuid UUID,
+    question_ids UUID[],
+    order_indexes INTEGER[]
+)
+RETURNS VOID AS $$
+BEGIN
+    IF array_length(question_ids, 1) IS DISTINCT FROM array_length(order_indexes, 1) THEN
+        RAISE EXCEPTION 'question_ids and order_indexes must have the same length';
+    END IF;
+
+    UPDATE public.questions q
+    SET order_index = reordered.order_index
+    FROM (
+        SELECT
+            unnest(question_ids) AS id,
+            unnest(order_indexes) AS order_index
+    ) AS reordered
+    WHERE q.id = reordered.id AND q.form_id = form_uuid;
+END;
+$$ LANGUAGE plpgsql
+SET search_path = public;
+
 -- Function: Check if account can create more projects (USED BY FRONTEND)
 CREATE OR REPLACE FUNCTION can_create_project(account_uuid UUID)
 RETURNS BOOLEAN AS $$

@@ -21,7 +21,10 @@ export interface Plan {
 const normalizePlan = (plan: any): Plan => {
   const priceCents = typeof plan?.price === 'number' ? plan.price : 0
   const monthly = priceCents / 100
-  const yearly = monthly * 12
+  const yearlyBase =
+    typeof plan?.price_yearly === 'number'
+      ? plan.price_yearly / 100
+      : monthly * 12 * 0.8
 
   const features = Array.isArray(plan?.features)
     ? plan.features
@@ -40,7 +43,7 @@ const normalizePlan = (plan: any): Plan => {
     id: plan?.id ?? '',
     name: plan?.name ?? 'Unknown',
     price_monthly: Number.isFinite(monthly) ? parseFloat(monthly.toFixed(2)) : 0,
-    price_yearly: Number.isFinite(yearly) ? parseFloat(yearly.toFixed(2)) : 0,
+    price_yearly: Number.isFinite(yearlyBase) ? parseFloat(yearlyBase.toFixed(2)) : 0,
     max_projects: typeof plan?.max_projects === 'number' ? plan.max_projects : -1,
     max_forms_per_project: typeof plan?.max_forms_per_project === 'number' ? plan.max_forms_per_project : -1,
     max_responses_per_month:
@@ -128,30 +131,16 @@ export function useAccountPlan() {
         console.warn('Error getting response count:', responseError)
       }
 
-      const { data: projectGraph, error: projectGraphError } = await supabase
-        .from('projects')
-        .select('id, is_active, forms:forms(id, is_active, qr_codes:qr_codes(id))')
-        .eq('account_id', account.id)
+      const { data: projectUsage, error: projectUsageError } = await supabase
+        .rpc('get_project_usage_summary', { account_uuid: account.id })
 
-      if (projectGraphError) {
-        console.warn('Error getting project usage graph:', projectGraphError)
+      if (projectUsageError) {
+        console.warn('Error getting project usage summary:', projectUsageError)
       }
 
-      const activeProjects = (projectGraph ?? []).filter((project: any) => project?.is_active !== false)
-      const projectsActual = activeProjects.length
-
-      let formsActual = 0
-      let qrActual = 0
-
-      for (const project of activeProjects) {
-        const forms = Array.isArray(project.forms) ? project.forms : []
-        const activeForms = forms.filter((form: any) => form?.is_active !== false)
-        formsActual += activeForms.length
-        for (const form of activeForms) {
-          const qrs = Array.isArray(form.qr_codes) ? form.qr_codes : []
-          qrActual += qrs.length
-        }
-      }
+      const projectsActual = projectUsage?.length ?? 0
+      const formsActual = projectUsage?.reduce((acc: number, entry: any) => acc + (entry.forms_count ?? 0), 0) ?? 0
+      const qrActual = projectUsage?.reduce((acc: number, entry: any) => acc + (entry.qr_codes_count ?? 0), 0) ?? 0
 
       const usageCountersRaw = (accountData as any)?.usage_counters
       const usageCounters = Array.isArray(usageCountersRaw)

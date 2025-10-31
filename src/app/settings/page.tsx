@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,14 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { supabase } from '@/lib/supabase-client'
 import Link from 'next/link'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon, CreditCardIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { usePlanLimits, useAccountPlan } from '@/hooks/use-plans'
 
 type AlertMessage = { type: 'success' | 'error'; text: string } | null
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { user, account, loading, signOut } = useAuth()
+  const { user, account, loading, signOut, refreshAccount } = useAuth()
+  const { data: accountPlanData } = useAccountPlan()
+  const planLimits = usePlanLimits()
   const [accountName, setAccountName] = useState(account?.name || '')
   const [isUpdating, setIsUpdating] = useState(false)
   const [accountAlert, setAccountAlert] = useState<AlertMessage>(null)
@@ -48,6 +51,7 @@ export default function SettingsPage() {
       const trimmed = accountName.trim()
       if (!trimmed) {
         setAccountAlert({ type: 'error', text: 'Account name cannot be empty.' })
+        setIsUpdating(false)
         return
       }
 
@@ -62,7 +66,7 @@ export default function SettingsPage() {
 
       setAccountAlert({ type: 'success', text: 'Account updated successfully' })
       setAccountName(data.name)
-      router.refresh()
+      await refreshAccount()
     } catch (error: any) {
       setAccountAlert({ type: 'error', text: error.message })
     } finally {
@@ -97,8 +101,41 @@ export default function SettingsPage() {
     }
   }, [accountId, confirmText, isDeleting, router, signOut])
 
-  const currentPlan = useMemo(() => (account as any)?.plans, [account])
+  const currentPlan = accountPlanData?.plan ?? null
+  const planUsage = accountPlanData?.usage
+
+  const formatCurrency = (value?: number) => {
+    if (!Number.isFinite(value ?? NaN)) return '€0'
+    const amount = value ?? 0
+    const hasFraction = Math.abs(amount % 1) > 0
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: hasFraction ? 2 : 0
+    }).format(amount)
+  }
+
+  const formatFeatureLabel = (feature: string) => {
+    return feature
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ')
+  }
   const deleteDisabled = confirmText !== 'DELETE' || !accountId || isDeleting
+  const memberSince = account?.created_at
+    ? new Date(account.created_at).toLocaleDateString()
+    : '—'
+
+  const formatUsage = (value: number, limit?: number | null) => {
+    if (typeof limit !== 'number') {
+      return `${value} / —`
+    }
+    if (limit === -1) {
+      return `${value} / ∞`
+    }
+    return `${value} / ${limit}`
+  }
 
   if (loading) {
     return (
@@ -112,19 +149,30 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="mr-4">
-                <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
+          <div className="flex items-center justify-between py-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
+              <p className="text-gray-600">Manage your profile, usage, and plan preferences</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <ArrowLeftIcon className="w-4 h-4" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+              <Link href="/billing">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <CreditCardIcon className="w-4 h-4" />
+                  Billing & Plans
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Account Information */}
         <Card>
           <CardHeader>
@@ -177,59 +225,85 @@ export default function SettingsPage() {
 
         {/* Plan Information */}
         <Card>
-          <CardHeader>
-            <CardTitle>Current Plan</CardTitle>
-            <CardDescription>
-              Your subscription details and usage limits
-            </CardDescription>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Current Plan</CardTitle>
+              <CardDescription>
+                Your subscription details and usage limits
+              </CardDescription>
+            </div>
+            <Link href="/billing?tab=plans">
+              <Button
+                variant={currentPlan?.name === 'Free' ? 'default' : 'outline'}
+                size="sm"
+              >
+                {currentPlan?.name === 'Free' ? 'Upgrade plan' : 'Manage plan'}
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-lg">{currentPlan?.name || 'Free'} Plan</h3>
-                  <p className="text-muted-foreground">
-                    {currentPlan?.price === 0
-                      ? 'Free forever'
-                      : `$${(currentPlan?.price / 100).toFixed(2)}/month`
-                    }
-                  </p>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{currentPlan?.name ?? 'Free'} plan</h3>
+                  {currentPlan?.name && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                      Active
+                    </span>
+                  )}
                 </div>
-                {currentPlan?.name === 'Free' && (
-                  <Button>Upgrade Plan</Button>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  {currentPlan?.name === 'Free'
+                    ? 'Free forever'
+                    : `${formatCurrency(currentPlan?.price_monthly)}/month`}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Member since {memberSince}
+                </p>
               </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Plan Limits</h4>
-                <div className="grid gap-2 md:grid-cols-2">
-                  <div className="flex justify-between">
-                    <span>Projects:</span>
-                    <span>{currentPlan?.max_projects === -1 ? 'Unlimited' : currentPlan?.max_projects}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Forms per project:</span>
-                    <span>{currentPlan?.max_forms_per_project === -1 ? 'Unlimited' : currentPlan?.max_forms_per_project}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Responses per form:</span>
-                    <span>{currentPlan?.max_responses_per_form === -1 ? 'Unlimited' : currentPlan?.max_responses_per_form}</span>
-                  </div>
-                </div>
-              </div>
-
-              {currentPlan?.features && (
+              {planLimits && (
                 <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3">Features</h4>
-                  <ul className="space-y-1">
+                  <h4 className="font-medium mb-3">Current usage</h4>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-lg border border-slate-200 p-3">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Projects</p>
+                      <p className="text-lg font-semibold">{formatUsage(planLimits.projects.current, planLimits.projects.limit)}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 p-3">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Forms</p>
+                      <p className="text-lg font-semibold">{formatUsage(planLimits.forms.current, planLimits.forms.limit)}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 p-3">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Responses this month</p>
+                      <p className="text-lg font-semibold">{formatUsage(planLimits.responses.current, planLimits.responses.limit)}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 p-3">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">QR codes</p>
+                      <p className="text-lg font-semibold">{formatUsage(planLimits.qrCodes.current, planLimits.qrCodes.limit)}</p>
+                    </div>
+                  </div>
+                  {planUsage && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Usage resets monthly based on your active plan.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {currentPlan?.features?.length ? (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Included features</h4>
+                  <ul className="grid gap-2 md:grid-cols-2">
                     {currentPlan.features.map((feature: string, index: number) => (
-                      <li key={index} className="text-sm text-muted-foreground">
-                        • {feature}
+                      <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                        {formatFeatureLabel(feature)}
                       </li>
                     ))}
                   </ul>
                 </div>
-              )}
+              ) : null}
             </div>
           </CardContent>
         </Card>

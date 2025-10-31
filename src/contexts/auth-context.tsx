@@ -15,6 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   resetPassword: (email: string) => Promise<{ error: any }>
+  refreshAccount: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => ({ error: null }),
   signOut: async () => ({ error: null }),
   resetPassword: async () => ({ error: null }),
+  refreshAccount: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -37,23 +39,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
+
+    const markReady = () => {
+      if (isMounted) {
+        setInitializing(false)
+      }
+    }
+
     // Get initial session
     const initSession = async () => {
       try {
         const { data } = await supabase.auth.getSession()
-        const session = data.session
-        setSession(session)
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchAccount(session.user.id)
+        const currentSession = data.session
+        setSession(currentSession)
+        setUser(currentSession?.user ?? null)
+
+        if (currentSession?.user) {
+          let resolved = false
+          const timeoutId = window.setTimeout(() => {
+            if (!resolved) {
+              console.warn('Account fetch timed out; proceeding without fresh data.')
+              markReady()
+            }
+          }, 4000)
+
+          fetchAccount(currentSession.user.id)
+            .catch((error) => {
+              console.error('Initial account fetch failed:', error)
+            })
+            .finally(() => {
+              resolved = true
+              window.clearTimeout(timeoutId)
+              markReady()
+            })
         } else {
-          setInitializing(false)
+          markReady()
         }
       } catch (error) {
         console.error('Failed to get initial session:', error)
         setSession(null)
         setUser(null)
-        setInitializing(false)
+        markReady()
       }
     }
 
@@ -62,27 +89,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        await fetchAccount(session.user.id)
+        fetchAccount(session.user.id).catch((error) => {
+          console.error('Account refresh failed:', error)
+        })
       } else {
         setAccount(null)
-        setInitializing(false)
       }
+
+      markReady()
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchAccount = async (userId: string) => {
-    console.log('Fetching account for userId:', userId)
-    try {
-      const { data, error } = await supabase
-        .from('accounts')
-        .select(`
+    const fetchPromise = supabase
+      .from('accounts')
+      .select(
+        `
           *,
           plans (
             id,
@@ -92,27 +124,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             max_responses_per_form,
             features
           )
-        `)
-        .eq('user_id', userId)
-        .single()
+        `
+      )
+      .eq('user_id', userId)
+      .single()
+
+    let timeoutId: ReturnType<typeof window.setTimeout> | null = null
+    try {
+      const result = await Promise.race([
+        fetchPromise,
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => {
+            reject(new Error('Account fetch timed out'))
+          }, 4000)
+        }),
+      ])
+
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+      }
+
+      const { data, error } = result as Awaited<typeof fetchPromise>
 
       if (error) {
-        console.error('Error fetching account:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          fullError: error
-        })
-      } else {
-        console.log('Successfully fetched account:', data)
-        setAccount(data as any)
+        throw error
       }
+
+      setAccount(data as any)
+      return true
     } catch (error) {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+      }
       console.error('Error fetching account:', error)
-    } finally {
-      setInitializing(false)
+      return false
     }
+  }
+  const refreshAccount = async () => {
+    if (!user?.id) return
+    await fetchAccount(user.id)
   }
 
   const signIn = async (email: string, password: string) => {
@@ -186,6 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signOut,
         resetPassword,
+        refreshAccount,
       }}
     >
       {children}

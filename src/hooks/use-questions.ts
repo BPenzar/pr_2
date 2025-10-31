@@ -124,26 +124,28 @@ export function useReorderQuestions() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: {
+    mutationFn: async ({
+      formId,
+      questions,
+    }: {
       formId: string
       questions: { id: string; orderIndex: number }[]
     }) => {
-      // Update all questions in a single transaction
-      const updates = data.questions.map(q =>
-        supabase
-          .from('questions')
-          .update({ order_index: q.orderIndex })
-          .eq('id', q.id)
-      )
-
-      const results = await Promise.all(updates)
-
-      // Check for errors
-      for (const result of results) {
-        if (result.error) throw result.error
+      if (questions.length === 0) {
+        return questions
       }
 
-      return data.questions
+      const { error } = await supabase.rpc('reorder_questions', {
+        form_uuid: formId,
+        question_ids: questions.map((q) => q.id),
+        order_indexes: questions.map((q) => q.orderIndex),
+      })
+
+      if (error) {
+        throw error
+      }
+
+      return questions
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['form', variables.formId] })

@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
 import { UpgradePrompt } from '@/components/upgrade/upgrade-prompt'
-import { CrownIcon } from 'lucide-react'
+import { CrownIcon, SparklesIcon, PencilIcon, ArrowLeftIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase-client'
@@ -27,6 +27,7 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const [serverCanCreate, setServerCanCreate] = useState(true)
   const [isCheckingLimit, setIsCheckingLimit] = useState(false)
+  const [mode, setMode] = useState<'options' | 'manual'>('options')
 
   const router = useRouter()
   const { account } = useAuth()
@@ -102,6 +103,15 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
     onClose()
   }
 
+  const handleGuidedSetup = () => {
+    if (!canCreate) {
+      setShowUpgradePrompt(true)
+      return
+    }
+    onClose()
+    router.push('/onboarding')
+  }
+
   if (showUpgradePrompt) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -118,6 +128,51 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
     )
   }
 
+  if (mode === 'options') {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <Card className="w-full max-w-md mx-4">
+          <CardHeader>
+            <CardTitle>Start a New Project</CardTitle>
+            <CardDescription>
+              Choose how you want to set things up.
+            </CardDescription>
+            {!canCreate && !isCheckingLimit && (
+              <Alert className="mt-3">
+                <CrownIcon className="h-4 w-4" />
+                <AlertDescription>
+                  You&apos;ve reached your project limit. Upgrade to create more projects.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={handleGuidedSetup}
+              disabled={!canCreate || isCheckingLimit}
+              className="w-full justify-start"
+            >
+              <SparklesIcon className="h-4 w-4 mr-2" />
+              Guided setup (Project → Form → Template)
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setMode('manual')}
+              disabled={!canCreate || isCheckingLimit}
+              className="w-full justify-start"
+            >
+              <PencilIcon className="h-4 w-4 mr-2" />
+              Start from scratch
+            </Button>
+            <Button type="button" variant="ghost" className="w-full" onClick={onClose}>
+              Cancel
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4">
@@ -126,6 +181,17 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
           <CardDescription>
             Create a project to organize your feedback forms
           </CardDescription>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-fit -ml-2"
+            onClick={() => setMode('options')}
+            disabled={createProject.isPending}
+          >
+            <ArrowLeftIcon className="h-4 w-4 mr-2" />
+            Back to options
+          </Button>
           {!canCreate && !isCheckingLimit && (
             <Alert className="mt-3">
               <CrownIcon className="h-4 w-4" />
