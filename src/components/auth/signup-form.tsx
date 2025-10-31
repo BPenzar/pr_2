@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,15 +13,20 @@ export function SignupForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const { signUp } = useAuth()
-  const router = useRouter()
+  const { signUp, authLoading } = useAuth()
+
+  useEffect(() => {
+    if (!authLoading) {
+      setIsSubmitting(false)
+    }
+  }, [authLoading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setIsSubmitting(true)
     setError(null)
     setMessage(null)
 
@@ -30,12 +34,12 @@ export function SignupForm() {
 
     if (error) {
       setError(error.message)
-      setIsLoading(false)
     } else {
       setMessage('Please check your email to verify your account.')
-      setIsLoading(false)
     }
   }
+
+  const isLoading = isSubmitting || authLoading
 
   return (
     <Card className="w-full max-w-md mx-auto">

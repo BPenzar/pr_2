@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
@@ -13,25 +13,32 @@ import Link from 'next/link'
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { signIn } = useAuth()
+  const { signIn, authLoading } = useAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading) {
+      setIsSubmitting(false)
+    }
+  }, [authLoading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setIsSubmitting(true)
     setError(null)
 
     const { error } = await signIn(email, password)
 
     if (error) {
       setError(error.message)
-      setIsLoading(false)
     } else {
       router.push('/dashboard')
     }
   }
+
+  const isLoading = isSubmitting || authLoading
 
   return (
     <Card className="w-full max-w-md mx-auto">
