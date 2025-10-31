@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase-client'
 import { Account } from '@/types/database'
@@ -37,6 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [initializing, setInitializing] = useState(true)
   const [authLoading, setAuthLoading] = useState(false)
+  const userIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null
+  }, [user])
 
   useEffect(() => {
     let isMounted = true
@@ -57,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (currentSession?.user) {
           let resolved = false
-          const timeoutId = window.setTimeout(() => {
+          const timeoutId = setTimeout(() => {
             if (!resolved) {
               console.warn('Account fetch timed out; proceeding without fresh data.')
               markReady()
@@ -70,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
             .finally(() => {
               resolved = true
-              window.clearTimeout(timeoutId)
+              clearTimeout(timeoutId)
               markReady()
             })
         } else {
@@ -108,9 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [fetchAccount])
 
-  const fetchAccount = async (userId: string) => {
+  const fetchAccount = useCallback(async (userId: string) => {
     const fetchPromise = supabase
       .from('accounts')
       .select(
@@ -150,6 +155,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error
       }
 
+      if (userIdRef.current !== userId) {
+        return true
+      }
+
       setAccount(data as any)
       return true
     } catch (error) {
@@ -159,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching account:', error)
       return false
     }
-  }
+  }, [])
   const refreshAccount = async () => {
     if (!user?.id) return
     await fetchAccount(user.id)
@@ -201,20 +210,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     setAuthLoading(true)
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        return { error }
-      }
+    let errorResult: any = null
 
+    const clearLocalSession = async () => {
+      try {
+        await supabase.auth.signOut({ scope: 'local' })
+      } catch (localError) {
+        console.warn('Local sign-out attempt failed.', localError)
+      }
+    }
+
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'global' })
+      if (error) {
+        console.warn('Supabase signOut returned an error; clearing local session anyway.', error)
+        errorResult = error
+        await clearLocalSession()
+      }
+    } catch (error) {
+      console.error('Unexpected sign-out error; clearing local session anyway.', error)
+      errorResult = error
+      await clearLocalSession()
+    } finally {
       setSession(null)
       setUser(null)
       setAccount(null)
       setInitializing(false)
-      return { error: null }
-    } finally {
       setAuthLoading(false)
     }
+
+    return { error: errorResult }
   }
 
   const resetPassword = async (email: string) => {

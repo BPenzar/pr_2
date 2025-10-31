@@ -11,15 +11,16 @@ interface HeaderProps {
 }
 
 export function Header({ showAuth = true }: HeaderProps) {
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut, loading, authLoading } = useAuth()
   const router = useRouter()
 
   const handleSignOut = async () => {
     const { error } = await signOut()
-    if (!error) {
-      router.push('/auth/login')
-      router.refresh()
+    if (error) {
+      console.warn('Sign out reported an error but session was cleared locally.', error)
     }
+    router.push('/auth/login')
+    router.refresh()
   }
 
   return (
@@ -71,7 +72,7 @@ export function Header({ showAuth = true }: HeaderProps) {
                     variant="ghost"
                     size="sm"
                     onClick={handleSignOut}
-                    disabled={loading}
+                    disabled={loading || authLoading}
                     className="text-sm"
                   >
                     Sign Out

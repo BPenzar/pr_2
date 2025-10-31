@@ -15,7 +15,7 @@ import { usePlanLimits } from '@/hooks/use-plans'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, account, signOut, loading } = useAuth()
+  const { user, account, signOut, loading, authLoading } = useAuth()
   const { data: projects } = useProjects()
   const planLimits = usePlanLimits()
   const [hasCreateAccess, setHasCreateAccess] = useState(true)
@@ -82,8 +82,7 @@ export default function DashboardPage() {
     setMobileActionsOpen(false)
     const { error } = await signOut()
     if (error) {
-      console.error('Failed to sign out:', error)
-      return
+      console.warn('Sign out reported an error but session was cleared locally.', error)
     }
     router.replace('/')
   }
@@ -151,6 +150,7 @@ export default function DashboardPage() {
                     onClick={handleSignOut}
                     variant="outline"
                     size="sm"
+                    disabled={authLoading}
                     className="h-9 items-center border-slate-300 text-slate-700 hover:bg-slate-100"
                   >
                     Sign Out
@@ -183,6 +183,7 @@ export default function DashboardPage() {
                         onClick={handleSignOut}
                         variant="outline"
                         size="sm"
+                        disabled={authLoading}
                         className="mt-1 w-full justify-start border-slate-300 text-slate-700 hover:bg-slate-100"
                       >
                         Sign Out
