@@ -212,25 +212,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthLoading(true)
     let errorResult: any = null
 
-    const clearLocalSession = async () => {
-      try {
-        await supabase.auth.signOut({ scope: 'local' })
-      } catch (localError) {
-        console.warn('Local sign-out attempt failed.', localError)
-      }
-    }
-
     try {
       const { error } = await supabase.auth.signOut({ scope: 'global' })
       if (error) {
         console.warn('Supabase signOut returned an error; clearing local session anyway.', error)
         errorResult = error
-        await clearLocalSession()
       }
     } catch (error) {
       console.error('Unexpected sign-out error; clearing local session anyway.', error)
       errorResult = error
-      await clearLocalSession()
+    }
+
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+    } catch (localError) {
+      if (!errorResult) {
+        console.warn('Local sign-out attempt failed.', localError)
+      }
     } finally {
       setSession(null)
       setUser(null)
