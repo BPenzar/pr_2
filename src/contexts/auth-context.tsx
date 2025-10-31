@@ -212,6 +212,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthLoading(true)
     let errorResult: any = null
 
+    const clearPersistedSession = () => {
+      if (typeof window === 'undefined') return
+
+      const projectRef =
+        process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/^https:\/\/([^.]+)\.supabase\.co/)?.[1] ?? null
+
+      if (!projectRef) return
+
+      const baseKey = `sb-${projectRef}-auth-token`
+      const variants = [baseKey, `${baseKey}#D`, `${baseKey}#d`]
+
+      try {
+        for (const key of variants) {
+          window.localStorage.removeItem(key)
+          window.sessionStorage.removeItem(key)
+        }
+      } catch (storageError) {
+        console.warn('Failed to clear cached Supabase session storage.', storageError)
+      }
+    }
+
     try {
       const { error } = await supabase.auth.signOut({ scope: 'global' })
       if (error) {
@@ -226,10 +247,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.auth.signOut({ scope: 'local' })
     } catch (localError) {
-      if (!errorResult) {
-        console.warn('Local sign-out attempt failed.', localError)
-      }
+      console.warn('Local sign-out attempt raised an error; removing storage manually.', localError)
     } finally {
+      clearPersistedSession()
       setSession(null)
       setUser(null)
       setAccount(null)
