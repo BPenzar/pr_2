@@ -10,6 +10,7 @@ interface AuthContextType {
   account: Account | null
   session: Session | null
   loading: boolean
+  authLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   account: null,
   session: null,
   loading: true,
+  authLoading: false,
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => ({ error: null }),
@@ -31,19 +33,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [account, setAccount] = useState<Account | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [initializing, setInitializing] = useState(true)
+  const [authLoading, setAuthLoading] = useState(false)
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchAccount(session.user.id)
-      } else {
-        setLoading(false)
+    const initSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession()
+        const session = data.session
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await fetchAccount(session.user.id)
+        } else {
+          setInitializing(false)
+        }
+      } catch (error) {
+        console.error('Failed to get initial session:', error)
+        setSession(null)
+        setUser(null)
+        setInitializing(false)
       }
-    })
+    }
+
+    initSession()
 
     // Listen for auth changes
     const {
@@ -56,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetchAccount(session.user.id)
       } else {
         setAccount(null)
-        setLoading(false)
+        setInitializing(false)
       }
     })
 
@@ -97,48 +111,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error fetching account:', error)
     } finally {
-      setLoading(false)
+      setInitializing(false)
     }
   }
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) setLoading(false)
-    return { error }
+    setAuthLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) {
+        return { error }
+      }
+      return { error: null }
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    setAuthLoading(true)
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    })
-    if (error) setLoading(false)
-    return { error }
+      })
+      return { error }
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   const signOut = async () => {
-    setLoading(true)
-    const { error } = await supabase.auth.signOut()
-    if (error) {
-      setLoading(false)
-      return { error }
-    }
+    setAuthLoading(true)
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        return { error }
+      }
 
-    setSession(null)
-    setUser(null)
-    setAccount(null)
-    setLoading(false)
-    return { error: null }
+      setSession(null)
+      setUser(null)
+      setAccount(null)
+      setInitializing(false)
+      return { error: null }
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   const resetPassword = async (email: string) => {
@@ -154,7 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         account,
         session,
-        loading,
+        loading: initializing,
+        authLoading,
         signIn,
         signUp,
         signOut,
