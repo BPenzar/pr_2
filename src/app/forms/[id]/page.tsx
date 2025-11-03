@@ -86,7 +86,7 @@ export default function FormBuilderPage() {
           onValueChange={(value) => setActiveTab(value as typeof activeTab)}
           className="space-y-6"
         >
-          <TabsList className="flex flex-wrap gap-2">
+          <TabsList className="flex flex-wrap gap-2 mb-3 sm:mb-4">
             <TabsTrigger value="response-analytics" className="flex items-center gap-2 whitespace-nowrap">
               <LayoutDashboard className="w-4 h-4" />
               Response Analytics

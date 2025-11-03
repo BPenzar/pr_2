@@ -12,6 +12,20 @@ import { TrashIcon, DownloadIcon, FilterIcon, StarIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Question } from '@/types/database'
 
+const getRatingBaseClasses = (value: number) => {
+  if (value <= 6) return 'border-red-200 bg-red-50 text-red-700'
+  if (value <= 8) return 'border-yellow-200 bg-yellow-50 text-yellow-700'
+  if (value === 9) return 'border-green-200 bg-green-50 text-green-700'
+  return 'border-green-300 bg-green-100 text-green-800'
+}
+
+const getRatingSelectedClasses = (value: number) => {
+  if (value <= 6) return 'border-red-600 bg-red-600 text-white shadow-sm'
+  if (value <= 8) return 'border-yellow-500 bg-yellow-500 text-white shadow-sm'
+  if (value === 9) return 'border-green-500 bg-green-500 text-white shadow-sm'
+  return 'border-green-700 bg-green-700 text-white shadow-sm'
+}
+
 interface ResponseViewerProps {
   formId: string
   formName: string
@@ -106,20 +120,17 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
       }
 
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-gray-800">{rating}</span>
-          <div className="flex gap-1">
-            {[...Array(maxScale)].map((_, index) => {
+          <div className="flex flex-wrap gap-1">
+            {Array.from({ length: maxScale }, (_, index) => {
               const valueLabel = index + 1
               const isSelected = valueLabel === rating
+              const baseClasses = getRatingBaseClasses(valueLabel)
               return (
                 <span
                   key={valueLabel}
-                  className={`h-6 w-6 flex items-center justify-center rounded-full text-xs border ${
-                    isSelected
-                      ? 'border-blue-500 bg-blue-500 text-white'
-                      : 'border-gray-300 text-gray-600'
-                  }`}
+                  className={`flex h-8 min-w-[2.25rem] items-center justify-center rounded-xl border px-2 text-xs font-semibold ${isSelected ? getRatingSelectedClasses(valueLabel) : baseClasses}`}
                 >
                   {valueLabel}
                 </span>
@@ -285,17 +296,20 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                 <CardContent className="pt-0">
                   <div className="space-y-4">
                     {response.response_items.map((item) => (
-                      <div key={item.id} className="border-l-2 border-gray-100 pl-4">
+                      <div
+                        key={item.id}
+                        className="rounded-lg border border-gray-100 bg-white/70 p-4 shadow-sm sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:border-l-2 sm:border-gray-100 sm:pl-4"
+                      >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex-1">
-                            <h4 className="font-medium text-sm mb-2">
+                            <h4 className="font-medium text-sm mb-2 text-gray-900">
                               {item.questions.title}
                             </h4>
-                            <div className="text-sm">
+                            <div className="text-sm text-gray-700">
                               {renderResponseValue(item)}
                             </div>
                           </div>
-                          <Badge variant="outline" className="text-xs w-fit">
+                          <Badge variant="outline" className="text-xs w-fit capitalize">
                             {item.questions.type}
                           </Badge>
                         </div>
