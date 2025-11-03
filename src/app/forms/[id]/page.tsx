@@ -1,16 +1,23 @@
 'use client'
 
+import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useForm } from '@/hooks/use-forms'
 import { FormBuilder } from '@/components/forms/form-builder'
+import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard'
+import { ResponseAnalytics } from '@/components/analytics/response-analytics'
+import { ResponseViewer } from '@/components/analytics/response-viewer'
+import { QRCodeList } from '@/components/qr/qr-code-list'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon, SettingsIcon, EyeIcon, LayoutDashboard, Wrench, Table, QrCode } from 'lucide-react'
 
 export default function FormBuilderPage() {
   const params = useParams()
   const formId = params.id as string
   const { data: form, isLoading } = useForm(formId)
+  const [activeTab, setActiveTab] = useState<'response-analytics' | 'qr-analytics' | 'builder' | 'responses' | 'qr-codes'>('response-analytics')
 
   if (isLoading) {
     return (
@@ -40,23 +47,84 @@ export default function FormBuilderPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <Link href={`/projects/${form.project.id}`}>
-              <Button variant="ghost" size="sm" className="mr-4">
-                <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                Back to {form.project.name}
-              </Button>
-            </Link>
+          <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Form Builder</h1>
               <p className="text-gray-600">Build and customize your feedback form</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/projects/${form.project.id}`}>
+                  <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                  Back to Project
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/forms/${formId}/settings`}>
+                  <SettingsIcon className="w-4 h-4 mr-2" />
+                  Form Settings
+                </Link>
+              </Button>
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                asChild
+              >
+                <Link href={`/forms/${formId}/preview`}>
+                  <EyeIcon className="w-4 h-4 mr-2" />
+                  Preview Form
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <FormBuilder formId={formId} />
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-6">
+          <TabsList className="flex flex-wrap gap-2">
+            <TabsTrigger value="response-analytics" className="flex items-center gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              Response Analytics
+            </TabsTrigger>
+            <TabsTrigger value="qr-analytics" className="flex items-center gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              QR Analytics
+            </TabsTrigger>
+            <TabsTrigger value="builder" className="flex items-center gap-2">
+              <Wrench className="w-4 h-4" />
+              Form Builder
+            </TabsTrigger>
+            <TabsTrigger value="responses" className="flex items-center gap-2">
+              <Table className="w-4 h-4" />
+              Responses
+            </TabsTrigger>
+            <TabsTrigger value="qr-codes" className="flex items-center gap-2">
+              <QrCode className="w-4 h-4" />
+              QR Codes
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="response-analytics" className="space-y-6">
+            <ResponseAnalytics formId={formId} />
+          </TabsContent>
+
+          <TabsContent value="qr-analytics" className="space-y-6">
+            <AnalyticsDashboard formId={formId} />
+          </TabsContent>
+
+          <TabsContent value="builder" className="space-y-6">
+            <FormBuilder formId={formId} />
+          </TabsContent>
+
+          <TabsContent value="responses" className="space-y-6">
+            <ResponseViewer formId={formId} formName={form.name} />
+          </TabsContent>
+
+          <TabsContent value="qr-codes" className="space-y-6">
+            <QRCodeList formId={formId} formName={form.name} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

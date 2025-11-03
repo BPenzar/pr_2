@@ -83,11 +83,16 @@ export function useCreateFormFromTemplate() {
 
       return form
     },
-    onSuccess: () => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-      queryClient.invalidateQueries({ queryKey: ['forms'] })
-      queryClient.invalidateQueries({ queryKey: ['account-plan'] })
+    onSuccess: (form, variables) => {
+      const projectId = variables.projectId
+      // Invalidate relevant queries scoped to this project/account
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      queryClient.invalidateQueries({ queryKey: ['forms', projectId] })
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['projects', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
+      }
     },
   })
 }
@@ -188,11 +193,15 @@ export function useCreateQuickSetupForm() {
 
       return form
     },
-    onSuccess: () => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
-      queryClient.invalidateQueries({ queryKey: ['forms'] })
-      queryClient.invalidateQueries({ queryKey: ['account-plan'] })
+    onSuccess: (form, variables) => {
+      const projectId = variables.projectId
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      queryClient.invalidateQueries({ queryKey: ['forms', projectId] })
+      if (account?.id) {
+        queryClient.invalidateQueries({ queryKey: ['projects', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-plan', account.id] })
+        queryClient.invalidateQueries({ queryKey: ['account-analytics', account.id] })
+      }
     },
   })
 }

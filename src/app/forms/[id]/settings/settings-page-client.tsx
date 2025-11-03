@@ -39,7 +39,7 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
           <div className="h-64 bg-gray-200 rounded"></div>
@@ -50,7 +50,7 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
 
   if (!form) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <div className="text-center">
           <p className="text-gray-600">Form not found</p>
           <Link href="/dashboard">
@@ -83,27 +83,35 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link href={`/forms/${formId}`}>
-            <Button variant="outline" size="sm">
-              <ArrowLeftIcon className="w-4 h-4 mr-2" />
-              Back to Form
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Form Settings</h1>
-            <p className="text-gray-600">Manage your form configuration</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Form Settings</h1>
+              <p className="text-gray-600">Manage your form configuration</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/forms/${formId}`}>
+                  <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                  Back to Form
+                </Link>
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={!hasChanges || updateForm.isPending}
+                size="sm"
+              >
+                <SaveIcon className="w-4 h-4 mr-2" />
+                {updateForm.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </div>
         </div>
-        <Button onClick={handleSave} disabled={!hasChanges || updateForm.isPending}>
-          <SaveIcon className="w-4 h-4 mr-2" />
-          {updateForm.isPending ? 'Saving...' : 'Save Changes'}
-        </Button>
       </div>
 
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>General Settings</CardTitle>

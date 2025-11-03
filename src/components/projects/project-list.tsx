@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useProjects, useDeleteProject } from '@/hooks/use-projects'
+import { useProjects } from '@/hooks/use-projects'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreateProjectModal } from './create-project-modal'
-import { PlusIcon, FolderIcon, TrashIcon, ArrowRightIcon, CheckCircle2Icon } from 'lucide-react'
+import { PlusIcon, FolderIcon, CheckCircle2Icon, AlertTriangleIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
@@ -26,9 +26,7 @@ export function ProjectList({
 }: ProjectListProps) {
   const [internalShowCreateModal, setInternalShowCreateModal] = useState(false)
   const { data: projects, isLoading, error } = useProjects()
-  const deleteProject = useDeleteProject()
   const router = useRouter()
-  const [confirmProjectId, setConfirmProjectId] = useState<string | null>(null)
 
   const isControlled = typeof controlledShowCreateModal === 'boolean'
   const modalOpen = isControlled ? controlledShowCreateModal! : internalShowCreateModal
@@ -88,6 +86,7 @@ export function ProjectList({
           {projects?.map((project) => {
             const handleOpen = () => router.push(`/projects/${project.id}`)
             const formsCount = project.usage?.forms_count ?? 0
+            const responsesCount = project.usage?.responses_count ?? 0
             const qrCodesCount = project.usage?.qr_codes_count ?? 0
             const createdLabel = project.created_at
               ? `${formatDistanceToNow(new Date(project.created_at))} ago`
@@ -95,6 +94,8 @@ export function ProjectList({
             const isActive = project.is_active !== false
             const statusLabel = isActive ? 'Active' : 'Inactive'
             const statusClass = isActive ? 'text-green-600 bg-green-50' : 'text-orange-600 bg-orange-50'
+            const StatusIcon = isActive ? CheckCircle2Icon : AlertTriangleIcon
+            const statusIconClass = isActive ? 'text-green-500' : 'text-orange-500'
 
             return (
               <Card
@@ -121,69 +122,10 @@ export function ProjectList({
                         {project.description || 'Add a brief description so teammates know what this project covers.'}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          event.preventDefault()
-                          handleOpen()
-                        }}
-                        aria-label={`Open ${project.name}`}
-                      >
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </Button>
-                      {confirmProjectId === project.id ? (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={async (event) => {
-                              event.stopPropagation()
-                              event.preventDefault()
-                              try {
-                                await deleteProject.mutateAsync(project.id)
-                              } catch (err) {
-                                console.error('Failed to delete project:', err)
-                              } finally {
-                                setConfirmProjectId(null)
-                              }
-                            }}
-                            disabled={deleteProject.isPending}
-                          >
-                            Confirm delete
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              event.preventDefault()
-                              setConfirmProjectId(null)
-                            }}
-                            disabled={deleteProject.isPending}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            event.preventDefault()
-                            setConfirmProjectId(project.id)
-                          }}
-                          aria-label={`Delete ${project.name}`}
-                          disabled={deleteProject.isPending}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    <StatusIcon
+                      className={`h-5 w-5 flex-shrink-0 ${statusIconClass}`}
+                      aria-hidden="true"
+                    />
                   </div>
                   <span className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-medium ${statusClass}`}>
                     {statusLabel}
@@ -197,7 +139,7 @@ export function ProjectList({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Responses</p>
-                      <p className="text-base font-semibold text-slate-900">—</p>
+                      <p className="text-base font-semibold text-slate-900">{responsesCount}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">QR Codes</p>
@@ -208,11 +150,6 @@ export function ProjectList({
                       <p className="text-sm font-medium text-slate-700">{createdLabel}</p>
                     </div>
                   </div>
-                  {confirmProjectId === project.id && (
-                    <p className="text-xs text-red-600">
-                      Deleting removes this project and all related forms, QR codes, and responses permanently.
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             )

@@ -25,7 +25,8 @@ export function useResponses(formId?: string) {
               id,
               title,
               type,
-              options
+              options,
+              rating_scale
             )
           ),
           qr_codes:qr_codes(
@@ -94,6 +95,38 @@ export function useFormAnalytics(formId?: string) {
 
       if (dailyError) console.warn('Failed to get daily responses:', dailyError)
 
+      const { data: fallbackResponses, error: fallbackError } = await supabase
+        .from('responses')
+        .select('submitted_at')
+        .eq('form_id', formId)
+        .gte('submitted_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+
+      if (fallbackError) console.warn('Failed to get fallback response timeline:', fallbackError)
+
+      let trendData = dailyResponses || []
+      if (fallbackResponses && fallbackResponses.length) {
+        const fallbackAggregatedMap = fallbackResponses.reduce((acc: Map<string, number>, row: { submitted_at: string }) => {
+          const dateKey = row.submitted_at ? new Date(row.submitted_at).toISOString().slice(0, 10) : null
+          if (!dateKey) return acc
+          acc.set(dateKey, (acc.get(dateKey) || 0) + 1)
+          return acc
+        }, new Map<string, number>())
+
+        const fallbackAggregated = Array.from(fallbackAggregatedMap.entries())
+          .map(([response_date, responses_count]) => ({ response_date, responses_count }))
+          .sort((a, b) => (a.response_date < b.response_date ? -1 : 1))
+
+        if (!trendData || trendData.length === 0) {
+          trendData = fallbackAggregated
+        } else {
+          const latestTrend = trendData[trendData.length - 1]?.response_date
+          const latestFallback = fallbackAggregated[fallbackAggregated.length - 1]?.response_date
+          if (latestTrend && latestFallback && latestFallback > latestTrend) {
+            trendData = fallbackAggregated
+          }
+        }
+      }
+
       // Get total responses count
       const { count: totalResponses, error: countError } = await supabase
         .from('responses')
@@ -138,7 +171,7 @@ export function useFormAnalytics(formId?: string) {
         totalResponses: totalResponses || 0,
         totalScans,
         conversionRate: Math.round(conversionRate * 100) / 100,
-        dailyResponses: dailyResponses || [],
+        dailyResponses: trendData,
         qrStats: qrStats || [],
         locationStats: Object.entries(locationCounts).map(([location, count]) => ({
           location,

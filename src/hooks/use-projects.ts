@@ -5,6 +5,12 @@ import { supabase } from '@/lib/supabase-client'
 import { Project } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
 
+type ProjectUsage = {
+  forms_count: number
+  responses_count: number
+  qr_codes_count: number
+}
+
 export function useProjects() {
   const { account } = useAuth()
 
@@ -26,14 +32,25 @@ export function useProjects() {
       if (projectsResponse.error) throw projectsResponse.error
       if (usageResponse.error) throw usageResponse.error
 
-      const usageMap = new Map(
-        (usageResponse.data ?? []).map((entry: any) => [entry.project_id, entry])
+      const usageMap = new Map<string, ProjectUsage>(
+        (usageResponse.data ?? []).map((entry: any) => [
+          entry.project_id,
+          {
+            forms_count: entry.forms_count ?? 0,
+            responses_count: entry.responses_count ?? 0,
+            qr_codes_count: entry.qr_codes_count ?? 0,
+          } satisfies ProjectUsage,
+        ])
       )
 
       return (projectsResponse.data ?? []).map((project: Project) => ({
         ...project,
-        usage: usageMap.get(project.id) ?? { forms_count: 0, qr_codes_count: 0 },
-      })) as Array<Project & { usage: { forms_count: number; qr_codes_count: number } }>
+        usage: usageMap.get(project.id) ?? {
+          forms_count: 0,
+          responses_count: 0,
+          qr_codes_count: 0,
+        },
+      })) as Array<Project & { usage: ProjectUsage }>
     },
     enabled: !!account?.id,
   })
@@ -55,7 +72,9 @@ export function useProject(projectId: string) {
             description,
             is_active,
             created_at,
-            responses:responses(count)
+            updated_at,
+            responses:responses(count),
+            qr_codes:qr_codes(count)
           )
         `)
         .eq('id', projectId)

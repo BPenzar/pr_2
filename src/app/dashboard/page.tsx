@@ -87,25 +87,32 @@ export default function DashboardPage() {
     router.replace('/')
   }
 
-  const formatLimit = (limit?: number | null) => {
-    if (typeof limit !== 'number') return '—'
-    return limit === -1 ? 'Unlimited' : limit
-  }
-
   const projectUsage = planLimits?.projects
   const projectsCount = projectUsage?.current ?? projects?.length ?? 0
   const projectLimitValue = projectUsage?.limit ?? null
-  const projectLimitLabel =
-    projectLimitValue === null
-      ? '—'
-      : projectLimitValue === -1
-      ? 'Unlimited'
-      : projectLimitValue
   const reachedProjectLimit =
     projectLimitValue !== null &&
     projectLimitValue !== -1 &&
     projectsCount >= projectLimitValue
   const canCreateProject = hasCreateAccess && !reachedProjectLimit
+
+  const formatAvailability = (usage?: { current: number; limit: number }) => {
+    if (!usage || usage.limit === undefined || usage.limit === null) {
+      return { display: null, suffix: null }
+    }
+
+    const limitDisplay = usage.limit === -1 ? '∞' : usage.limit
+
+    return {
+      display: `${usage.current}/${limitDisplay}`,
+      suffix: 'available',
+    }
+  }
+
+  const projectsAvailability = formatAvailability(planLimits?.projects)
+  const formsAvailability = formatAvailability(planLimits?.forms)
+  const responsesAvailability = formatAvailability(planLimits?.responses)
+  const qrCodesAvailability = formatAvailability(planLimits?.qrCodes)
 
   const handleCreateProjectClick = () => {
     setMobileActionsOpen(false)
@@ -203,28 +210,56 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="space-y-1">
               <CardTitle className="text-sm font-medium text-muted-foreground">Projects</CardTitle>
-              <div className="text-2xl font-semibold text-slate-900">{projectsCount}</div>
+              <div className="flex items-baseline gap-2 text-slate-900">
+                <span className="text-2xl font-semibold">
+                  {projectsAvailability.display ?? projectsCount}
+                </span>
+                {projectsAvailability.suffix && (
+                  <span className="text-xs text-muted-foreground">{projectsAvailability.suffix}</span>
+                )}
+              </div>
               <CardDescription>Active projects</CardDescription>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="space-y-1">
               <CardTitle className="text-sm font-medium text-muted-foreground">Forms</CardTitle>
-              <div className="text-2xl font-semibold text-slate-900">{planLimits?.forms.current ?? 0}</div>
+              <div className="flex items-baseline gap-2 text-slate-900">
+                <span className="text-2xl font-semibold">
+                  {formsAvailability.display ?? planLimits?.forms.current ?? 0}
+                </span>
+                {formsAvailability.suffix && (
+                  <span className="text-xs text-muted-foreground">{formsAvailability.suffix}</span>
+                )}
+              </div>
               <CardDescription>Across all projects</CardDescription>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="space-y-1">
               <CardTitle className="text-sm font-medium text-muted-foreground">Responses</CardTitle>
-              <div className="text-2xl font-semibold text-slate-900">{planLimits?.responses.current ?? 0}</div>
+              <div className="flex items-baseline gap-2 text-slate-900">
+                <span className="text-2xl font-semibold">
+                  {responsesAvailability.display ?? planLimits?.responses.current ?? 0}
+                </span>
+                {responsesAvailability.suffix && (
+                  <span className="text-xs text-muted-foreground">{responsesAvailability.suffix}</span>
+                )}
+              </div>
               <CardDescription>This month</CardDescription>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="space-y-1">
               <CardTitle className="text-sm font-medium text-muted-foreground">QR Codes</CardTitle>
-              <div className="text-2xl font-semibold text-slate-900">{planLimits?.qrCodes.current ?? 0}</div>
+              <div className="flex items-baseline gap-2 text-slate-900">
+                <span className="text-2xl font-semibold">
+                  {qrCodesAvailability.display ?? planLimits?.qrCodes.current ?? 0}
+                </span>
+                {qrCodesAvailability.suffix && (
+                  <span className="text-xs text-muted-foreground">{qrCodesAvailability.suffix}</span>
+                )}
+              </div>
               <CardDescription>Generated to date</CardDescription>
             </CardHeader>
           </Card>

@@ -26,6 +26,7 @@ export function usePublicForm(shortUrl: string) {
               description,
               required,
               options,
+              rating_scale,
               order_index
             )
           )
@@ -48,17 +49,59 @@ export function usePublicForm(shortUrl: string) {
         console.warn('Failed to increment scan count:', error)
       }
 
-      // Sort questions by order
-      const sortedQuestions = (qrCode.form as any).questions.sort(
-        (a: any, b: any) => a.order_index - b.order_index
-      )
+      // Sort and normalize question data
+      const formRecord = qrCode.form as any
+      const formId = formRecord.id
+
+      const { data: questions, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('form_id', formId)
+        .order('order_index', { ascending: true })
+
+      if (questionsError) {
+        throw questionsError
+      }
+
+      const sortedQuestions = (questions ?? [])
+        .map((question: any) => {
+          if (question.type !== 'rating') {
+            return question
+          }
+
+          const parsedScale = Number(question.rating_scale)
+          const ratingScale = Number.isFinite(parsedScale) && parsedScale > 0 ? parsedScale : 10
+          return {
+            ...question,
+            rating_scale: ratingScale,
+          }
+        })
+
+      const normalizedQuestions = sortedQuestions.map((question: any) => ({
+        ...question,
+        rating_scale:
+          typeof question.rating_scale === 'number'
+            ? question.rating_scale
+            : Number(question.rating_scale),
+      }))
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(
+          '[PublicForm] Loaded questions',
+          normalizedQuestions.map((question: any) => ({
+            id: question.id,
+            type: question.type,
+            rating_scale: question.rating_scale,
+          }))
+        )
+      }
 
       return {
         qrCodeId: qrCode.id,
         locationName: qrCode.location_name,
         form: {
-          ...qrCode.form,
-          questions: sortedQuestions,
+          ...formRecord,
+          questions: normalizedQuestions,
         },
       }
     },

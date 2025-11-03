@@ -179,7 +179,7 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
         </Card>
       </div>
 
-      {/* Export Section */}
+      {/* Export Section 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -213,7 +213,7 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
             Response exports include all submission data and metadata. Form structure exports include question definitions.
           </p>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -244,7 +244,7 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
       {/* Location Analytics */}
       <LocationAnalytics data={locationStats} />
 
-      {/* Form Information */}
+      {/* Form Information 
       <Card>
         <CardHeader>
           <CardTitle>Form Information</CardTitle>
@@ -288,7 +288,8 @@ export function AnalyticsDashboard({ formId }: AnalyticsDashboardProps) {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
+      
     </div>
   )
 }

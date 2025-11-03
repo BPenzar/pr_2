@@ -57,6 +57,7 @@ export function useForm(formId: string) {
             description,
             required,
             options,
+            rating_scale,
             order_index
           )
         `)
@@ -127,7 +128,7 @@ export function useUpdateForm() {
     mutationFn: async (data: {
       id: string
       name: string
-      description?: string
+      description?: string | null
       is_active?: boolean
     }) => {
       const { data: form, error } = await supabase

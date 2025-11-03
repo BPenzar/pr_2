@@ -308,7 +308,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         className="flex-1"
                       >
                         <EyeIcon className="w-4 h-4 mr-1" />
-                        Preview
+                        Live
                       </Button>
                       <Button
                         variant="outline"

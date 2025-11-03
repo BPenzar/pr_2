@@ -200,7 +200,7 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
     <div className="min-h-screen bg-gradient-to-b from-white via-white to-gray-100 pb-32 sm:pb-16">
       <div className="mx-auto w-full max-w-3xl px-4 pt-10">
         <Card className="border-none shadow-xl rounded-3xl bg-white/95 backdrop-blur">
-          <CardHeader className="space-y-4 text-center px-6 pt-8 pb-0 sm:px-12">
+          <CardHeader className="space-y-5 text-center px-6 pt-10 pb-2 sm:px-12 sm:pt-12">
             <div className="space-y-2">
               <CardTitle className="text-2xl font-semibold text-gray-900 sm:text-3xl">
                 {formName}
@@ -223,7 +223,7 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
             )}
           </CardHeader>
 
-          <CardContent className="px-6 pb-8 sm:px-12 sm:pb-12">
+          <CardContent className="px-6 pb-8 pt-10 sm:px-12 sm:pb-12 sm:pt-14">
             <form onSubmit={handleSubmit} className="space-y-6 pb-16">
               {submitError && (
                 <Alert variant="destructive">
@@ -231,14 +231,16 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
                 </Alert>
               )}
 
-              {currentQuestions.map((question: any) => (
-                <QuestionRenderer
-                  key={question.id}
-                  question={question}
-                  value={responses[question.id] || (question.type === 'multiselect' ? [] : '')}
-                  onChange={(value) => handleResponseChange(question.id, value)}
-                />
-              ))}
+              <div className="space-y-6 pt-4 sm:pt-6">
+                {currentQuestions.map((question: any) => (
+                  <QuestionRenderer
+                    key={question.id}
+                    question={question}
+                    value={responses[question.id] || (question.type === 'multiselect' ? [] : '')}
+                    onChange={(value) => handleResponseChange(question.id, value)}
+                  />
+                ))}
+              </div>
 
               {/* Honeypot field - hidden from users but visible to bots */}
               <div style={{ display: 'none' }}>

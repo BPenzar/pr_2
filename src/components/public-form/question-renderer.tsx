@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -12,9 +13,10 @@ interface QuestionRendererProps {
   question: Question
   value: string | string[]
   onChange: (value: string | string[]) => void
+  className?: string
 }
 
-export function QuestionRenderer({ question, value, onChange }: QuestionRendererProps) {
+export function QuestionRenderer({ question, value, onChange, className }: QuestionRendererProps) {
   const [hoverRating, setHoverRating] = useState<number | null>(null)
 
   const renderTextInput = () => (
@@ -42,7 +44,21 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
 
   const renderRatingInput = () => {
     const currentRating = parseInt(value as string) || 0
-    const maxRating = question.rating_scale ?? 10
+    const parsedScale =
+      typeof question.rating_scale === 'number'
+        ? question.rating_scale
+        : parseInt(question.rating_scale as unknown as string)
+    const maxRating = Number.isFinite(parsedScale) && parsedScale > 0 ? parsedScale : 10
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('Rendering rating question', {
+        questionId: question.id,
+        title: question.title,
+        ratingScaleRaw: question.rating_scale,
+        parsedScale,
+        maxRating,
+      })
+    }
     const isStarRating = maxRating === 5
     const ratingValues = Array.from({ length: maxRating }, (_, i) => i + 1)
 
@@ -105,7 +121,9 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
 
       return (
         <div className="space-y-3">
-          <div className="grid grid-cols-5 gap-2 sm:flex sm:flex-wrap sm:gap-2 sm:justify-center">
+          <div
+            className="grid max-w-[360px] mx-auto grid-cols-5 auto-rows-auto gap-2 justify-items-center sm:max-w-[400px] md:max-w-[420px] lg:max-w-none lg:grid-cols-10 lg:gap-3"
+          >
             {ratingValues.map((ratingValue) => {
               const isSelected = ratingValue === currentRating
               const isHovered = ratingValue === hoverRating
@@ -209,7 +227,12 @@ export function QuestionRenderer({ question, value, onChange }: QuestionRenderer
   }
 
   return (
-    <div className="space-y-3">
+    <div
+      className={cn('space-y-3', className)}
+      data-question-id={question.id}
+      data-question-type={question.type}
+      data-rating-scale={question.type === 'rating' ? question.rating_scale ?? 'unset' : undefined}
+    >
       <div>
         <Label className="text-base font-medium">
           {question.title}

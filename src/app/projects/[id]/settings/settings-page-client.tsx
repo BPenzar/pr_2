@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { ArrowLeftIcon } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 
 type AlertMessage = { type: 'success' | 'error'; text: string } | null
 
@@ -105,31 +106,40 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
 
   const deleteDisabled = confirmText !== 'DELETE' || deleteProject.isPending
 
+  const createdAgo = project.created_at
+    ? `${formatDistanceToNow(new Date(project.created_at))} ago`
+    : '—'
+  const updatedAgo = project.updated_at
+    ? `${formatDistanceToNow(new Date(project.updated_at))} ago`
+    : '—'
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <Link href={`/projects/${projectId}`}>
-              <Button variant="ghost" size="sm" className="mr-4">
-                <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                Back to Project
-              </Button>
-            </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Project Settings</h1>
               <p className="text-sm text-muted-foreground">
                 Update details or remove this project. Changes apply immediately.
               </p>
             </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/projects/${projectId}`}>
+                  <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                  Back to Project
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Project Information</CardTitle>
+            <CardTitle>Project Details</CardTitle>
             <CardDescription>Edit how this project appears across your workspace</CardDescription>
           </CardHeader>
           <CardContent>
@@ -170,6 +180,25 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Information</CardTitle>
+            <CardDescription>Track when this project was created and last changed</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label className="text-sm font-medium">Created</Label>
+                <p className="text-sm text-muted-foreground">{createdAgo}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Last Updated</Label>
+                <p className="text-sm text-muted-foreground">{updatedAgo}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

@@ -215,7 +215,7 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                 disabled={!responses || responses.length === 0 || exportResponses.isPending}
               >
                 <DownloadIcon className="w-4 h-4 mr-2" />
-                {exportResponses.isPending ? 'Exporting...' : 'Export CSV'}
+                {exportResponses.isPending ? 'Exporting...' : 'Export Responses (CSV)'}
               </Button>
             </div>
           </div>

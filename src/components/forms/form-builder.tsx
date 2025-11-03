@@ -5,19 +5,14 @@ import { useForm, useUpdateForm } from '@/hooks/use-forms'
 import { useQRCodes } from '@/hooks/use-qr-codes'
 import { useReorderQuestions } from '@/hooks/use-questions'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { QuestionEditor } from './question-editor'
-import {
-  PlusIcon,
-  SaveIcon,
-  EyeIcon,
-  SettingsIcon,
-  QrCodeIcon,
-  BarChart3Icon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-} from 'lucide-react'
+import { PlusIcon, ArrowUpIcon, ArrowDownIcon, FileTextIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useExportFormStructure } from '@/hooks/use-csv-export'
 
 interface FormBuilderProps {
   formId: string
@@ -29,7 +24,11 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const { data: form, isLoading, error } = useForm(formId)
   const { data: qrCodes } = useQRCodes(formId)
   const updateForm = useUpdateForm()
+  const [formName, setFormName] = useState('')
+  const [formDescription, setFormDescription] = useState('')
+  const [hasMetaChanges, setHasMetaChanges] = useState(false)
   const reorderQuestions = useReorderQuestions()
+  const exportStructure = useExportFormStructure()
 
   const questions = useMemo(() => {
     if (!form?.questions) {
@@ -38,6 +37,14 @@ export function FormBuilder({ formId }: FormBuilderProps) {
     return [...form.questions].sort((a: any, b: any) => a.order_index - b.order_index)
   }, [form?.questions])
   const [orderedQuestions, setOrderedQuestions] = useState(questions)
+  const nextOrderIndex = useMemo(() => {
+    if (orderedQuestions.length === 0) return 0
+    const maxIndex = orderedQuestions.reduce((max, question: any) => {
+      const current = typeof question.order_index === 'number' ? question.order_index : -1
+      return current > max ? current : max
+    }, -1)
+    return maxIndex + 1
+  }, [orderedQuestions])
 
   useEffect(() => {
     setOrderedQuestions((prev) => {
@@ -47,6 +54,13 @@ export function FormBuilder({ formId }: FormBuilderProps) {
       return questions
     })
   }, [questions])
+
+  useEffect(() => {
+    if (!form) return
+    setFormName(form.name ?? '')
+    setFormDescription(form.description ?? '')
+    setHasMetaChanges(false)
+  }, [form])
 
   if (isLoading) {
     return (
@@ -87,6 +101,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
 
   const handleMoveQuestion = (questionId: string, direction: 'up' | 'down') => {
     setOrderedQuestions((prev) => {
+      const previousState = prev
       const index = prev.findIndex((q) => q.id === questionId)
       if (index === -1) return prev
 
@@ -96,113 +111,122 @@ export function FormBuilder({ formId }: FormBuilderProps) {
       const updated = [...prev]
       ;[updated[index], updated[targetIndex]] = [updated[targetIndex], updated[index]]
 
+      const updatedWithOrder = updated.map((question, idx) => ({
+        ...question,
+        order_index: idx,
+      }))
+
       reorderQuestions.mutate(
         {
           formId,
-          questions: updated.map((q, idx) => ({ id: q.id, orderIndex: idx })),
+          questions: updatedWithOrder.map((q, idx) => ({ id: q.id, orderIndex: idx })),
         },
         {
           onError: () => {
-            setOrderedQuestions(prev)
+            setOrderedQuestions(previousState)
           },
         }
       )
 
-      return updated
+      return updatedWithOrder
     })
+  }
+
+  const handleMetaChange = (kind: 'name' | 'description', value: string) => {
+    if (kind === 'name') setFormName(value)
+    if (kind === 'description') setFormDescription(value)
+    setHasMetaChanges(true)
+  }
+
+  const handleMetaSave = async () => {
+    try {
+      await updateForm.mutateAsync({
+        id: formId,
+        name: formName.trim(),
+        description: formDescription.trim() === '' ? null : formDescription.trim(),
+      })
+      setHasMetaChanges(false)
+    } catch (err) {
+      console.error('Failed to update form details:', err)
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Form Header */}
+      {/* Form details */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <CardTitle className="text-xl">{form.name}</CardTitle>
-              <CardDescription className="mt-1">
-                {form.description || 'No description'}
-              </CardDescription>
-            </div>
-            <div className="flex space-x-2">
-              <Link href={`/forms/${formId}/settings`}>
-                <Button variant="outline" size="sm">
-                  <SettingsIcon className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
-              <Link href={`/forms/${formId}/analytics`}>
-                <Button variant="outline" size="sm">
-                  <BarChart3Icon className="w-4 h-4 mr-2" />
-                  Analytics
-                </Button>
-              </Link>
-              <Link href={`/forms/${formId}/qr`}>
-                <Button variant="outline" size="sm">
-                  <QrCodeIcon className="w-4 h-4 mr-2" />
-                  QR Codes
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Create a preview URL with form data
-                  const previewUrl = `/forms/${formId}/preview`
-                  window.open(previewUrl, '_blank')
-                }}
-              >
-                <EyeIcon className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-              <Button
-                size="sm"
-                onClick={async () => {
-                  if (!form) return
-
-                  try {
-                    await updateForm.mutateAsync({
-                      id: formId,
-                      name: form.name,
-                      description: form.description ?? undefined,
-                      is_active: !form.is_active
-                    })
-                  } catch (error) {
-                    console.error('Failed to update form status:', error)
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>Form Details</CardTitle>
+            <CardDescription>Update the name and description shown to respondents</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={handleMetaSave}
+              disabled={!hasMetaChanges || updateForm.isPending}
+              size="sm"
+            >
+              {updateForm.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!form) return
+                exportStructure.mutate({
+                  form: {
+                    id: form.id,
+                    name: formName || form.name,
+                    description: formDescription || form.description,
+                    questions: form.questions || [],
                   }
-                }}
-                disabled={updateForm.isPending}
-              >
-                <SaveIcon className="w-4 h-4 mr-2" />
-                {form?.is_active ? 'Unpublish' : 'Publish'}
-              </Button>
-            </div>
+                })
+              }}
+              disabled={!form || exportStructure.isPending}
+            >
+              {exportStructure.isPending ? (
+                'Exporting...'
+              ) : (
+                <>
+                  <FileTextIcon className="h-4 w-4 mr-2" />
+                  Export Form Structure
+                </>
+              )}
+            </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>{orderedQuestions.length} questions</span>
-              <span>•</span>
-              <span>0 responses</span>
-              <span>•</span>
-              <span className={form.is_active ? 'text-green-600' : 'text-red-600'}>
-                {form.is_active ? 'Active' : 'Inactive'}
-              </span>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="builder-form-name">Form Name</Label>
+            <Input
+              id="builder-form-name"
+              value={formName}
+              onChange={(event) => handleMetaChange('name', event.target.value)}
+              placeholder="Enter form name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="builder-form-description">Description</Label>
+            <Textarea
+              id="builder-form-description"
+              value={formDescription}
+              onChange={(event) => handleMetaChange('description', event.target.value)}
+              placeholder="Enter form description (optional)"
+              rows={3}
+            />
+          </div>
+
+          {/* <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <span>{orderedQuestions.length} questions</span>
+            <span>•</span>
+            <span>{form.is_active ? 'Active' : 'Inactive'}</span>
             {form.is_active && qrCodes && qrCodes.length > 0 && (
-              <Link href={`/f/${qrCodes[0].short_url}`} target="_blank">
-                <Button variant="outline" size="sm">
-                  View Live Form
-                </Button>
+              <Link href={`/f/${qrCodes[0].short_url}`} target="_blank" className="text-primary hover:underline">
+                View live form
               </Link>
             )}
-            {form.is_active && (!qrCodes || qrCodes.length === 0) && (
-              <Button variant="outline" size="sm" disabled>
-                No QR Code Yet
-              </Button>
-            )}
-          </div>
+          </div> */}
+
         </CardContent>
       </Card>
 
@@ -296,7 +320,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
         {isAddingQuestion ? (
           <QuestionEditor
             formId={formId}
-            orderIndex={orderedQuestions.length}
+            orderIndex={nextOrderIndex}
             onSave={handleQuestionSaved}
             onCancel={handleCancelEdit}
           />

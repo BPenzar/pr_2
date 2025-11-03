@@ -26,7 +26,7 @@ const UNIVERSAL_FEATURES = [
   'Unlimited QR codes per form',
   'Advanced Analytics',
   'QR Codes',
-  'Export CSV',
+  'Export Responses as CSV',
   'Custom Branding'
 ] as const
 
