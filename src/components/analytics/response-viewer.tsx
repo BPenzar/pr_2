@@ -127,23 +127,9 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
 
       return (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium text-gray-800">{rating}</span>
-          <div className="flex flex-wrap gap-1">
-            {Array.from({ length: maxScale }, (_, index) => {
-              const valueLabel = index + 1
-              const isSelected = valueLabel === rating
-              return (
-                <span
-                  key={valueLabel}
-                  className={`flex h-8 min-w-[2.25rem] items-center justify-center rounded-xl border px-2 text-xs font-semibold ${
-                    isSelected ? getRatingSelectedClasses(valueLabel) : RATING_BASE_CLASSES
-                  }`}
-                >
-                  {valueLabel}
-                </span>
-              )
-            })}
-          </div>
+          <span className={`flex h-8 min-w-[2.75rem] items-center justify-center rounded-xl border px-3 text-sm font-semibold ${getRatingSelectedClasses(rating)}`}>
+            {rating}
+          </span>
           <span className="text-xs text-gray-500">out of {maxScale}</span>
         </div>
       )
@@ -299,15 +285,6 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                         Submitted {formattedSubmitted}
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(response.id)}
-                      disabled={deleteResponse.isPending}
-                      className="self-start text-red-600 hover:text-red-700"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
