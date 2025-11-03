@@ -68,7 +68,7 @@ export function useForm(formId: string) {
       if (error) throw error
       return {
         ...data,
-        questions: data.questions?.map((question) => ({
+        questions: data.questions?.map((question: any) => ({
           ...question,
           options: normalizeChoiceOptions(question.options),
         })),
