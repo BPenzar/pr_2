@@ -12,19 +12,21 @@ import { TrashIcon, DownloadIcon, FilterIcon, StarIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Question } from '@/types/database'
 
-const getRatingBaseClasses = (value: number) => {
-  if (value <= 6) return 'border-red-200 bg-red-50 text-red-700'
-  if (value <= 8) return 'border-yellow-200 bg-yellow-50 text-yellow-700'
-  if (value === 9) return 'border-green-200 bg-green-50 text-green-700'
-  return 'border-green-300 bg-green-100 text-green-800'
-}
-
 const getRatingSelectedClasses = (value: number) => {
   if (value <= 6) return 'border-red-600 bg-red-600 text-white shadow-sm'
   if (value <= 8) return 'border-yellow-500 bg-yellow-500 text-white shadow-sm'
   if (value === 9) return 'border-green-500 bg-green-500 text-white shadow-sm'
   return 'border-green-700 bg-green-700 text-white shadow-sm'
 }
+
+const RATING_BASE_CLASSES =
+  'border-gray-200 bg-gray-50 text-gray-600'
+
+const emptyDisplay = (
+  <span className="text-sm font-medium text-red-500">
+    No answer provided
+  </span>
+)
 
 interface ResponseViewerProps {
   formId: string
@@ -103,6 +105,10 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
         : 10
       const rating = parseInt(value)
 
+       if (!Number.isFinite(rating)) {
+        return emptyDisplay
+      }
+
       if (maxScale === 5) {
         return (
           <div className="flex items-center">
@@ -126,11 +132,12 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
             {Array.from({ length: maxScale }, (_, index) => {
               const valueLabel = index + 1
               const isSelected = valueLabel === rating
-              const baseClasses = getRatingBaseClasses(valueLabel)
               return (
                 <span
                   key={valueLabel}
-                  className={`flex h-8 min-w-[2.25rem] items-center justify-center rounded-xl border px-2 text-xs font-semibold ${isSelected ? getRatingSelectedClasses(valueLabel) : baseClasses}`}
+                  className={`flex h-8 min-w-[2.25rem] items-center justify-center rounded-xl border px-2 text-xs font-semibold ${
+                    isSelected ? getRatingSelectedClasses(valueLabel) : RATING_BASE_CLASSES
+                  }`}
                 >
                   {valueLabel}
                 </span>
@@ -145,6 +152,9 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
     if (questions.type === 'multiselect') {
       try {
         const selections = JSON.parse(value)
+        if (!Array.isArray(selections) || selections.length === 0) {
+          return emptyDisplay
+        }
         return (
           <div className="flex flex-wrap gap-1">
             {selections.map((selection: string, index: number) => (
@@ -160,10 +170,16 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
     }
 
     if (questions.type === 'choice') {
-      return <Badge variant="outline">{value}</Badge>
+      if (!value) return emptyDisplay
+      return (
+        <Badge variant="outline" className="border border-gray-200 text-gray-700">
+          {value}
+        </Badge>
+      )
     }
 
     if (questions.type === 'textarea') {
+      if (!value) return emptyDisplay
       return (
         <div className="max-w-xs">
           <p className="text-sm text-gray-700 line-clamp-3">{value}</p>
@@ -171,6 +187,7 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
       )
     }
 
+    if (!value) return emptyDisplay
     return <span className="text-gray-700">{value}</span>
   }
 
