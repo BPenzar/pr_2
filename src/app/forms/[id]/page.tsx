@@ -81,7 +81,11 @@ export default function FormBuilderPage() {
       </div>
 
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+          className="space-y-6"
+        >
           <TabsList className="flex flex-wrap gap-2">
             <TabsTrigger value="response-analytics" className="flex items-center gap-2 whitespace-nowrap">
               <LayoutDashboard className="w-4 h-4" />
@@ -105,23 +109,23 @@ export default function FormBuilderPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="response-analytics" className="space-y-6 pt-2">
+          <TabsContent value="response-analytics" className="space-y-6 pt-4 sm:pt-6">
             <ResponseAnalytics formId={formId} />
           </TabsContent>
 
-          <TabsContent value="qr-analytics" className="space-y-6 pt-2">
+          <TabsContent value="qr-analytics" className="space-y-6 pt-4 sm:pt-6">
             <AnalyticsDashboard formId={formId} />
           </TabsContent>
 
-          <TabsContent value="builder" className="space-y-6 pt-2">
+          <TabsContent value="builder" className="space-y-6 pt-4 sm:pt-6">
             <FormBuilder formId={formId} />
           </TabsContent>
 
-          <TabsContent value="responses" className="space-y-6 pt-2">
+          <TabsContent value="responses" className="space-y-6 pt-4 sm:pt-6">
             <ResponseViewer formId={formId} formName={form.name} />
           </TabsContent>
 
-          <TabsContent value="qr-codes" className="space-y-6 pt-2">
+          <TabsContent value="qr-codes" className="space-y-6 pt-4 sm:pt-6">
             <QRCodeList formId={formId} formName={form.name} />
           </TabsContent>
         </Tabs>
