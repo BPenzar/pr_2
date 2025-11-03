@@ -83,23 +83,23 @@ export default function FormBuilderPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-6">
           <TabsList className="flex flex-wrap gap-2">
-            <TabsTrigger value="response-analytics" className="flex items-center gap-2">
+            <TabsTrigger value="response-analytics" className="flex items-center gap-2 whitespace-nowrap">
               <LayoutDashboard className="w-4 h-4" />
               Response Analytics
             </TabsTrigger>
-            <TabsTrigger value="qr-analytics" className="flex items-center gap-2">
+            <TabsTrigger value="qr-analytics" className="flex items-center gap-2 whitespace-nowrap">
               <LayoutDashboard className="w-4 h-4" />
               QR Analytics
             </TabsTrigger>
-            <TabsTrigger value="builder" className="flex items-center gap-2">
+            <TabsTrigger value="builder" className="flex items-center gap-2 whitespace-nowrap">
               <Wrench className="w-4 h-4" />
               Form Builder
             </TabsTrigger>
-            <TabsTrigger value="responses" className="flex items-center gap-2">
+            <TabsTrigger value="responses" className="flex items-center gap-2 whitespace-nowrap">
               <Table className="w-4 h-4" />
               Responses
             </TabsTrigger>
-            <TabsTrigger value="qr-codes" className="flex items-center gap-2">
+            <TabsTrigger value="qr-codes" className="flex items-center gap-2 whitespace-nowrap">
               <QrCode className="w-4 h-4" />
               QR Codes
             </TabsTrigger>

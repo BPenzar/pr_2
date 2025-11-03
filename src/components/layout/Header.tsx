@@ -27,7 +27,7 @@ export function Header({ showAuth = true }: HeaderProps) {
     <header className="border-b bg-white/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="https://bsp-lab.dev"
               target="_blank"
@@ -42,20 +42,20 @@ export function Header({ showAuth = true }: HeaderProps) {
                 className="h-10 w-10 rounded-full object-cover"
                 priority
               />
-              <span className="text-sm font-semibold text-gray-900">
+              <span className="hidden text-sm font-semibold text-gray-900 sm:inline">
                 BSP Lab
               </span>
             </Link>
 
-            <span className="h-8 w-px bg-gray-200" />
+            <span className="hidden h-8 w-px bg-gray-200 sm:inline" />
             <Link
               href="/"
               className="flex flex-col hover:text-primary transition-colors"
             >
               <span className="text-sm font-semibold text-gray-900">
-                Business Feedback Tool
+                BSP Tool
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="hidden text-xs text-gray-500 sm:inline">
                 QR &amp; Web Widget Feedback Platform
               </span>
             </Link>
@@ -85,6 +85,7 @@ export function Header({ showAuth = true }: HeaderProps) {
                       Sign In
                     </Button>
                   </Link>
+                  <span className="text-xs text-gray-400 sm:hidden">/</span>
                   <Link href="/auth/signup">
                     <Button size="sm" className="text-sm">
                       Get Started
