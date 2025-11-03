@@ -196,15 +196,15 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <CardTitle>Responses</CardTitle>
               <CardDescription>
                 {responses?.length || 0} responses for {formName}
               </CardDescription>
             </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+              <Button variant="outline" size="sm" className="justify-center">
                 <FilterIcon className="w-4 h-4 mr-2" />
                 Filter
               </Button>
@@ -213,6 +213,7 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                 size="sm"
                 onClick={handleExportCSV}
                 disabled={!responses || responses.length === 0 || exportResponses.isPending}
+                className="justify-center"
               >
                 <DownloadIcon className="w-4 h-4 mr-2" />
                 {exportResponses.isPending ? 'Exporting...' : 'Export Responses (CSV)'}
@@ -247,15 +248,15 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
             return (
               <Card key={response.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                         <span>
                           {relativeSubmitted} ago
                         </span>
                         {response.qr_codes?.location_name && (
                           <>
-                            <span>•</span>
+                            <span className="hidden sm:inline">•</span>
                             <Badge variant="secondary" className="text-xs">
                               {response.qr_codes.location_name}
                             </Badge>
@@ -263,8 +264,8 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                         )}
                         {response.qr_codes?.short_url && (
                           <>
-                            <span>•</span>
-                            <span className="font-mono text-xs">
+                            <span className="hidden sm:inline">•</span>
+                            <span className="font-mono text-xs break-all">
                               {response.qr_codes.short_url}
                             </span>
                           </>
@@ -273,40 +274,40 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                       <div className="mt-1 text-xs text-muted-foreground">
                         Submitted {formattedSubmitted}
                       </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(response.id)}
-                    disabled={deleteResponse.isPending}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-4">
-                  {response.response_items.map((item) => (
-                    <div key={item.id} className="border-l-2 border-gray-100 pl-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm mb-2">
-                            {item.questions.title}
-                          </h4>
-                          <div className="text-sm">
-                            {renderResponseValue(item)}
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-xs ml-2">
-                          {item.questions.type}
-                        </Badge>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(response.id)}
+                      disabled={deleteResponse.isPending}
+                      className="self-start text-red-600 hover:text-red-700"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-4">
+                    {response.response_items.map((item) => (
+                      <div key={item.id} className="border-l-2 border-gray-100 pl-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm mb-2">
+                              {item.questions.title}
+                            </h4>
+                            <div className="text-sm">
+                              {renderResponseValue(item)}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs w-fit">
+                            {item.questions.type}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )
           })}
         </div>

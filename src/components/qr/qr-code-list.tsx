@@ -134,7 +134,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
   if (showGenerator) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-lg font-semibold">Generate QR Code</h3>
           <Button
             variant="outline"
@@ -154,7 +154,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">QR Codes</h3>
           <p className="text-sm text-muted-foreground">
@@ -164,6 +164,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
         <Button
           onClick={() => setShowGenerator(true)}
           disabled={isEnsuringDefault}
+          className="w-full sm:w-auto"
         >
           <PlusIcon className="w-4 h-4 mr-2" />
           {qrCodes && qrCodes.length > 0 ? 'Generate Additional QR Code' : 'Generate QR Code'}
@@ -226,7 +227,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             return (
               <Card key={qrCode.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <CardTitle className="text-base">
                         {qrCode.location_name || 'Unnamed Location'}
@@ -240,7 +241,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         Default
                       </Badge>
                     ) : confirmDeleteId === qrCode.id ? (
-                      <div className="flex space-x-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
                         <Button
                           variant="destructive"
                           size="sm"
@@ -285,14 +286,14 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                     </div>
 
                     {/* QR Code Stats */}
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                       <span className="text-muted-foreground">Scans</span>
                       <Badge variant="secondary">
                         {qrCode.scan_count}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                       <span className="text-muted-foreground">Created</span>
                       <span className="text-sm">
                         {formatDistanceToNow(new Date(qrCode.created_at))} ago
@@ -300,7 +301,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex space-x-2 pt-2">
+                    <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -322,7 +323,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                     </div>
 
                     {/* URL Display */}
-                    <div className="text-xs text-muted-foreground font-mono bg-gray-50 p-2 rounded truncate">
+                    <div className="text-xs text-muted-foreground font-mono bg-gray-50 p-2 rounded break-all">
                       {qrCode.full_url}
                     </div>
                     {copiedId === qrCode.id && (
