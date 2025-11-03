@@ -131,7 +131,7 @@ export function useUpdateProject() {
   const { account } = useAuth()
 
   return useMutation({
-    mutationFn: async (data: { id: string; name: string; description?: string }) => {
+    mutationFn: async (data: { id: string; name: string; description: string | null }) => {
       const { data: project, error } = await supabase
         .from('projects')
         .update({

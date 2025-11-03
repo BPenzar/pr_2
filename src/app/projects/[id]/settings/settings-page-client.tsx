@@ -53,14 +53,15 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
 
     try {
       const trimmedName = name.trim()
-      const descriptionValue = description.trim()
+      const trimmedDescription = description.trim()
+      const normalizedDescription = trimmedDescription === '' ? null : trimmedDescription
       await updateProject.mutateAsync({
         id: project.id,
         name: trimmedName,
-        description: descriptionValue ? descriptionValue : undefined,
+        description: normalizedDescription,
       })
       setName(trimmedName)
-      setDescription(descriptionValue)
+      setDescription(normalizedDescription ?? '')
       setUpdateAlert({ type: 'success', text: 'Project details updated' })
     } catch (err: any) {
       setUpdateAlert({ type: 'error', text: err?.message || 'Unable to update project right now.' })
