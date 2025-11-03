@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-client'
 import { Response, ResponseItem } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
+import { normalizeChoiceOptions } from '@/lib/question-utils'
 
 export function useResponses(formId?: string) {
   const { account } = useAuth()
