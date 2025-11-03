@@ -223,6 +223,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {qrCodes.map((qrCode) => {
             const isOnlyQRCode = totalCodes === 1
+            const isDefaultCode = (qrCode.location_name || '').toLowerCase() === 'default'
 
             return (
               <Card key={qrCode.id}>
@@ -236,7 +237,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         {qrCode.short_url}
                       </CardDescription>
                     </div>
-                    {isOnlyQRCode ? (
+                    {isDefaultCode ? (
                       <Badge variant="outline" className="text-xs uppercase tracking-wide">
                         Default
                       </Badge>
