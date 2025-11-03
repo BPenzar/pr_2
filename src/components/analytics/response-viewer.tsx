@@ -112,11 +112,11 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
       }
 
       return (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`flex h-8 min-w-[2.75rem] items-center justify-center rounded-xl border px-3 text-sm font-semibold ${getRatingSelectedClasses(rating)}`}>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+          <span className={`inline-flex h-8 min-w-[2.75rem] items-center justify-center rounded-xl border px-3 font-semibold ${getRatingSelectedClasses(rating)}`}>
             {rating}
           </span>
-          <span className="text-xs text-gray-500">out of {maxScale}</span>
+          <span className="text-sm text-gray-600">out of {maxScale}</span>
         </div>
       )
     }
@@ -296,9 +296,6 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
                               {renderResponseValue(item)}
                             </div>
                           </div>
-                          <Badge variant="outline" className="text-xs w-fit capitalize">
-                            {item.questions.type}
-                          </Badge>
                         </div>
                       </div>
                     ))}
