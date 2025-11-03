@@ -204,10 +204,6 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
-              <Button variant="outline" size="sm" className="justify-center">
-                <FilterIcon className="w-4 h-4 mr-2" />
-                Filter
-              </Button>
               <Button
                 variant="outline"
                 size="sm"

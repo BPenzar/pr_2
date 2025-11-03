@@ -105,23 +105,23 @@ export default function FormBuilderPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="response-analytics" className="space-y-6">
+          <TabsContent value="response-analytics" className="space-y-6 pt-2">
             <ResponseAnalytics formId={formId} />
           </TabsContent>
 
-          <TabsContent value="qr-analytics" className="space-y-6">
+          <TabsContent value="qr-analytics" className="space-y-6 pt-2">
             <AnalyticsDashboard formId={formId} />
           </TabsContent>
 
-          <TabsContent value="builder" className="space-y-6">
+          <TabsContent value="builder" className="space-y-6 pt-2">
             <FormBuilder formId={formId} />
           </TabsContent>
 
-          <TabsContent value="responses" className="space-y-6">
+          <TabsContent value="responses" className="space-y-6 pt-2">
             <ResponseViewer formId={formId} formName={form.name} />
           </TabsContent>
 
-          <TabsContent value="qr-codes" className="space-y-6">
+          <TabsContent value="qr-codes" className="space-y-6 pt-2">
             <QRCodeList formId={formId} formName={form.name} />
           </TabsContent>
         </Tabs>
