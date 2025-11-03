@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-client'
+import { normalizeChoiceOptions } from '@/lib/question-utils'
 
 export function usePublicForm(shortUrl: string) {
   return useQuery({
@@ -79,6 +80,7 @@ export function usePublicForm(shortUrl: string) {
 
       const normalizedQuestions = sortedQuestions.map((question: any) => ({
         ...question,
+        options: normalizeChoiceOptions(question.options),
         rating_scale:
           typeof question.rating_scale === 'number'
             ? question.rating_scale

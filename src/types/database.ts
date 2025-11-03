@@ -1,3 +1,5 @@
+import type { ChoiceOption } from '@/lib/question-utils'
+
 // Database types based on PRD data structure:
 // User → Account → Project → Form → Question → QR → Response → ResponseItem
 
@@ -56,7 +58,7 @@ export interface Question {
   title: string
   description?: string
   required: boolean
-  options?: string[] // For choice/multiselect questions
+  options?: ChoiceOption[] | string[] // For choice/multiselect questions
   rating_scale?: number // For rating questions: 5 or 10
   order_index: number
   created_at: string

@@ -8,6 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Question } from '@/types/database'
 import { StarIcon } from 'lucide-react'
+import {
+  normalizeChoiceOptions,
+} from '@/lib/question-utils'
+import { getOptionColorConfig } from '@/lib/option-colors'
 
 interface QuestionRendererProps {
   question: Question
@@ -160,29 +164,33 @@ export function QuestionRenderer({ question, value, onChange, className }: Quest
   }
 
   const renderChoiceInput = () => {
-    if (!question.options) return null
+    const options = normalizeChoiceOptions(question.options)
+    if (!options.length) return null
+    const selectedValue = typeof value === 'string' ? value : ''
 
     return (
       <div className="space-y-3">
-        {question.options.map((option, index) => {
-          const isSelected = value === option
+        {options.map((option) => {
+          const isSelected = selectedValue === option.label
+          const colorConfig = getOptionColorConfig(option.color)
           return (
             <label
-              key={index}
-              className={`flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
-                isSelected ? 'border-primary/80 bg-primary/5' : 'border-gray-200 bg-white'
-              }`}
+              key={option.label}
+              className={cn(
+                'flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
+                isSelected ? colorConfig.containerSelected : colorConfig.containerBase
+              )}
             >
               <input
                 type="radio"
                 name={`question-${question.id}`}
-                value={option}
+                value={option.label}
                 checked={isSelected}
                 onChange={(e) => onChange(e.target.value)}
                 required={question.required}
                 className="h-5 w-5 border-gray-300 text-primary focus:ring-primary"
               />
-              <span className="text-base text-gray-800">{option}</span>
+              <span className="text-base text-gray-800">{option.label}</span>
             </label>
           )
         })}
@@ -191,34 +199,37 @@ export function QuestionRenderer({ question, value, onChange, className }: Quest
   }
 
   const renderMultiselectInput = () => {
-    if (!question.options) return null
+    const options = normalizeChoiceOptions(question.options)
+    if (!options.length) return null
     const selectedValues = Array.isArray(value) ? value : []
 
-    const handleCheckboxChange = (option: string, checked: boolean) => {
+    const handleCheckboxChange = (optionLabel: string, checked: boolean) => {
       if (checked) {
-        onChange([...selectedValues, option])
+        onChange([...selectedValues, optionLabel])
       } else {
-        onChange(selectedValues.filter(v => v !== option))
+        onChange(selectedValues.filter((v) => v !== optionLabel))
       }
     }
 
     return (
       <div className="space-y-3">
-        {question.options.map((option, index) => {
-          const isChecked = selectedValues.includes(option)
+        {options.map((option) => {
+          const isChecked = selectedValues.includes(option.label)
+          const colorConfig = getOptionColorConfig(option.color)
           return (
             <label
-              key={index}
-              className={`flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
-                isChecked ? 'border-primary/80 bg-primary/5' : 'border-gray-200 bg-white'
-              }`}
+              key={option.label}
+              className={cn(
+                'flex items-center gap-3 rounded-2xl border p-4 shadow-sm transition focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2',
+                isChecked ? colorConfig.containerSelected : colorConfig.containerBase
+              )}
             >
               <Checkbox
                 checked={isChecked}
-                onCheckedChange={(checked) => handleCheckboxChange(option, checked as boolean)}
+                onCheckedChange={(checked) => handleCheckboxChange(option.label, checked as boolean)}
                 className="h-5 w-5 border-gray-300 text-primary"
               />
-              <span className="text-base text-gray-800">{option}</span>
+              <span className="text-base text-gray-800">{option.label}</span>
             </label>
           )
         })}

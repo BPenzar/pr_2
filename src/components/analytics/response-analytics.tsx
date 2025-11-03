@@ -8,6 +8,9 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatDistanceToNow } from 'date-fns'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
+import { getOptionColorConfig } from '@/lib/option-colors'
+import { normalizeChoiceOptions } from '@/lib/question-utils'
+import type { OptionColorKey } from '@/lib/option-colors'
 
 interface ResponseAnalyticsProps {
   formId: string
@@ -25,7 +28,7 @@ type RatingSummary = {
 type ChoiceSummary = {
   questionId: string
   questionTitle: string
-  counts: Array<{ option: string; count: number }>
+  counts: Array<{ option: string; count: number; color?: OptionColorKey }>
 }
 
 type TextSummary = {
@@ -59,7 +62,10 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
 
     const questionMap = new Map<string, any>()
     form.questions?.forEach((question: any) => {
-      questionMap.set(question.id, question)
+      questionMap.set(question.id, {
+        ...question,
+        options: normalizeChoiceOptions(question.options),
+      })
     })
 
     const ratingAccumulator = new Map<string, number[]>()
@@ -137,14 +143,34 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
     choiceAccumulator.forEach((counts, questionId) => {
       const question = questionMap.get(questionId)
       if (!question) return
-      const entries = Object.entries(counts)
-        .map(([option, count]) => ({ option, count }))
+
+      const optionDefinitions = normalizeChoiceOptions(question.options)
+      const seen = new Set<string>()
+
+      const orderedEntries = optionDefinitions
+        .map((option) => ({
+          option: option.label,
+          count: counts[option.label] ?? 0,
+          color: option.color,
+        }))
+        .filter((entry) => {
+          if (!entry.count) return false
+          seen.add(entry.option)
+          return true
+        })
+
+      const extraEntries = Object.entries(counts)
+        .filter(([option]) => !seen.has(option))
+        .map(([option, count]) => ({ option, count, color: undefined as OptionColorKey | undefined }))
         .sort((a, b) => b.count - a.count)
+
+      const combinedEntries = [...orderedEntries, ...extraEntries]
+      if (!combinedEntries.length) return
 
       choiceSummaries.push({
         questionId,
         questionTitle: question.title,
-        counts: entries,
+        counts: combinedEntries,
       })
     })
 
@@ -326,27 +352,37 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
                             labelLine={false}
                             label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                           >
-                            {summary.counts.map((_, optionIndex) => (
-                              <Cell key={optionIndex} fill={PALETTE[(summaryIndex * 4 + optionIndex) % PALETTE.length]} />
-                            ))}
+                            {summary.counts.map((entry, optionIndex) => {
+                              const fallback = PALETTE[(summaryIndex * 4 + optionIndex) % PALETTE.length]
+                              const fillColor = entry.color
+                                ? getOptionColorConfig(entry.color).hex
+                                : fallback
+                              return <Cell key={entry.option} fill={fillColor} />
+                            })}
                           </Pie>
                           <Tooltip formatter={(value: number, name: string) => [value, name]} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
                     <div className="flex-1 space-y-3">
-                      {summary.counts.map(({ option, count }, optionIndex) => (
-                        <div key={option} className="flex items-center gap-4 text-sm text-gray-700">
-                          <span
-                            className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white"
-                            style={{ backgroundColor: PALETTE[(summaryIndex * 4 + optionIndex) % PALETTE.length] }}
-                          >
-                            {optionIndex + 1}
-                          </span>
-                          <span className="flex-1">{option}</span>
-                          <span className="w-12 text-right text-muted-foreground">{count}</span>
-                        </div>
-                      ))}
+                      {summary.counts.map(({ option, count, color }, optionIndex) => {
+                        const fallback = PALETTE[(summaryIndex * 4 + optionIndex) % PALETTE.length]
+                        const chipClasses = color
+                          ? `${getOptionColorConfig(color).chip} border border-transparent`
+                          : 'bg-slate-500 text-white border border-slate-500'
+                        return (
+                          <div key={option} className="flex items-center gap-4 text-sm text-gray-700">
+                            <span
+                              className={`flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-2 text-xs font-semibold ${chipClasses}`}
+                              style={{ backgroundColor: color ? undefined : fallback, color: color ? undefined : 'white' }}
+                            >
+                              {optionIndex + 1}
+                            </span>
+                            <span className="flex-1">{option}</span>
+                            <span className="w-12 text-right text-muted-foreground">{count}</span>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 </CardContent>

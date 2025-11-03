@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase-client'
 import { useAuth } from '@/contexts/auth-context'
 import { type FormTemplate } from '@/lib/form-templates'
 import { ensureDefaultQRCode } from '@/lib/qr-codes'
+import { normalizeChoiceOptions, sanitizeChoiceOptions } from '@/lib/question-utils'
 
 interface CreateFormFromTemplateParams {
   template: FormTemplate
@@ -61,15 +62,24 @@ export function useCreateFormFromTemplate() {
       }
 
       // Create questions from template
-      const questions = template.questions.map(q => ({
-        form_id: form.id,
-        type: q.type,
-        title: q.title,
-        description: q.description || null,
-        required: q.required,
-        options: q.options || null,
-        order_index: q.order_index,
-      }))
+      const questions = template.questions.map(q => {
+        const normalizedOptions = normalizeChoiceOptions(q.options)
+        const sanitizedOptions = sanitizeChoiceOptions(normalizedOptions)
+        const optionsPayload =
+          q.type === 'choice' || q.type === 'multiselect'
+            ? sanitizedOptions.length ? sanitizedOptions : null
+            : null
+
+        return {
+          form_id: form.id,
+          type: q.type,
+          title: q.title,
+          description: q.description || null,
+          required: q.required,
+          options: optionsPayload,
+          order_index: q.order_index,
+        }
+      })
 
       const { error: questionsError } = await supabase
         .from('questions')
@@ -333,15 +343,24 @@ export function useCompleteOnboarding() {
         }
 
         // Create questions from template
-        const questions = data.template.questions.map(q => ({
-          form_id: templateForm.id,
-          type: q.type,
-          title: q.title,
-          description: q.description || null,
-          required: q.required,
-          options: q.options || null,
-          order_index: q.order_index,
-        }))
+        const questions = data.template.questions.map(q => {
+          const normalizedOptions = normalizeChoiceOptions(q.options)
+          const sanitizedOptions = sanitizeChoiceOptions(normalizedOptions)
+          const optionsPayload =
+            q.type === 'choice' || q.type === 'multiselect'
+              ? sanitizedOptions.length ? sanitizedOptions : null
+              : null
+
+          return {
+            form_id: templateForm.id,
+            type: q.type,
+            title: q.title,
+            description: q.description || null,
+            required: q.required,
+            options: optionsPayload,
+            order_index: q.order_index,
+          }
+        })
 
         const { error: questionsError } = await supabase
           .from('questions')

@@ -3,6 +3,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-client'
 import { Question } from '@/types/database'
+import {
+  ChoiceOption,
+  normalizeChoiceOptions,
+  sanitizeChoiceOptions,
+} from '@/lib/question-utils'
 
 export function useQuestions(formId?: string) {
   return useQuery({
@@ -17,7 +22,10 @@ export function useQuestions(formId?: string) {
         .order('order_index', { ascending: true })
 
       if (error) throw error
-      return data as Question[]
+      return (data as Question[]).map((question) => ({
+        ...question,
+        options: normalizeChoiceOptions(question.options),
+      }))
     },
     enabled: !!formId,
   })
@@ -33,10 +41,13 @@ export function useCreateQuestion() {
       title: string
       description?: string
       required: boolean
-      options?: string[]
+      options?: ChoiceOption[]
       rating_scale?: number
       orderIndex: number
     }) => {
+      const sanitizedOptionsRaw = data.options ? sanitizeChoiceOptions(data.options) : undefined
+      const sanitizedOptions = sanitizedOptionsRaw && sanitizedOptionsRaw.length ? sanitizedOptionsRaw : null
+
       const { data: question, error } = await supabase
         .from('questions')
         .insert({
@@ -45,7 +56,7 @@ export function useCreateQuestion() {
           title: data.title,
           description: data.description,
           required: data.required,
-          options: data.options,
+          options: sanitizedOptions,
           rating_scale: data.rating_scale,
           order_index: data.orderIndex,
         })
@@ -72,7 +83,7 @@ export function useUpdateQuestion() {
       title?: string
       description?: string
       required?: boolean
-      options?: string[]
+      options?: ChoiceOption[]
       rating_scale?: number
       orderIndex?: number
     }) => {
@@ -80,7 +91,10 @@ export function useUpdateQuestion() {
       if (data.title !== undefined) updateData.title = data.title
       if (data.description !== undefined) updateData.description = data.description
       if (data.required !== undefined) updateData.required = data.required
-      if (data.options !== undefined) updateData.options = data.options
+      if (data.options !== undefined) {
+        const sanitized = sanitizeChoiceOptions(data.options)
+        updateData.options = sanitized.length ? sanitized : null
+      }
       if (data.rating_scale !== undefined) updateData.rating_scale = data.rating_scale
       if (data.orderIndex !== undefined) updateData.order_index = data.orderIndex
 

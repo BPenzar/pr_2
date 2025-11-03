@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { FORM_TEMPLATES, type FormTemplate } from '@/lib/form-templates'
 import { QuestionRenderer } from '@/components/public-form/question-renderer'
 import type { Question } from '@/types/database'
+import { normalizeChoiceOptions } from '@/lib/question-utils'
 import {
   SearchIcon,
   ClockIcon,
@@ -25,6 +26,7 @@ export function TemplatePreviewModal({ template, onClose }: TemplatePreviewModal
   const mockQuestions = useMemo(() => {
     return template.questions.map((question, index) => {
       const id = `template-${template.id}-q${index}`
+      const options = normalizeChoiceOptions(question.options)
       return {
         id,
         form_id: 'template-preview',
@@ -32,7 +34,7 @@ export function TemplatePreviewModal({ template, onClose }: TemplatePreviewModal
         title: question.title,
         description: question.description,
         required: question.required,
-        options: question.options,
+        options: options.length ? options : undefined,
         rating_scale: question.rating_scale,
         order_index: question.order_index,
         created_at: new Date().toISOString(),

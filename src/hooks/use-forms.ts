@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase-client'
 import { Form, Question } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
 import { ensureDefaultQRCode } from '@/lib/qr-codes'
+import { normalizeChoiceOptions } from '@/lib/question-utils'
 
 export function useForms(projectId?: string) {
   const { account } = useAuth()
@@ -65,7 +66,13 @@ export function useForm(formId: string) {
         .single()
 
       if (error) throw error
-      return data
+      return {
+        ...data,
+        questions: data.questions?.map((question) => ({
+          ...question,
+          options: normalizeChoiceOptions(question.options),
+        })),
+      }
     },
     enabled: !!formId,
   })

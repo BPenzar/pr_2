@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCreateQuestion, useUpdateQuestion, useDeleteQuestion } from '@/hooks/use-questions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Question } from '@/types/database'
 import { PlusIcon, MinusIcon, GripVerticalIcon, TrashIcon } from 'lucide-react'
+import {
+  ChoiceOption,
+  normalizeChoiceOptions,
+  sanitizeChoiceOptions,
+} from '@/lib/question-utils'
+import {
+  OPTION_COLOR_CHOICES,
+  OptionColorKey,
+  getOptionColorConfig,
+} from '@/lib/option-colors'
 
 interface QuestionEditorProps {
   formId: string
@@ -30,6 +40,20 @@ const questionTypes = [
   { value: 'multiselect', label: 'Multiple Choice', description: 'Checkboxes' },
 ] as const
 
+type EditableOption = {
+  id: string
+  label: string
+  color: OptionColorKey | 'none'
+}
+
+const createEditableOption = (option?: ChoiceOption): EditableOption => {
+  return {
+    id: Math.random().toString(36).slice(2),
+    label: option?.label ?? '',
+    color: option?.color ?? 'none',
+  }
+}
+
 export function QuestionEditor({
   formId,
   question,
@@ -42,7 +66,13 @@ export function QuestionEditor({
   const [title, setTitle] = useState(question?.title || '')
   const [description, setDescription] = useState(question?.description || '')
   const [required, setRequired] = useState(question?.required || false)
-  const [options, setOptions] = useState<string[]>(question?.options || [''])
+  const [options, setOptions] = useState<EditableOption[]>(() => {
+    const normalized = normalizeChoiceOptions(question?.options)
+    if (!normalized.length) {
+      return [createEditableOption()]
+    }
+    return normalized.map((option) => createEditableOption(option))
+  })
   const [ratingScale, setRatingScale] = useState<number>(question?.rating_scale || 5)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -50,6 +80,15 @@ export function QuestionEditor({
   const createQuestion = useCreateQuestion()
   const updateQuestion = useUpdateQuestion()
   const deleteQuestion = useDeleteQuestion()
+
+  useEffect(() => {
+    if (question) {
+      const normalized = normalizeChoiceOptions(question.options)
+      setOptions(normalized.length ? normalized.map((option) => createEditableOption(option)) : [createEditableOption()])
+    } else {
+      setOptions((prev) => (prev.length ? prev : [createEditableOption()]))
+    }
+  }, [question])
 
   const isEditing = !!question
   const isChoiceType = type === 'choice' || type === 'multiselect'
@@ -60,12 +99,22 @@ export function QuestionEditor({
     setError(null)
 
     try {
+      const sanitizedOptionsRaw = isChoiceType
+        ? sanitizeChoiceOptions(
+            options.map((option) => ({
+              label: option.label,
+              color: option.color === 'none' ? undefined : option.color,
+            }))
+          )
+        : undefined
+      const sanitizedOptions = sanitizedOptionsRaw && sanitizedOptionsRaw.length ? sanitizedOptionsRaw : undefined
+
       const questionData = {
         formId,
         title: title.trim(),
         description: description.trim() || undefined,
         required,
-        options: isChoiceType ? options.filter(opt => opt.trim()) : undefined,
+        options: sanitizedOptions,
         rating_scale: isRatingType ? ratingScale : undefined,
       }
 
@@ -104,17 +153,32 @@ export function QuestionEditor({
   }
 
   const addOption = () => {
-    setOptions([...options, ''])
+    setOptions((prev) => [...prev, createEditableOption()])
   }
 
   const removeOption = (index: number) => {
-    setOptions(options.filter((_, i) => i !== index))
+    setOptions((prev) => {
+      if (prev.length <= 1) {
+        return [createEditableOption()]
+      }
+      return prev.filter((_, i) => i !== index)
+    })
   }
 
-  const updateOption = (index: number, value: string) => {
-    const newOptions = [...options]
-    newOptions[index] = value
-    setOptions(newOptions)
+  const updateOptionLabel = (index: number, value: string) => {
+    setOptions((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], label: value }
+      return updated
+    })
+  }
+
+  const updateOptionColor = (index: number, value: OptionColorKey | 'none') => {
+    setOptions((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], color: value }
+      return updated
+    })
   }
 
   const isPending = createQuestion.isPending || updateQuestion.isPending || deleteQuestion.isPending
@@ -228,27 +292,64 @@ export function QuestionEditor({
             <div className="space-y-2">
               <Label>Options</Label>
               <div className="space-y-2">
-                {options.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      placeholder={`Option ${index + 1}`}
-                      value={option}
-                      onChange={(e) => updateOption(index, e.target.value)}
-                      disabled={isPending}
-                    />
-                    {options.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeOption(index)}
+                {options.map((option, index) => {
+                  return (
+                    <div
+                      key={option.id}
+                      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:gap-2"
+                    >
+                      <Input
+                        placeholder={`Option ${index + 1}`}
+                        value={option.label}
+                        onChange={(e) => updateOptionLabel(index, e.target.value)}
                         disabled={isPending}
-                      >
-                        <MinusIcon className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                        className="flex-1"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={option.color}
+                          onValueChange={(value) => updateOptionColor(index, value as OptionColorKey | 'none')}
+                          disabled={isPending}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Optional color" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {OPTION_COLOR_CHOICES.map(({ value, label }) => {
+                              if (value === 'none') {
+                                return (
+                                  <SelectItem key={value} value={value}>
+                                    <div className="flex items-center gap-2 text-sm">{label}</div>
+                                  </SelectItem>
+                                )
+                              }
+                              const config = getOptionColorConfig(value)
+                              return (
+                                <SelectItem key={value} value={value}>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`h-3 w-3 rounded-full ${config.chip}`} />
+                                    <span className="text-sm">{label}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {options.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeOption(index)}
+                            disabled={isPending}
+                          >
+                            <MinusIcon className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
                 <Button
                   type="button"
                   variant="outline"

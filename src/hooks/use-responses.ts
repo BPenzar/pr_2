@@ -39,13 +39,14 @@ export function useResponses(formId?: string) {
         .order('submitted_at', { ascending: false })
 
       if (error) throw error
-      return data as (Response & {
+      return (data as (Response & {
         response_items: (ResponseItem & {
           questions: {
             id: string
             title: string
             type: string
-            options?: string[]
+            options?: any
+            rating_scale?: number
           }
         })[]
         qr_codes: {
@@ -53,7 +54,16 @@ export function useResponses(formId?: string) {
           location_name?: string
           short_url: string
         }
-      })[]
+      })[]).map((response) => ({
+        ...response,
+        response_items: response.response_items.map((item) => ({
+          ...item,
+          questions: {
+            ...item.questions,
+            options: normalizeChoiceOptions(item.questions?.options),
+          },
+        })),
+      }))
     },
     enabled: !!formId && !!account?.id,
   })

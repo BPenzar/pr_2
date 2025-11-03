@@ -1,16 +1,16 @@
 'use client'
-
-import { useState } from 'react'
-import { useResponses, useDeleteResponse } from '@/hooks/use-responses'
+import { useResponses } from '@/hooks/use-responses'
 import { useForm } from '@/hooks/use-forms'
 import { useExportResponses } from '@/hooks/use-csv-export'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { TrashIcon, DownloadIcon, FilterIcon, StarIcon } from 'lucide-react'
+import { DownloadIcon, FilterIcon, StarIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Question } from '@/types/database'
+import { findOptionColor, normalizeChoiceOptions } from '@/lib/question-utils'
+import { getOptionColorConfig } from '@/lib/option-colors'
 
 const getRatingSelectedClasses = (value: number) => {
   if (value <= 6) return 'border-red-600 bg-red-600 text-white shadow-sm'
@@ -18,9 +18,6 @@ const getRatingSelectedClasses = (value: number) => {
   if (value === 9) return 'border-green-500 bg-green-500 text-white shadow-sm'
   return 'border-green-700 bg-green-700 text-white shadow-sm'
 }
-
-const RATING_BASE_CLASSES =
-  'border-gray-200 bg-gray-50 text-gray-600'
 
 const emptyDisplay = (
   <span className="text-sm font-medium text-red-500">
@@ -36,19 +33,7 @@ interface ResponseViewerProps {
 export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
   const { data: responses, isLoading, error } = useResponses(formId)
   const { data: form } = useForm(formId)
-  const deleteResponse = useDeleteResponse()
   const exportResponses = useExportResponses()
-  const [selectedResponse, setSelectedResponse] = useState<string | null>(null)
-
-  const handleDelete = async (responseId: string) => {
-    if (!confirm('Are you sure you want to delete this response?')) return
-
-    try {
-      await deleteResponse.mutateAsync(responseId)
-    } catch (error) {
-      console.error('Failed to delete response:', error)
-    }
-  }
 
   const handleExportCSV = async () => {
     if (!responses || !form) {
@@ -98,6 +83,7 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
 
   const renderResponseValue = (item: any) => {
     const { value, questions } = item
+    const options = normalizeChoiceOptions((questions as Question).options)
 
     if (questions.type === 'rating') {
       const maxScale = typeof questions.rating_scale === 'number' && questions.rating_scale > 0
@@ -105,7 +91,7 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
         : 10
       const rating = parseInt(value)
 
-       if (!Number.isFinite(rating)) {
+      if (!Number.isFinite(rating)) {
         return emptyDisplay
       }
 
@@ -143,24 +129,31 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
         }
         return (
           <div className="flex flex-wrap gap-1">
-            {selections.map((selection: string, index: number) => (
-              <Badge key={index} variant="secondary" className="text-xs">
-                {selection}
-              </Badge>
-            ))}
+            {selections.map((selection: string, index: number) => {
+              const colorConfig = getOptionColorConfig(findOptionColor(options, selection))
+              return (
+                <span
+                  key={`${selection}-${index}`}
+                  className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${colorConfig.badge}`}
+                >
+                  {selection}
+                </span>
+              )
+            })}
           </div>
         )
       } catch {
-        return <span className="text-gray-600">{value}</span>
+        return value ? <span className="text-gray-600 break-words">{value}</span> : emptyDisplay
       }
     }
 
     if (questions.type === 'choice') {
       if (!value) return emptyDisplay
+      const colorConfig = getOptionColorConfig(findOptionColor(options, value))
       return (
-        <Badge variant="outline" className="border border-gray-200 text-gray-700">
+        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${colorConfig.badge}`}>
           {value}
-        </Badge>
+        </span>
       )
     }
 
@@ -168,13 +161,13 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
       if (!value) return emptyDisplay
       return (
         <div className="max-w-xs">
-          <p className="text-sm text-gray-700 line-clamp-3">{value}</p>
+          <p className="text-sm text-gray-700 line-clamp-3 break-words">{value}</p>
         </div>
       )
     }
 
     if (!value) return emptyDisplay
-    return <span className="text-gray-700">{value}</span>
+    return <span className="text-gray-700 break-words">{value}</span>
   }
 
   if (isLoading) {
