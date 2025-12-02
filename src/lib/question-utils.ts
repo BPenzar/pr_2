@@ -17,8 +17,21 @@ export function normalizeChoiceOptions(raw: any): ChoiceOption[] {
       .map((entry) => {
         if (!entry) return null
         if (typeof entry === 'string') {
-          const label = entry.trim()
-          return label ? { label } : null
+          const raw = entry.trim()
+          if (!raw) return null
+
+          // Support inline color flags using "Label | color"
+          const pipeIndex = raw.lastIndexOf('|')
+          if (pipeIndex !== -1) {
+            const labelPart = raw.slice(0, pipeIndex).trim()
+            const colorPart = raw.slice(pipeIndex + 1).trim().toLowerCase()
+            const color = COLOR_VALUES.find((c) => c === colorPart)
+            if (labelPart) {
+              return color ? { label: labelPart, color } : { label: labelPart }
+            }
+          }
+
+          return { label: raw }
         }
         if (typeof entry === 'object') {
           const label = (entry.label ?? entry.value ?? '').toString().trim()
