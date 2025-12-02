@@ -52,7 +52,11 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         description: 'Odaberite signal povratka.',
         type: 'choice',
         required: true,
-        options: ['Zeleno – sigurno se vraćam', 'Žuto – možda', 'Crveno – vjerojatno ne'],
+        options: [
+          'Zeleno – sigurno se vraćam | green',
+          'Žuto – možda | yellow',
+          'Crveno – vjerojatno ne | red'
+        ],
         order_index: 2
       }
     ]
