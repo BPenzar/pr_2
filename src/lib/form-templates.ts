@@ -51,7 +51,7 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         title: 'Koliko je vjerojatno da ćete nam se vratiti?',
         description: 'Odaberite signal povratka.',
         type: 'choice',
-        required: true,
+        required: false,
         options: [
           'Sigurno se vraćam. | Green',
           'Možda. | Yellow',
