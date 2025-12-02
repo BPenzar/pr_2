@@ -48,9 +48,9 @@ BEGIN
     VALUES (
       'Free',
       0,
-      1,
-      3,
-      50,
+      -1,
+      -1,
+      -1,
       '["basic_analytics", "qr_codes"]',
       true
     )

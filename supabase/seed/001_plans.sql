@@ -5,10 +5,10 @@ INSERT INTO plans (name, price, max_projects, max_forms_per_project, max_respons
   (
     'Free',
     0,
-    1,
-    3,
-    50,
-    '["Basic dashboard", "QR code generation", "CSV export", "Email support"]'
+    -1,
+    -1,
+    -1,
+    '["Basic dashboard", "QR code generation", "CSV export", "Email support", "Unlimited usage"]'
   ),
   (
     'Starter',
