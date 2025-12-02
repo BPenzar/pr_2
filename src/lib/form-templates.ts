@@ -23,6 +23,41 @@ export interface TemplateQuestion {
 
 export const FORM_TEMPLATES: FormTemplate[] = [
   {
+    id: 'ugostiteljstvo_dozivljaj_blic',
+    name: 'Blic doživljaj posjeta',
+    description: 'U minuti doznajte kako su gosti doživjeli uslugu, hranu i ambijent.',
+    category: 'Hospitality',
+    businessTypes: ['restaurant', 'other'],
+    useCases: ['customer_satisfaction'],
+    estimatedTime: '45 sekundi',
+    popular: true,
+    tags: ['ugostiteljstvo', 'restoran', 'doživljaj', 'povratak'],
+    questions: [
+      {
+        title: 'Koliko ste zadovoljni današnjim posjetom?',
+        description: 'Ocijenite ukupni doživljaj (usluga, hrana, ambijent).',
+        type: 'rating',
+        required: true,
+        rating_scale: 10,
+        order_index: 0
+      },
+      {
+        title: 'Što bismo mogli poboljšati za idući put?',
+        type: 'textarea',
+        required: false,
+        order_index: 1
+      },
+      {
+        title: 'Koliko je vjerojatno da ćete nam se vratiti?',
+        description: 'Odaberite signal povratka.',
+        type: 'choice',
+        required: true,
+        options: ['Zeleno – sigurno se vraćam', 'Žuto – možda', 'Crveno – vjerojatno ne'],
+        order_index: 2
+      }
+    ]
+  },
+  {
     id: 'hospitality_experience_snapshot',
     name: 'Hospitality Experience Snapshot',
     description: 'Capture how guests felt about service, food, and ambiance in under a minute.',
