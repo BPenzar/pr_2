@@ -53,9 +53,9 @@ export const FORM_TEMPLATES: FormTemplate[] = [
         type: 'choice',
         required: true,
         options: [
-          'Sigurno se vraćam | green',
-          'Možda | yellow',
-          'Vjerojatno ne | red'
+          'Sigurno se vraćam | Green',
+          'Možda | Yellow',
+          'Vjerojatno ne | Red'
         ],
         order_index: 2
       }
