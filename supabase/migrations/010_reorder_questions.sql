@@ -5,6 +5,7 @@ create or replace function public.reorder_questions(
   order_indexes integer[]
 ) returns void
 language plpgsql
+SET search_path = 'public'
 as $$
 begin
   if array_length(question_ids, 1) is distinct from array_length(order_indexes, 1) then

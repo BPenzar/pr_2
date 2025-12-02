@@ -22,7 +22,8 @@ BEGIN
 
   RETURN short_url;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = 'public';
 
 -- Function to create account automatically when user signs up
 CREATE OR REPLACE FUNCTION create_user_account()
@@ -68,7 +69,8 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Trigger to create account when user signs up
 CREATE TRIGGER on_auth_user_created
@@ -101,7 +103,8 @@ BEGIN
   -- Return true if unlimited (-1) or under limit
   RETURN max_allowed = -1 OR current_count < max_allowed;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Function to check if user can create forms based on plan limits
 CREATE OR REPLACE FUNCTION can_create_form(project_uuid UUID, account_uuid UUID DEFAULT NULL)
@@ -145,7 +148,8 @@ BEGIN
   -- Return true if unlimited (-1) or under limit
   RETURN max_allowed = -1 OR current_count < max_allowed;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Function to check if form can accept more responses based on plan limits
 CREATE OR REPLACE FUNCTION can_accept_response(form_uuid UUID)
@@ -175,7 +179,8 @@ BEGIN
   -- Return true if unlimited (-1) or under limit
   RETURN max_allowed = -1 OR current_count < max_allowed;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Function to update usage counters
 CREATE OR REPLACE FUNCTION update_usage_counters()
@@ -235,7 +240,8 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Triggers for usage tracking
 CREATE TRIGGER track_project_usage
@@ -283,7 +289,8 @@ BEGIN
 
   RETURN audit_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Function to increment QR scan count
 CREATE OR REPLACE FUNCTION increment_qr_scan(qr_code_uuid UUID)
@@ -293,4 +300,5 @@ BEGIN
   SET scan_count = scan_count + 1
   WHERE id = qr_code_uuid;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';

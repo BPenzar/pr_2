@@ -42,7 +42,8 @@ BEGIN
     LIMIT 1
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Accounts policies
 CREATE POLICY "Users can read their own account" ON accounts

@@ -80,7 +80,8 @@ BEGIN
   REFRESH MATERIALIZED VIEW CONCURRENTLY form_analytics;
   REFRESH MATERIALIZED VIEW CONCURRENTLY response_trends;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public';
 
 -- Function to be called by cron job (every 15 minutes)
 -- Guard against duplicate job creation

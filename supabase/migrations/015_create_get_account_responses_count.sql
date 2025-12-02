@@ -7,6 +7,7 @@ create or replace function public.get_account_responses_count(
 returns integer
 language sql
 stable
+SET search_path = 'public'
 as $$
   select coalesce(count(*)::integer, 0)
   from public.responses r

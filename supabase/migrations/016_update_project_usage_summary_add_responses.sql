@@ -20,4 +20,5 @@ returns table(
   where p.account_id = account_uuid
     and coalesce(p.is_active, true)
   group by p.id;
-$$ language sql stable;
+$$ language sql stable
+SET search_path = 'public';
