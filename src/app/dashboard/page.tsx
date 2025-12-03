@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ProjectList } from '@/components/projects/project-list'
 import { SettingsIcon, TrendingUpIcon, SparklesIcon, Menu, X } from 'lucide-react'
-import { checkOnboardingStatus } from '@/lib/onboarding'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase-client'
 import { usePlanLimits } from '@/hooks/use-plans'
@@ -23,15 +22,12 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false)
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding - removed automatic redirect
   useEffect(() => {
     async function checkOnboarding() {
       if (account?.id && !onboardingChecked) {
-        const { needsOnboarding } = await checkOnboardingStatus(account!.id)
-        if (needsOnboarding) {
-          router.push('/onboarding')
-          return
-        }
+        // No longer automatically redirecting to onboarding
+        // Users can still access onboarding manually via guided setup
         setOnboardingChecked(true)
       }
     }
@@ -114,14 +110,6 @@ export default function DashboardPage() {
   const responsesAvailability = formatAvailability(planLimits?.responses)
   const qrCodesAvailability = formatAvailability(planLimits?.qrCodes)
 
-  const handleCreateProjectClick = () => {
-    setMobileActionsOpen(false)
-    if (!canCreateProject) {
-      setShowCreateModal(false)
-      return
-    }
-    setShowCreateModal(true)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

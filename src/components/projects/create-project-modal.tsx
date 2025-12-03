@@ -109,7 +109,7 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
       return
     }
     onClose()
-    router.push('/onboarding')
+    router.push('/onboarding?from=guided-setup')
   }
 
   if (showUpgradePrompt) {

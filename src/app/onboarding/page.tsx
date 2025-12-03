@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   OnboardingWizard,
   type OnboardingData,
@@ -23,6 +23,7 @@ interface CompletionState {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const completeOnboarding = useCompleteOnboarding()
   const { account } = useAuth()
   const { data: projects } = useProjects()
@@ -32,8 +33,10 @@ export default function OnboardingPage() {
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [completionState, setCompletionState] = useState<CompletionState | null>(null)
+
   const projectCount = projects?.length ?? 0
-  const shouldRedirect = projectCount > 0
+  const fromGuidedSetup = searchParams.get('from') === 'guided-setup'
+  const shouldRedirect = projectCount > 0 && !fromGuidedSetup
 
   useEffect(() => {
     if (shouldRedirect) {
@@ -50,7 +53,7 @@ export default function OnboardingPage() {
           ? getTemplateById(data.selectedTemplate ?? selectedTemplate?.id ?? '') ?? selectedTemplate ?? undefined
           : undefined
 
-      const result = await completeOnboarding.mutateAsync({
+      await completeOnboarding.mutateAsync({
         projectName: data.projectName,
         projectDescription: `Feedback collection for ${data.businessType} business`,
         template,
