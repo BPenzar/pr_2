@@ -280,7 +280,7 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-4 sm:static sm:border-none sm:bg-transparent sm:px-0 sm:py-8">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className={`mx-auto flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:items-center ${isMultiStep ? 'sm:justify-between' : 'sm:justify-center'}`}>
           {isMultiStep ? (
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
               <Button
