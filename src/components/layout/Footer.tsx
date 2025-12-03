@@ -123,7 +123,7 @@ export function Footer() {
               href="https://qr.bsp-lab.dev/f/wxEpRhWB"
               target="_blank"
               rel="noopener noreferrer"
-              className="mb-3 inline-block w-fit rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-yellow-600 shadow-sm transition duration-150 hover:bg-amber-100 hover:shadow-md"
+              className="mb-2 inline-block text-sm font-medium text-amber-600 transition-colors hover:text-amber-700"
             >
               Leave us your feedback
             </a>
