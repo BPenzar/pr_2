@@ -97,6 +97,17 @@ export function Footer() {
                 {social.icon}
               </a>
             ))}
+            <a
+              href="https://qr.bsp-lab.dev/f/wxEpRhWB"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Feedback"
+              className="text-gray-500 transition-colors hover:text-gray-900"
+            >
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+              </svg>
+            </a>
           </div>
         </div>
       </footer>
@@ -106,19 +117,29 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t bg-gray-50 py-8">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <p className="text-left text-sm text-gray-600">
-            © {year}{' '}
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col">
             <a
-              href="https://www.bsp-lab.dev/"
+              href="https://qr.bsp-lab.dev/f/wxEpRhWB"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-gray-900 transition-colors hover:text-primary"
+              className="mb-3 inline-block w-fit rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-yellow-600 shadow-sm transition duration-150 hover:bg-amber-100 hover:shadow-md"
             >
-              BSP Lab
-            </a>{' '}
-            • Bruno Penzar
-          </p>
+              Leave us your feedback
+            </a>
+            <p className="text-left text-sm text-gray-600">
+              © {year}{' '}
+              <a
+                href="https://www.bsp-lab.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gray-900 transition-colors hover:text-primary"
+              >
+                BSP Lab
+              </a>{' '}
+              • Bruno Penzar
+            </p>
+          </div>
 
           <div className="flex flex-col items-center gap-3 text-gray-600 md:items-end">
             <div className="flex items-center gap-4">
