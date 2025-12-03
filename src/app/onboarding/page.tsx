@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   OnboardingWizard,
@@ -21,7 +21,8 @@ interface CompletionState {
   setupOption: OnboardingData['setupOption']
 }
 
-export default function OnboardingPage() {
+// Inner component that uses useSearchParams
+function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const completeOnboarding = useCompleteOnboarding()
@@ -169,5 +170,18 @@ export default function OnboardingPage() {
         </div>
       )}
     </>
+  )
+}
+
+// Main component with Suspense boundary
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4 text-sm text-muted-foreground">
+        Loading...
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   )
 }

@@ -81,13 +81,29 @@ export default function SettingsPage() {
     setDeleteAlert(null)
 
     try {
-      const { error } = await supabase
-        .from('accounts')
-        .delete()
-        .eq('id', accountId)
+      // Get the user's session token for the API call
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-      if (error) throw error
+      if (sessionError || !session) {
+        throw new Error('No active session found')
+      }
 
+      // Call our API endpoint to delete the account
+      const response = await fetch('/api/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Sign out and redirect
       await signOut()
       router.replace('/')
     } catch (error: any) {
@@ -96,6 +112,8 @@ export default function SettingsPage() {
         type: 'error',
         text: error?.message || 'Unable to delete account right now. Please try again or contact support.'
       })
+      // Reset confirmation text on error so user can try again
+      setConfirmText('')
     } finally {
       setIsDeleting(false)
     }
