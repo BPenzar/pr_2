@@ -125,7 +125,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="mb-2 inline-block text-sm font-medium text-amber-600 transition-colors hover:text-amber-700"
             >
-              Leave us your feedback
+              Leave us your feedback.
             </a>
             <p className="text-left text-sm text-gray-600">
               © {year}{' '}
