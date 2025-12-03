@@ -24,8 +24,8 @@ export interface TemplateQuestion {
 export const FORM_TEMPLATES: FormTemplate[] = [
   {
     id: 'ugostiteljstvo_dozivljaj_blic',
-    name: 'Blic doživljaj posjeta',
-    description: 'U minuti doznajte kako su gosti doživjeli uslugu, hranu i ambijent.',
+    name: 'Ocijenite našu uslugu.',
+    description: 'Molimo Vas za iskreno mišljenje o našoj usluzi kako bismo ju mogli unaprijediti.',
     category: 'Hospitality',
     businessTypes: ['restaurant', 'other'],
     useCases: ['customer_satisfaction'],
@@ -35,21 +35,20 @@ export const FORM_TEMPLATES: FormTemplate[] = [
     questions: [
       {
         title: 'Koliko ste zadovoljni današnjim posjetom?',
-        description: 'Ocijenite ukupni doživljaj (usluga, hrana, ambijent).',
+        description: 'Ocijenite ukupni doživljaj Vašeg posjeta.',
         type: 'rating',
         required: true,
         rating_scale: 10,
         order_index: 0
       },
       {
-        title: 'Što bismo mogli poboljšati za idući put?',
+        title: 'Kako bi mogli poboljšati našu uslugu?',
         type: 'textarea',
         required: false,
         order_index: 1
       },
       {
         title: 'Koliko je vjerojatno da ćete nam se vratiti?',
-        description: 'Odaberite signal povratka.',
         type: 'choice',
         required: false,
         options: [
