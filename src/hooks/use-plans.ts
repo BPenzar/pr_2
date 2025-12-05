@@ -77,7 +77,7 @@ export interface PlanLimits {
  * Get all available plans
  */
 export function usePlans() {
-  return useQuery({
+  return useQuery<Plan[]>({
     queryKey: ['plans'],
     queryFn: async () => {
       const { data, error } = await supabase

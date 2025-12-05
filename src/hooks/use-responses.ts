@@ -123,7 +123,7 @@ export function useFormAnalytics(formId?: string) {
           return acc
         }, new Map<string, number>())
 
-        const fallbackAggregated = Array.from(fallbackAggregatedMap.entries())
+        const fallbackAggregated = Array.from<[string, number]>(fallbackAggregatedMap.entries())
           .map(([response_date, responses_count]) => ({ response_date, responses_count }))
           .sort((a, b) => (a.response_date < b.response_date ? -1 : 1))
 
@@ -165,14 +165,15 @@ export function useFormAnalytics(formId?: string) {
 
       // Calculate location distribution
       const locationCounts: Record<string, number> = {}
-      locationStats?.forEach(response => {
+      locationStats?.forEach((response: { location_name?: string | null }) => {
         if (response.location_name) {
           locationCounts[response.location_name] = (locationCounts[response.location_name] || 0) + 1
         }
       })
 
       // Calculate total QR scans
-      const totalScans = qrStats?.reduce((sum, qr) => sum + qr.scan_count, 0) || 0
+      const totalScans =
+        qrStats?.reduce((sum: number, qr: { scan_count?: number | null }) => sum + (qr.scan_count || 0), 0) || 0
 
       // Calculate conversion rate
       const conversionRate = totalScans > 0 ? ((totalResponses || 0) / totalScans * 100) : 0
@@ -234,20 +235,27 @@ export function useAccountAnalytics() {
       if (error) throw error
 
       // Aggregate the data
-      const totals = summaries.reduce(
+      const aggregatedSummaries = (summaries ?? []) as Array<{
+        forms_count?: number
+        total_responses?: number
+        qr_codes_count?: number
+        total_scans?: number
+      }>
+
+      const totals = aggregatedSummaries.reduce(
         (acc, project) => ({
           projects: acc.projects + 1,
-          forms: acc.forms + project.forms_count,
-          responses: acc.responses + project.total_responses,
-          qrCodes: acc.qrCodes + project.qr_codes_count,
-          scans: acc.scans + project.total_scans,
+          forms: acc.forms + (project.forms_count ?? 0),
+          responses: acc.responses + (project.total_responses ?? 0),
+          qrCodes: acc.qrCodes + (project.qr_codes_count ?? 0),
+          scans: acc.scans + (project.total_scans ?? 0),
         }),
         { projects: 0, forms: 0, responses: 0, qrCodes: 0, scans: 0 }
       )
 
       return {
         totals,
-        projects: summaries,
+        projects: aggregatedSummaries,
       }
     },
     enabled: !!account?.id,
