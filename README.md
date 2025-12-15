@@ -1,40 +1,38 @@
-# Business Feedback Tool 🎯
+# Business Feedback Tool
 
-A comprehensive QR code feedback platform built with Next.js, TypeScript, and Supabase. Collect, analyze, and act on customer feedback efficiently with QR codes, analytics, and multi-tenant SaaS architecture.
+QR-code powered feedback collection platform built with Next.js + TypeScript + Supabase. Create projects and forms, generate short-link QR codes, collect responses, and review analytics/exports.
 
 ![Business Feedback Tool](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Supabase](https://img.shields.io/badge/Supabase-enabled-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-blue)
 
 ## 🚀 Features
 
-### 📝 **Form Management**
-- **Dynamic Form Builder**: Create forms with 5 question types (text, textarea, rating, choice, multiselect)
-- **8 Professional Templates**: Restaurant, Retail, Events, Healthcare, Employee Satisfaction, NPS, and more
-- **Multi-step Forms**: Support for long surveys with progress tracking
-- **Real-time Preview**: Test forms before publishing
+### 📝 **Projects & Forms**
+- **Projects**: Organize forms per project
+- **Form builder**: 5 question types (text, textarea, rating, choice, multiselect)
+- **Templates**: Starter library (`src/lib/form-templates.ts`)
+- **Preview**: Preview a form before sharing
+- **Public multi-step UX**: Long forms show progress and one question per step
 
 ### 📱 **QR Code System**
-- **Dynamic QR Generation**: Create unique QR codes for each form
-- **Location Tracking**: Name and track QR code performance by location
-- **Scan Analytics**: Monitor QR code usage and conversion rates
-- **Mobile Responsive**: Optimized public submission interface
+- **Short links**: Public routes under `/f/[shortUrl]`
+- **Generation via Supabase Edge Function**: `supabase/functions/generate-qr-code`
+- **Location labels**: Track performance per QR placement
 
 ### 📊 **Analytics & Insights**
-- **Comprehensive Dashboard**: Charts, trends, and key metrics
-- **Response Analytics**: Track submission patterns and user behavior
-- **CSV Export**: Download responses and form structure data
-- **Real-time Updates**: Live data refresh and notifications
+- **Dashboard & charts**: Submission/response insights
+- **Response viewer**: Browse responses in-app
+- **CSV export**: Export responses and form structure
 
 ### 🛡️ **Security & Performance**
-- **Rate Limiting**: 10 submissions per 15 minutes per IP
-- **Anti-Spam Protection**: Honeypot fields, timing analysis, content filtering
-- **CAPTCHA Challenges**: Dynamic verification for suspicious activity
-- **GDPR Compliance**: IP hashing and privacy-first data handling
+- **Rate limiting**: Form submissions (default 10 / 15 minutes per IP)
+- **Anti-spam**: Honeypot + timing + content checks
+- **Simple CAPTCHA**: Optional challenge on suspicious submissions
+- **Privacy**: IP hashing via `IP_HASH_SALT`
 
 ### 🎯 **User Experience**
-- **Guided Onboarding**: Step-by-step setup wizard for new users
-- **Template Selector**: Search and filter pre-built form templates
-- **Plan Management**: Usage tracking with upgrade recommendations
-- **Responsive Design**: Works seamlessly on all devices
+- **Auth + onboarding**: Signup/login and onboarding flow
+- **Usage & plan page**: Usage meters and plan comparison (seeded in `supabase/seed/001_plans.sql`)
+- **Legal pages**: `/terms`, `/privacy`, `/dpa`
 
 ## 🏗️ Tech Stack
 
@@ -52,9 +50,9 @@ A comprehensive QR code feedback platform built with Next.js, TypeScript, and Su
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
-- Supabase account
+- Node.js 20+
+- npm
+- Supabase (cloud or local via Supabase CLI)
 
 ### 1. Clone the repository
 
@@ -66,40 +64,39 @@ cd pr_2
 ### 2. Install dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
 ### 3. Set up environment variables
 
-Copy the example environment file and fill in your Supabase credentials:
+Copy the example environment file and fill in your Supabase credentials (required for server routes that use the service role key):
 
 ```bash
 cp .env.example .env.local
 ```
 
-Add your Supabase configuration:
+Required variables:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+IP_HASH_SALT=your_random_salt_here
 ```
 
 ### 4. Set up the database
 
-Run the Supabase migrations to create the database schema:
+The schema lives in `supabase/migrations/*` and seed data in `supabase/seed/*`.
+
+If you use Supabase CLI locally:
 
 ```bash
-# If you have Supabase CLI installed
+supabase start
 supabase db reset
-
-# Or manually run the migration files in your Supabase dashboard:
-# - supabase/migrations/001_initial_schema.sql
-# - supabase/migrations/002_rls_policies.sql
-# - supabase/migrations/003_functions_and_triggers.sql
-# - supabase/migrations/004_materialized_views.sql
-# - supabase/seed/001_plans.sql
+supabase status
 ```
+
+If you use Supabase Cloud, run the SQL migrations in order in the dashboard (or via CI of your choice).
 
 ### 5. Run the development server
 
@@ -143,16 +140,7 @@ src/
 
 ## 🎨 Form Templates
 
-The platform includes 8 professionally designed templates:
-
-1. **Restaurant Feedback** - Comprehensive dining experience survey
-2. **Retail Experience** - Shopping and product feedback
-3. **Event Feedback** - Conference and workshop evaluation
-4. **Employee Satisfaction** - Internal engagement surveys
-5. **Patient Experience** - Healthcare service feedback
-6. **Simple Product Feedback** - Quick product evaluation
-7. **Net Promoter Score (NPS)** - Standard loyalty measurement
-8. **Customer Service** - Support interaction evaluation
+Templates live in `src/lib/form-templates.ts` and are used by onboarding + the “create form” flow.
 
 ## 🛡️ Security Features
 
@@ -174,39 +162,24 @@ The platform includes 8 professionally designed templates:
 
 ## 📊 Plan Structure
 
-### Free Plan
-- 3 projects
-- 10 forms per project
-- 100 responses per month
-- 5 QR codes per form
-- Basic analytics
-- CSV export
+Plans are seeded in `supabase/seed/001_plans.sql` (Free, Starter, Professional, Enterprise). Limits are enforced via database functions (see `supabase/migrations/*`) and surfaced in the UI on `/billing`.
 
-### Pro Plan ($19/month)
-- Unlimited projects
-- Unlimited forms
-- 10,000 responses per month
-- Unlimited QR codes
-- Advanced analytics
-- Custom branding
-- Priority support
-- API access
+## ✅ CI
 
-### Enterprise Plan (Custom pricing)
-- Everything in Pro
-- Unlimited responses
-- White-label solution
-- SSO integration
-- Dedicated support
-- SLA guarantee
+GitHub Actions runs:
+- `npm run lint`
+- `npm run type-check`
+- `npm run build`
 
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
 
 1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
+2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`)
 3. Deploy automatically on every push to main
+
+For QR generation, the Supabase Edge Function `generate-qr-code` uses `APP_URL` to build the public short link (`/f/[shortUrl]`).
 
 ### Manual Deployment
 
@@ -225,22 +198,3 @@ npm start
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support, email support@bspfeedback.com or join our Discord community.
-
-## 🙏 Acknowledgments
-
-- Built with [Claude Code](https://claude.com/claude-code)
-- UI components from [Radix UI](https://radix-ui.com)
-- Charts powered by [Recharts](https://recharts.org)
-- Database and authentication by [Supabase](https://supabase.com)
-
----
-
-**Made with ❤️ by the Business Feedback Tool team**
