@@ -12,6 +12,7 @@ interface RateLimitConfig {
 
 // In-memory store for rate limiting (in production, use Redis or similar)
 const rateLimitStore = new Map<string, RateLimitEntry>()
+let warnedMissingIPHashSalt = false
 
 /**
  * Rate limiting implementation using sliding window
@@ -168,5 +169,16 @@ export function createRateLimitHeaders(result: { remaining: number; resetTime: n
  * Hash IP address for privacy compliance
  */
 export function hashIP(ip: string): string {
-  return createHash('sha256').update(ip + process.env.IP_HASH_SALT || 'default-salt').digest('hex')
+  const salt = process.env.IP_HASH_SALT
+
+  if (!salt && !warnedMissingIPHashSalt) {
+    warnedMissingIPHashSalt = true
+    console.warn(
+      'Missing env.IP_HASH_SALT; IP hashes will be less private. Set IP_HASH_SALT to a strong random value.'
+    )
+  }
+
+  return createHash('sha256')
+    .update(`${ip}${salt ?? 'default-salt'}`)
+    .digest('hex')
 }

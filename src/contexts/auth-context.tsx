@@ -12,7 +12,12 @@ interface AuthContextType {
   loading: boolean
   authLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>
+  signUp: (
+    email: string,
+    password: string,
+    fullName?: string,
+    userData?: Record<string, unknown>
+  ) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   resetPassword: (email: string) => Promise<{ error: any }>
   refreshAccount: () => Promise<void>
@@ -190,7 +195,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName?: string,
+    userData?: Record<string, unknown>
+  ) => {
     setAuthLoading(true)
     try {
       const { error } = await supabase.auth.signUp({
@@ -199,6 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           data: {
             full_name: fullName,
+            ...(userData ?? {}),
           },
         },
       })

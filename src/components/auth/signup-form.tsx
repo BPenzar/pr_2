@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,10 +13,10 @@ import Link from 'next/link'
 export function SignupForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [acceptedLegal, setAcceptedLegal] = useState(false)
   const { signUp, authLoading } = useAuth()
 
   useEffect(() => {
@@ -30,7 +31,18 @@ export function SignupForm() {
     setError(null)
     setMessage(null)
 
-    const { error } = await signUp(email, password, fullName)
+    if (!acceptedLegal) {
+      setIsSubmitting(false)
+      setError('Please accept the Terms of Service and Privacy Policy to continue.')
+      return
+    }
+
+    const acceptedAt = new Date().toISOString()
+    const { error } = await signUp(email, password, undefined, {
+      legal_version: '2025-12-15',
+      terms_accepted_at: acceptedAt,
+      privacy_accepted_at: acceptedAt,
+    })
 
     if (error) {
       setError(error.message)
@@ -64,18 +76,6 @@ export function SignupForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              type="text"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -105,10 +105,31 @@ export function SignupForm() {
             </p>
           </div>
 
+          <div className="flex items-start gap-3 rounded-md border bg-muted/30 p-3">
+            <Checkbox
+              id="legal"
+              checked={acceptedLegal}
+              onCheckedChange={(checked) => setAcceptedLegal(checked === true)}
+              disabled={isLoading}
+              className="mt-0.5"
+            />
+            <Label htmlFor="legal" className="text-sm leading-snug text-muted-foreground">
+              I agree to the{' '}
+              <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+                Terms of Service
+              </Link>{' '}
+              and have read the{' '}
+              <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+                Privacy Policy
+              </Link>
+              .
+            </Label>
+          </div>
+
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading}
+            disabled={isLoading || !acceptedLegal}
           >
             {isLoading ? 'Creating account...' : 'Create Account'}
           </Button>

@@ -84,6 +84,17 @@ export function Footer() {
             </a>{' '}
             • Bruno Penzar
           </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-900">
+              Privacy
+            </Link>
+            <Link href="/terms" className="underline underline-offset-2 hover:text-gray-900">
+              Terms
+            </Link>
+            <Link href="/dpa" className="underline underline-offset-2 hover:text-gray-900">
+              DPA
+            </Link>
+          </div>
           <div className="mt-4 flex justify-center gap-4 text-gray-500">
             {publicLinks.map((social) => (
               <a
@@ -165,6 +176,18 @@ export function Footer() {
               >
                 penzar.bruno@gmail.com
               </a>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500 md:justify-end md:text-right">
+              <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-900">
+                Privacy
+              </Link>
+              <Link href="/terms" className="underline underline-offset-2 hover:text-gray-900">
+                Terms
+              </Link>
+              <Link href="/dpa" className="underline underline-offset-2 hover:text-gray-900">
+                DPA
+              </Link>
             </div>
           </div>
         </div>
