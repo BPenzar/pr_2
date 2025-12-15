@@ -1,6 +1,10 @@
 import { FormSettingsPageClient } from './settings-page-client'
 
-export default async function FormSettingsPage(props: PageProps<'/forms/[id]/settings'>) {
-  const { id } = await props.params
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+export default async function FormSettingsPage({ params }: Props) {
+  const { id } = await params
   return <FormSettingsPageClient formId={id} />
 }
