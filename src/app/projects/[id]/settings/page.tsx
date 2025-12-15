@@ -1,6 +1,10 @@
 import { ProjectSettingsPageClient } from './settings-page-client'
 
-export default async function ProjectSettingsPage(props: PageProps<'/projects/[id]/settings'>) {
-  const { id } = await props.params
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+export default async function ProjectSettingsPage({ params }: Props) {
+  const { id } = await params
   return <ProjectSettingsPageClient projectId={id} />
 }

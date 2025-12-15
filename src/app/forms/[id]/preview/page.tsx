@@ -1,6 +1,10 @@
 import { FormPreviewPageClient } from './preview-page-client'
 
-export default async function FormPreviewPage(props: PageProps<'/forms/[id]/preview'>) {
-  const { id } = await props.params
+type Props = {
+  params: Promise<{ id: string }>
+}
+
+export default async function FormPreviewPage({ params }: Props) {
+  const { id } = await params
   return <FormPreviewPageClient formId={id} />
 }
