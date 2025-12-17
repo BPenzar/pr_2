@@ -65,6 +65,37 @@ export default function Home() {
               </div>
             </section>
 
+            {/* Demo Video Section */}
+            <section className="pb-20">
+              <div className="mx-auto max-w-4xl text-center">
+                <h2 className="mb-4 text-2xl font-semibold text-gray-900 sm:text-3xl">
+                  See How It Works
+                </h2>
+                <p className="mb-8 text-lg text-gray-600">
+                  Watch how easy it is to collect and manage customer feedback
+                </p>
+                <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 shadow-xl backdrop-blur">
+                  <video
+                    className="w-full"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    controls={false}
+                    poster="/website_marketing_demo.gif"
+                  >
+                    <source src="/website_marketing_video.mp4" type="video/mp4" />
+                    {/* Fallback for browsers that don't support video */}
+                    <img
+                      src="/website_marketing_demo.gif"
+                      alt="Business Feedback Tool Demo"
+                      className="w-full"
+                    />
+                  </video>
+                </div>
+              </div>
+            </section>
+
             <section className="pb-20">
               <div className="grid gap-6 md:grid-cols-3">
                 {[
