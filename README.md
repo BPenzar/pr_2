@@ -1,8 +1,8 @@
-# Business Feedback Tool
+# BSP Feedback
 
 QR-code powered feedback collection platform built with Next.js + TypeScript + Supabase. Create projects and forms, generate short-link QR codes, collect responses, and review analytics/exports.
 
-![Business Feedback Tool](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Supabase](https://img.shields.io/badge/Supabase-enabled-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-blue)
+![BSP Feedback](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Supabase](https://img.shields.io/badge/Supabase-enabled-green) ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3-blue)
 
 ## 🚀 Features
 

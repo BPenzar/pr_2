@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
           <section className="mt-10 space-y-3 text-gray-700">
             <h2 className="text-xl font-semibold text-gray-900">1) Agreement</h2>
             <p>
-              These Terms govern your access to and use of Business Feedback Tool (the “Service”). By creating an
+              These Terms govern your access to and use of BSP Feedback (the “Service”). By creating an
               account or using the Service, you agree to these Terms.
             </p>
           </section>
