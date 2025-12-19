@@ -101,6 +101,7 @@ export function HowItWorksSlideshow() {
             alt={current.alt}
             fill
             priority={index === 0}
+            unoptimized
             sizes="(max-width: 1024px) 100vw, 896px"
             className="pointer-events-none object-contain"
           />
@@ -172,7 +173,7 @@ export function HowItWorksSlideshow() {
             </div>
 
             <div
-              className="relative flex-1 overflow-hidden rounded-2xl bg-black/40"
+              className="group relative flex-1 overflow-hidden rounded-2xl bg-black/40"
               onTouchStart={onTouchStart}
               onTouchEnd={onTouchEnd}
             >
@@ -181,6 +182,7 @@ export function HowItWorksSlideshow() {
                 src={current.src}
                 alt={current.alt}
                 fill
+                unoptimized
                 sizes="(max-width: 1024px) 100vw, 1200px"
                 className="object-contain"
               />
@@ -192,9 +194,9 @@ export function HowItWorksSlideshow() {
                   size="icon"
                   onClick={prev}
                   aria-label="Previous screenshot"
-                  className="h-11 w-11 rounded-full bg-white/10 text-white hover:bg-white/20"
+                  className="h-24 w-14 rounded-md bg-gray-100/85 text-gray-700 shadow-sm backdrop-blur transition-opacity hover:bg-gray-100 opacity-100 sm:h-28 sm:w-16 sm:opacity-0 sm:group-hover:opacity-100"
                 >
-                  <ChevronLeft className="h-6 w-6" />
+                  <ChevronLeft className="h-7 w-7" />
                 </Button>
                 <Button
                   type="button"
@@ -202,9 +204,9 @@ export function HowItWorksSlideshow() {
                   size="icon"
                   onClick={next}
                   aria-label="Next screenshot"
-                  className="h-11 w-11 rounded-full bg-white/10 text-white hover:bg-white/20"
+                  className="h-24 w-14 rounded-md bg-gray-100/85 text-gray-700 shadow-sm backdrop-blur transition-opacity hover:bg-gray-100 opacity-100 sm:h-28 sm:w-16 sm:opacity-0 sm:group-hover:opacity-100"
                 >
-                  <ChevronRight className="h-6 w-6" />
+                  <ChevronRight className="h-7 w-7" />
                 </Button>
               </div>
 
@@ -228,9 +230,10 @@ export function HowItWorksSlideshow() {
                     aria-label={`Open screenshot ${slideIndex + 1}`}
                   >
                     <Image
-                      src={slide.src}
+                      src={slide.thumbSrc}
                       alt={slide.alt}
                       fill
+                      unoptimized
                       sizes="96px"
                       className="object-cover"
                     />
