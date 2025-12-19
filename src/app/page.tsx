@@ -91,7 +91,9 @@ export default function Home() {
                   Want something like this for your business?{' '}
                   <a
                     className="underline underline-offset-2 hover:text-gray-700"
-                    href="mailto:penzar.bruno@gmail.com"
+                    href="https://bsp-lab.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     Contact BSP Lab
                   </a>
