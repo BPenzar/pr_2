@@ -83,15 +83,14 @@ export default function Home() {
                 <h2 className="mb-3 text-2xl font-semibold text-gray-900 sm:text-3xl">
                   See How It Works
                 </h2>
-                <p className="mb-6 text-lg text-gray-600">
-                  Watch how easy it is to collect and manage customer feedback
-                </p>
                 <HowItWorksSlideshow />
                 <p className="mt-5 text-sm text-gray-500">
                   Want something like this for your business?{' '}
                   <a
                     className="underline underline-offset-2 hover:text-gray-700"
-                    href="mailto:penzar.bruno@gmail.com"
+                    href="https://bsp-lab.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     Contact BSP Lab
                   </a>
