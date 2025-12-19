@@ -33,7 +33,7 @@ export default function Home() {
         <Header />
         <main className="flex-1">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <section className="relative pb-8 pt-14 sm:pb-10 sm:pt-16">
+            <section className="relative pb-7 pt-10 sm:pb-9 sm:pt-12">
               <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_60%)]" />
               <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
                 <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700">
