@@ -4,7 +4,7 @@ export type HowItWorksSlide = {
 }
 
 export const HOW_IT_WORKS_SLIDES: HowItWorksSlide[] = Array.from(
-  { length: 30 },
+  { length: 23 },
   (_, index) => {
     const slideNumber = index + 1
     const padded = String(slideNumber).padStart(3, '0')
@@ -14,4 +14,3 @@ export const HOW_IT_WORKS_SLIDES: HowItWorksSlide[] = Array.from(
     }
   }
 )
-
