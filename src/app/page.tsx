@@ -60,6 +60,20 @@ export default function Home() {
                       Sign In
                     </Button>
                   </Link>
+                  <a
+                    href="https://qr.bsp-lab.dev/f/wxEpRhWB"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto"
+                  >
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                    >
+                      Leave us your feedback
+                    </Button>
+                  </a>
                 </div>
               </div>
             </section>
