@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
           <section className="mt-10 space-y-3 text-gray-700">
             <h2 className="text-xl font-semibold text-gray-900">1) Who we are</h2>
             <p>
-              Business Feedback Tool (“Service”) is operated by BSP Lab • Bruno Penzar (“we”, “us”). Contact:{' '}
+              BSP Feedback (“Service”) is operated by BSP Lab • Bruno Penzar (“we”, “us”). Contact:{' '}
               <a className="underline" href="mailto:penzar.bruno@gmail.com">
                 penzar.bruno@gmail.com
               </a>

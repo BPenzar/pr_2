@@ -70,7 +70,7 @@ export function Footer() {
             href="/"
             className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
           >
-            Business Feedback Tool
+            BSP Feedback
           </Link>
           <p className="mt-2 text-sm text-gray-600">
             © {year}{' '}

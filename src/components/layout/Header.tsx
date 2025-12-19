@@ -35,7 +35,7 @@ export function Header({ showAuth = true }: HeaderProps) {
               className="flex items-center gap-3 hover:opacity-90 transition-opacity"
             >
               <Image
-                src="/bsp-lab-logo.png"
+                src="/bsp-lab-logo.webp"
                 alt="BSP Lab logo"
                 width={40}
                 height={40}
@@ -53,10 +53,10 @@ export function Header({ showAuth = true }: HeaderProps) {
               className="flex flex-col hover:text-primary transition-colors"
             >
               <span className="text-sm font-semibold text-gray-900">
-                BSP Tool
+                BSP Feedback
               </span>
               <span className="hidden text-xs text-gray-500 sm:inline">
-                QR &amp; Web Widget Feedback Platform
+                QR-powered feedback collection platform
               </span>
             </Link>
           </div>

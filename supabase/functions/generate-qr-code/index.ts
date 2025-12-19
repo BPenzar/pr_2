@@ -11,6 +11,20 @@ interface RequestBody {
   locationName?: string
 }
 
+const SHORT_URL_LENGTH = 8
+const SHORT_URL_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+
+function generateShortUrl(length: number = SHORT_URL_LENGTH): string {
+  const bytes = new Uint8Array(length)
+  crypto.getRandomValues(bytes)
+
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += SHORT_URL_CHARS[bytes[i] % SHORT_URL_CHARS.length]
+  }
+  return result
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -38,6 +52,29 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
+    const authHeader = req.headers.get('Authorization') ?? req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing or invalid authorization header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired session' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     // Get the request body
     const { formId, locationName }: RequestBody = await req.json()
 
@@ -51,7 +88,23 @@ serve(async (req) => {
       )
     }
 
-    // Verify form exists and user has access
+    // Verify the caller owns the form (prevents token-less public abuse)
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (accountError || !account) {
+      return new Response(
+        JSON.stringify({ error: 'Account not found' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     const { data: form, error: formError } = await supabase
       .from('forms')
       .select(`
@@ -75,22 +128,27 @@ serve(async (req) => {
       )
     }
 
-    // Generate short URL
-    const generateShortUrl = (): string => {
-      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-      let result = ''
-      for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length))
-      }
-      return result
+    if (form.project?.account_id !== account.id) {
+      return new Response(
+        JSON.stringify({ error: 'Not authorized to create QR codes for this form' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
+
+    const locationNameValue =
+      typeof locationName === 'string' && locationName.trim()
+        ? locationName.trim().slice(0, 120)
+        : null
 
     // Check for unique short URL
     let shortUrl = generateShortUrl()
     let isUnique = false
     let attempts = 0
 
-    while (!isUnique && attempts < 10) {
+    while (!isUnique && attempts < 20) {
       const { data: existing } = await supabase
         .from('qr_codes')
         .select('id')
@@ -126,7 +184,7 @@ serve(async (req) => {
         form_id: formId,
         short_url: shortUrl,
         full_url: fullUrl,
-        location_name: locationName,
+        location_name: locationNameValue,
       })
       .select()
       .single()
