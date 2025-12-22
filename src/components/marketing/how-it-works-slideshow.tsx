@@ -58,6 +58,38 @@ export function HowItWorksSlideshow() {
     lastActiveElementRef.current = null
   }, [isOpen])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const preloadAll = () => {
+      slides.forEach((slide) => {
+        const img = new window.Image()
+        img.src = slide.src
+      })
+    }
+    const requestIdle = (window as { requestIdleCallback?: (cb: () => void) => number })
+      .requestIdleCallback
+    const cancelIdle = (window as { cancelIdleCallback?: (id: number) => void })
+      .cancelIdleCallback
+    if (requestIdle) {
+      const handle = requestIdle(preloadAll)
+      return () => cancelIdle?.(handle)
+    }
+    const timeout = window.setTimeout(preloadAll, 200)
+    return () => window.clearTimeout(timeout)
+  }, [slides])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || count < 2) return
+    const preload = (src: string) => {
+      const img = new window.Image()
+      img.src = src
+    }
+    const nextIndex = (index + 1) % count
+    const prevIndex = (index - 1 + count) % count
+    preload(slides[nextIndex].src)
+    preload(slides[prevIndex].src)
+  }, [count, index, slides])
+
   const onTouchStart = (event: React.TouchEvent) => {
     touchStartXRef.current = event.touches[0]?.clientX ?? null
   }
