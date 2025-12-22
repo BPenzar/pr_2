@@ -73,3 +73,6 @@ supabase/.branches/
 
 # Vercel
 .vercel
+
+# Local notes
+todo.md
