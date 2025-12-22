@@ -37,7 +37,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.8.10",
+    "@types/node": "^25.0.3",
     "@types/papaparse": "^5.3.14",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.33",
