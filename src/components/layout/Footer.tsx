@@ -51,7 +51,7 @@ const socialLinks: Array<{
         />
       </svg>
     ),
-    href: 'mailto:penzar.bruno@gmail.com',
+    href: 'mailto:contact@bsp-lab.dev',
     label: 'Email',
   },
 ]
@@ -171,10 +171,10 @@ export function Footer() {
             <div className="text-sm text-gray-500 md:text-right">
               Contact:{' '}
               <a
-                href="mailto:penzar.bruno@gmail.com"
+                href="mailto:contact@bsp-lab.dev"
                 className="text-gray-700 underline transition hover:text-primary"
               >
-                penzar.bruno@gmail.com
+                contact@bsp-lab.dev
               </a>
             </div>
 
