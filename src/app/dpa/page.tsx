@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { Header } from '@/components/layout/Header'
 
-const lastUpdated = '2025-12-15'
+const effectiveDate = '01.01.2026'
+const version = '1.3'
 
 export default function DataProcessingAddendumPage() {
   return (
@@ -12,112 +13,131 @@ export default function DataProcessingAddendumPage() {
         <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Data Processing Addendum (DPA)</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Last updated: {lastUpdated}. This page is a starter template and not legal advice. Please review with a
-            qualified lawyer before using it in production.
+            Effective date: {effectiveDate}. Version {version}.
           </p>
 
-          <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">1) Purpose</h2>
-            <p>
-              This DPA applies when you (the “Customer”) use the Service to collect or otherwise process end-user
-              feedback data and we process personal data on your behalf as a processor under Article 28 GDPR.
-            </p>
-            <p>
-              This DPA is incorporated into the{' '}
-              <Link className="underline" href="/terms">
-                Terms of Service
-              </Link>{' '}
-              and forms part of the agreement between the Customer and BSP Lab • Bruno Penzar.
-            </p>
-          </section>
-
-          <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">2) Roles</h2>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>
-                Customer is the <span className="font-medium">controller</span> for end-user feedback data.
-              </li>
-              <li>
-                BSP Lab • Bruno Penzar is the <span className="font-medium">processor</span>.
-              </li>
-            </ul>
-          </section>
-
-          <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">3) Processing details (Annex 1)</h2>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>
-                <span className="font-medium">Subject matter:</span> hosting and operation of a feedback-collection
-                platform.
-              </li>
-              <li>
-                <span className="font-medium">Duration:</span> for the term of the Customer’s use of the Service, plus
-                any period required for backups and legal obligations.
-              </li>
-              <li>
-                <span className="font-medium">Nature and purpose:</span> collect, store, and provide analytics and export
-                of feedback responses; prevent spam and abuse.
-              </li>
-              <li>
-                <span className="font-medium">Types of personal data:</span> feedback responses (may include free-text),
-                technical identifiers (e.g., hashed IP), user agent, timestamps.
-              </li>
-              <li>
-                <span className="font-medium">Categories of data subjects:</span> Customer’s end users (e.g., customers,
-                visitors), and Customer’s staff/admin users.
-              </li>
-            </ul>
-          </section>
-
-          <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">4) Processor obligations</h2>
-            <ul className="list-disc space-y-2 pl-5">
-              <li>Process personal data only on documented instructions from the Customer.</li>
-              <li>Ensure persons authorized to process personal data are bound by confidentiality.</li>
-              <li>Implement appropriate technical and organizational security measures (see Annex 2).</li>
-              <li>
-                Assist the Customer with responding to requests from data subjects and with GDPR compliance obligations
-                (Articles 32–36), taking into account the nature of processing.
-              </li>
-              <li>Notify the Customer without undue delay after becoming aware of a personal data breach.</li>
-              <li>
-                At the Customer’s choice, delete or return personal data at the end of the provision of services, unless
-                retention is required by law.
-              </li>
-              <li>Make available information reasonably necessary to demonstrate compliance and allow audits.</li>
-            </ul>
-          </section>
-
-          <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">5) Subprocessors</h2>
-            <p>
-              Customer provides a general authorization for subprocessors required to deliver the Service. We remain
-              responsible for their performance. Current subprocessors typically include hosting, database, and DNS
-              providers such as Supabase, Vercel, and Cloudflare. Please verify the latest list before production use.
+          <section className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-700">
+            <p className="font-semibold text-gray-900">Provider</p>
+            <p className="mt-2">
+              BSP LAB, obrt za ostalo računalno programiranje, vl. Bruno Sebastian Penzar
+              <br />
+              ULICA ĐURE CRNATKA 24, 10000 ZAGREB, Croatia
+              <br />
+              OIB: 00357376233
+              <br />
+              Contact:{' '}
+              <a className="underline" href="mailto:privacy@bsp-lab.dev">
+                privacy@bsp-lab.dev
+              </a>
             </p>
           </section>
 
           <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">6) International transfers</h2>
+            <h2 className="text-xl font-semibold text-gray-900">1) Roles</h2>
             <p>
-              Where subprocessors or infrastructure involve data transfers outside the EEA, appropriate safeguards will
-              be used where required (for example, standard contractual clauses).
+              You are the <span className="font-medium">controller</span>. BSP LAB is the <span className="font-medium">processor</span>.
             </p>
           </section>
 
           <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">7) Security measures (Annex 2)</h2>
+            <h2 className="text-xl font-semibold text-gray-900">2) Processor instructions</h2>
+            <p>We process personal data only on documented instructions from the controller.</p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">3) Subject matter &amp; duration</h2>
+            <p>
+              Processing of feedback responses and related metadata for the duration of your account and until deletion
+              request (plus backup retention up to 30 days).
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">4) Nature &amp; purpose</h2>
             <ul className="list-disc space-y-2 pl-5">
-              <li>Encryption in transit (TLS) for connections to the Service.</li>
-              <li>Access controls and least-privilege for administrative access.</li>
-              <li>Row-level security in the database to isolate tenant data (where configured).</li>
-              <li>Rate limiting and anti-spam controls to reduce abuse.</li>
-              <li>Backups and disaster recovery mechanisms provided by infrastructure vendors.</li>
+              <li>collect and store feedback responses</li>
+              <li>provide analytics and exports</li>
+              <li>ensure security and abuse prevention</li>
             </ul>
           </section>
 
           <section className="mt-10 space-y-3 text-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900">8) Related documents</h2>
+            <h2 className="text-xl font-semibold text-gray-900">5) Categories of data</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              <li>feedback content (text, ratings, selections)</li>
+              <li>timestamps</li>
+              <li>location labels</li>
+              <li>IP hash</li>
+              <li>user-agent hash</li>
+            </ul>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">6) Subprocessors</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              <li>Vercel (hosting)</li>
+              <li>Supabase (database/auth)</li>
+              <li>Cloudflare (DNS/network)</li>
+              <li>Google (Gmail support communications)</li>
+            </ul>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">7) Subprocessor updates</h2>
+            <p>
+              We may update or replace subprocessors. We will provide notice of material changes to our subprocessors,
+              for example via the Service or by email.
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">8) Security measures</h2>
+            <ul className="list-disc space-y-2 pl-5">
+              <li>access control and least-privilege permissions</li>
+              <li>encryption in transit (TLS)</li>
+              <li>secure hosting environments</li>
+            </ul>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">9) Data subject rights</h2>
+            <p>
+              We will assist you in fulfilling data subject requests to the extent required by law and feasible.
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">10) Breach notification</h2>
+            <p>
+              We will notify the controller without undue delay after becoming aware of a personal data breach.
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">11) Deletion or return</h2>
+            <p>
+              Upon account deletion or request, we will delete data unless retention is required by law. Backup
+              retention up to 30 days.
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">12) International transfers</h2>
+            <p>
+              If data is transferred outside the EEA, we rely on SCCs or other lawful safeguards from our
+              subprocessors.
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">13) Audits</h2>
+            <p>
+              You may request information about our security measures. Formal audits may be provided where reasonable.
+            </p>
+          </section>
+
+          <section className="mt-10 space-y-3 text-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900">14) Related documents</h2>
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 <Link className="underline" href="/terms">

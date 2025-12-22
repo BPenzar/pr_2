@@ -85,7 +85,6 @@ export function Header({ showAuth = true }: HeaderProps) {
                       Sign In
                     </Button>
                   </Link>
-                  <span className="text-xs text-gray-400 sm:hidden">/</span>
                   <Link href="/auth/signup">
                     <Button size="sm" className="text-sm">
                       Get Started
