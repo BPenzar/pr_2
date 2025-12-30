@@ -81,7 +81,17 @@ Required variables:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 IP_HASH_SALT=your_random_salt_here
+```
+
+Optional variables (only if you enable those features):
+
+```env
+STRIPE_SECRET_KEY=...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+MAILER_SEND_API_KEY=...
 ```
 
 ### 4. Set up the database
@@ -136,6 +146,10 @@ src/
 │   └── supabase-*.ts      # Supabase client configurations
 ├── contexts/              # React contexts
 └── types/                 # TypeScript type definitions
+supabase/
+├── functions/             # Edge functions (QR generation)
+├── migrations/            # Database schema migrations
+└── seed/                  # Seed data (plans, defaults)
 ```
 
 ## 🎨 Form Templates
@@ -164,6 +178,15 @@ Templates live in `src/lib/form-templates.ts` and are used by onboarding + the �
 
 Plans are seeded in `supabase/seed/001_plans.sql` (Free, Starter, Professional, Enterprise). Limits are enforced via database functions (see `supabase/migrations/*`) and surfaced in the UI on `/billing`.
 
+## 🧪 Useful Commands
+
+```bash
+npm run dev        # start dev server
+npm run lint       # lint
+npm run type-check # TypeScript checks
+npm run build      # production build
+```
+
 ## ✅ CI
 
 GitHub Actions runs:
@@ -179,7 +202,7 @@ GitHub Actions runs:
 2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`)
 3. Deploy automatically on every push to main
 
-For QR generation, the Supabase Edge Function `generate-qr-code` uses `APP_URL` to build the public short link (`/f/[shortUrl]`).
+For QR generation, the Supabase Edge Function `generate-qr-code` uses `NEXT_PUBLIC_APP_URL` to build the public short link (`/f/[shortUrl]`).
 
 ### Manual Deployment
 
