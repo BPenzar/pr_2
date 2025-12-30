@@ -40,27 +40,41 @@ const socialLinks: Array<{
     href: 'https://www.linkedin.com/in/bruno-penzar',
     label: 'LinkedIn',
   },
-  {
-    icon: (
-      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-        />
-      </svg>
-    ),
-    href: 'mailto:contact@bsp-lab.dev',
-    label: 'Email',
-  },
 ]
+
+const CONTACT_EMAIL = 'contact@bsp-lab.dev'
 
 export function Footer() {
   const year = new Date().getFullYear()
   const pathname = usePathname()
   const isPublicForm = pathname?.startsWith('/f/')
   const publicLinks = socialLinks
+
+  const handleCopyEmail = async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(CONTACT_EMAIL)
+        return
+      }
+    } catch (error) {
+      console.warn('Clipboard copy failed, falling back to manual copy.', error)
+    }
+
+    const textarea = document.createElement('textarea')
+    textarea.value = CONTACT_EMAIL
+    textarea.setAttribute('readonly', 'true')
+    textarea.style.position = 'absolute'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    try {
+      document.execCommand('copy')
+    } catch (error) {
+      console.warn('Manual copy failed.', error)
+    } finally {
+      document.body.removeChild(textarea)
+    }
+  }
 
   if (isPublicForm) {
     return (
@@ -170,12 +184,15 @@ export function Footer() {
 
             <div className="text-sm text-gray-500 md:text-right">
               Contact:{' '}
-              <a
-                href="mailto:contact@bsp-lab.dev"
+              <button
+                type="button"
+                onClick={handleCopyEmail}
                 className="text-gray-700 underline transition hover:text-primary"
+                title="Copy email address"
+                aria-label="Copy contact email address"
               >
-                contact@bsp-lab.dev
-              </a>
+                {CONTACT_EMAIL}
+              </button>
             </div>
 
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500 md:justify-end md:text-right">
