@@ -72,11 +72,11 @@ const buildSnapshotKey = (snapshot: QuestionSnapshot) => JSON.stringify(snapshot
 
 const buildSnapshotFromQuestion = (question?: Question): QuestionSnapshot => {
   const normalizedOptions = normalizeChoiceOptions(question?.options)
-  const options =
+  const options: QuestionSnapshot['options'] =
     question && (question.type === 'choice' || question.type === 'multiselect')
       ? normalizedOptions.map((option) => ({
           label: option.label ?? '',
-          color: option.color ?? 'none',
+          color: (option.color ?? 'none') as OptionColorKey | 'none',
         }))
       : []
 
