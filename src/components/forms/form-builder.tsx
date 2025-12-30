@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useUpdateForm } from '@/hooks/use-forms'
 import { useQRCodes } from '@/hooks/use-qr-codes'
 import { useReorderQuestions } from '@/hooks/use-questions'
@@ -9,13 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { QuestionEditor } from './question-editor'
+import { QuestionEditor, QuestionEditorHandle } from './question-editor'
 import { PlusIcon, ArrowUpIcon, ArrowDownIcon, FileTextIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useExportFormStructure } from '@/hooks/use-csv-export'
 
 interface FormBuilderProps {
   formId: string
+}
+
+const QUESTION_TYPE_LABELS: Record<string, string> = {
+  text: 'Short Text',
+  textarea: 'Long Text',
+  rating: 'Rating Scale',
+  choice: 'Single Choice',
+  multiselect: 'Multiple Choice',
 }
 
 export function FormBuilder({ formId }: FormBuilderProps) {
@@ -27,6 +35,9 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [hasMetaChanges, setHasMetaChanges] = useState(false)
+  const [hasQuestionChanges, setHasQuestionChanges] = useState(false)
+  const [isSavingAll, setIsSavingAll] = useState(false)
+  const questionEditorRef = useRef<QuestionEditorHandle | null>(null)
   const reorderQuestions = useReorderQuestions()
   const exportStructure = useExportFormStructure()
 
@@ -48,10 +59,18 @@ export function FormBuilder({ formId }: FormBuilderProps) {
 
   useEffect(() => {
     setOrderedQuestions((prev) => {
-      if (prev.length === questions.length && prev.every((q, idx) => q.id === questions[idx]?.id)) {
-        return prev
-      }
-      return questions
+      if (!questions.length) return []
+      if (!prev.length) return questions
+
+      const questionMap = new Map(questions.map((question: any) => [question.id, question]))
+      const merged = prev
+        .map((question) => questionMap.get(question.id) ?? question)
+        .filter((question) => questionMap.has(question.id))
+      const additions = questions.filter(
+        (question: any) => !prev.some((prevQuestion) => prevQuestion.id === question.id)
+      )
+
+      return [...merged, ...additions]
     })
   }, [questions])
 
@@ -82,21 +101,25 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const handleAddQuestion = () => {
     setIsAddingQuestion(true)
     setEditingQuestionId(null)
+    setHasQuestionChanges(false)
   }
 
   const handleEditQuestion = (questionId: string) => {
     setEditingQuestionId(questionId)
     setIsAddingQuestion(false)
+    setHasQuestionChanges(false)
   }
 
   const handleQuestionSaved = () => {
     setIsAddingQuestion(false)
     setEditingQuestionId(null)
+    setHasQuestionChanges(false)
   }
 
   const handleCancelEdit = () => {
     setIsAddingQuestion(false)
     setEditingQuestionId(null)
+    setHasQuestionChanges(false)
   }
 
   const handleMoveQuestion = (questionId: string, direction: 'up' | 'down') => {
@@ -139,34 +162,49 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   }
 
   const handleMetaSave = async () => {
+    if (!hasMetaChanges && !hasQuestionChanges) return
+    setIsSavingAll(true)
     try {
-      await updateForm.mutateAsync({
-        id: formId,
-        name: formName.trim(),
-        description: formDescription.trim() === '' ? null : formDescription.trim(),
-      })
-      setHasMetaChanges(false)
+      if (hasQuestionChanges && questionEditorRef.current) {
+        const questionSaved = await questionEditorRef.current.submit()
+        if (questionSaved) {
+          setHasQuestionChanges(false)
+        }
+      }
+
+      if (hasMetaChanges) {
+        await updateForm.mutateAsync({
+          id: formId,
+          name: formName.trim(),
+          description: formDescription.trim() === '' ? null : formDescription.trim(),
+        })
+        setHasMetaChanges(false)
+      }
     } catch (err) {
       console.error('Failed to update form details:', err)
+    } finally {
+      setIsSavingAll(false)
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Form details */}
-      <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardHeader className="flex flex-col gap-4 border-b border-slate-200/70 bg-slate-50/70 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Form Details</CardTitle>
-            <CardDescription>Update the name and description shown to respondents</CardDescription>
+            <CardDescription>
+              Update the name and description shown to respondents. Saving applies any open question edits too.
+            </CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={handleMetaSave}
-              disabled={!hasMetaChanges || updateForm.isPending}
+              disabled={(!hasMetaChanges && !hasQuestionChanges) || updateForm.isPending || isSavingAll}
               size="sm"
             >
-              {updateForm.isPending ? 'Saving...' : 'Save Changes'}
+              {updateForm.isPending || isSavingAll ? 'Saving...' : 'Save All Changes'}
             </Button>
             <Button
               variant="outline"
@@ -195,7 +233,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <div className="space-y-2">
             <Label htmlFor="builder-form-name">Form Name</Label>
             <Input
@@ -231,43 +269,57 @@ export function FormBuilder({ formId }: FormBuilderProps) {
       </Card>
 
       {/* Questions List */}
-      <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200/70 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200/70 bg-slate-50/70 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Questions</h2>
+            <p className="text-sm text-slate-500">
+              Click a question to edit and use the arrows to reorder.
+            </p>
+          </div>
+          <Button onClick={handleAddQuestion} size="sm" className="self-start sm:self-auto">
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Add Question
+          </Button>
+        </div>
+        <div className="space-y-4 p-6">
         {orderedQuestions.map((question: any, index: number) => {
           const canMoveUp = index > 0
           const canMoveDown = index < orderedQuestions.length - 1
+          const typeLabel = QUESTION_TYPE_LABELS[question.type] ?? question.type
 
           return (
             <div key={question.id}>
               {editingQuestionId === question.id ? (
                 <QuestionEditor
+                  ref={questionEditorRef}
                   formId={formId}
                   question={question}
                   orderIndex={index}
                   onSave={handleQuestionSaved}
                   onCancel={handleCancelEdit}
                   onDelete={handleQuestionSaved}
+                  onDirtyChange={setHasQuestionChanges}
                 />
               ) : (
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <Card className="cursor-pointer border-slate-200/70 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1" onClick={() => handleEditQuestion(question.id)}>
                         <div className="flex items-center space-x-2 mb-2">
-                          <span className="text-sm font-medium text-gray-500">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Question {index + 1}
                           </span>
-                          <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
-                            {question.type}
-                          </span>
+                          <span className="text-xs text-slate-400">• {typeLabel}</span>
                           {question.required && (
-                            <span className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                            <span className="text-xs px-2 py-1 bg-rose-100 text-rose-700 rounded-full">
                               Required
                             </span>
                           )}
                         </div>
-                        <h3 className="font-medium">{question.title}</h3>
+                        <h3 className="font-medium text-slate-900">{question.title}</h3>
                         {question.description && (
-                          <p className="text-sm text-gray-600 mt-1">{question.description}</p>
+                          <p className="text-sm text-slate-600 mt-1">{question.description}</p>
                         )}
                       </div>
                       <div className="flex items-center space-x-1">
@@ -279,7 +331,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
                             handleMoveQuestion(question.id, 'up')
                           }}
                           disabled={!canMoveUp || reorderQuestions.isPending}
-                          className="h-8 w-8 text-gray-500 hover:text-gray-900 disabled:opacity-40"
+                          className="h-8 w-8 text-slate-500 hover:text-slate-900 disabled:opacity-40"
                           aria-label="Move question up"
                         >
                           <ArrowUpIcon className="h-4 w-4" />
@@ -292,7 +344,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
                             handleMoveQuestion(question.id, 'down')
                           }}
                           disabled={!canMoveDown || reorderQuestions.isPending}
-                          className="h-8 w-8 text-gray-500 hover:text-gray-900 disabled:opacity-40"
+                          className="h-8 w-8 text-slate-500 hover:text-slate-900 disabled:opacity-40"
                           aria-label="Move question down"
                         >
                           <ArrowDownIcon className="h-4 w-4" />
@@ -319,35 +371,38 @@ export function FormBuilder({ formId }: FormBuilderProps) {
         {/* Add Question */}
         {isAddingQuestion ? (
           <QuestionEditor
+            ref={questionEditorRef}
             formId={formId}
             orderIndex={nextOrderIndex}
             onSave={handleQuestionSaved}
             onCancel={handleCancelEdit}
+            onDirtyChange={setHasQuestionChanges}
           />
         ) : (
-          <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors">
-            <CardContent className="p-8">
+          <Card className="border-dashed border-2 border-slate-200 bg-slate-50/70 hover:border-slate-300 transition-colors">
+            <CardContent className="p-6">
               <div className="text-center">
                 <Button onClick={handleAddQuestion} variant="ghost" className="w-full">
                   <PlusIcon className="w-5 h-5 mr-2" />
-                  Add Question
+                  Add another question
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
 
       {/* Empty State */}
       {orderedQuestions.length === 0 && !isAddingQuestion && (
-        <Card className="border-dashed border-2">
+        <Card className="border-dashed border-2 border-slate-200 bg-slate-50/70">
           <CardContent className="p-12">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <PlusIcon className="w-8 h-8 text-gray-400" />
+              <div className="w-16 h-16 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <PlusIcon className="w-8 h-8 text-slate-400" />
               </div>
               <h3 className="text-lg font-semibold mb-2">No questions yet</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-slate-600 mb-6">
                 Add your first question to start building your form
               </p>
               <Button onClick={handleAddQuestion}>

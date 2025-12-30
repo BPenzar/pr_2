@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useCreateQuestion, useUpdateQuestion, useDeleteQuestion } from '@/hooks/use-questions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,7 @@ interface QuestionEditorProps {
   onSave?: () => void
   onCancel?: () => void
   onDelete?: () => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 const questionTypes = [
@@ -54,14 +55,53 @@ const createEditableOption = (option?: ChoiceOption): EditableOption => {
   }
 }
 
-export function QuestionEditor({
-  formId,
-  question,
-  orderIndex,
-  onSave,
-  onCancel,
-  onDelete,
-}: QuestionEditorProps) {
+export type QuestionEditorHandle = {
+  submit: () => Promise<boolean>
+}
+
+type QuestionSnapshot = {
+  type: Question['type']
+  title: string
+  description: string
+  required: boolean
+  options: Array<{ label: string; color: OptionColorKey | 'none' }>
+  ratingScale: number | null
+}
+
+const buildSnapshotKey = (snapshot: QuestionSnapshot) => JSON.stringify(snapshot)
+
+const buildSnapshotFromQuestion = (question?: Question): QuestionSnapshot => {
+  const normalizedOptions = normalizeChoiceOptions(question?.options)
+  const options =
+    question && (question.type === 'choice' || question.type === 'multiselect')
+      ? normalizedOptions.map((option) => ({
+          label: option.label ?? '',
+          color: option.color ?? 'none',
+        }))
+      : []
+
+  return {
+    type: question?.type ?? 'text',
+    title: question?.title ?? '',
+    description: question?.description ?? '',
+    required: question?.required ?? false,
+    options,
+    ratingScale: question?.type === 'rating' ? question.rating_scale ?? 5 : null,
+  }
+}
+
+export const QuestionEditor = forwardRef<QuestionEditorHandle, QuestionEditorProps>(function QuestionEditor(
+  {
+    formId,
+    question,
+    orderIndex,
+    onSave,
+    onCancel,
+    onDelete,
+    onDirtyChange,
+  },
+  ref
+) {
   const [type, setType] = useState<Question['type']>(question?.type || 'text')
   const [title, setTitle] = useState(question?.title || '')
   const [description, setDescription] = useState(question?.description || '')
@@ -76,27 +116,78 @@ export function QuestionEditor({
   const [ratingScale, setRatingScale] = useState<number>(question?.rating_scale || 5)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const initialSnapshotRef = useRef<string>(buildSnapshotKey(buildSnapshotFromQuestion(question)))
+  const lastQuestionIdRef = useRef<string | undefined>(question?.id)
 
   const createQuestion = useCreateQuestion()
   const updateQuestion = useUpdateQuestion()
   const deleteQuestion = useDeleteQuestion()
 
   useEffect(() => {
+    const nextQuestionId = question?.id
+    if (lastQuestionIdRef.current === nextQuestionId) {
+      return
+    }
+    lastQuestionIdRef.current = nextQuestionId
+
     if (question) {
+      setType(question.type)
+      setTitle(question.title ?? '')
+      setDescription(question.description ?? '')
+      setRequired(question.required ?? false)
+      setRatingScale(question.rating_scale || 5)
       const normalized = normalizeChoiceOptions(question.options)
       setOptions(normalized.length ? normalized.map((option) => createEditableOption(option)) : [createEditableOption()])
-    } else {
-      setOptions((prev) => (prev.length ? prev : [createEditableOption()]))
+      initialSnapshotRef.current = buildSnapshotKey(buildSnapshotFromQuestion(question))
+      onDirtyChange?.(false)
+      return
     }
-  }, [question])
+
+    initialSnapshotRef.current = buildSnapshotKey({
+      type: 'text',
+      title: '',
+      description: '',
+      required: false,
+      options: [],
+      ratingScale: null,
+    })
+    onDirtyChange?.(false)
+  }, [question, onDirtyChange])
 
   const isEditing = !!question
   const isChoiceType = type === 'choice' || type === 'multiselect'
   const isRatingType = type === 'rating'
+  const typeLabel = questionTypes.find((questionType) => questionType.value === type)?.label ?? type
+  const currentSnapshotKey = useMemo(
+    () =>
+      buildSnapshotKey({
+        type,
+        title,
+        description,
+        required,
+        options: isChoiceType
+          ? options.map((option) => ({
+              label: option.label,
+              color: option.color,
+            }))
+          : [],
+        ratingScale: isRatingType ? ratingScale : null,
+      }),
+    [description, isChoiceType, isRatingType, options, ratingScale, required, title, type]
+  )
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const isDirty = currentSnapshotKey !== initialSnapshotRef.current
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  const saveQuestion = async () => {
     setError(null)
+    if (!title.trim()) {
+      setError('Question text is required.')
+      return false
+    }
 
     try {
       const sanitizedOptionsRaw = isChoiceType
@@ -131,11 +222,35 @@ export function QuestionEditor({
         })
       }
 
-      onSave?.()
+      return true
     } catch (err: any) {
       setError(err.message)
+      return false
     }
   }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const wasSaved = await saveQuestion()
+    if (wasSaved) {
+      onSave?.()
+    }
+  }
+
+  const handleHeaderClick = () => {
+    if (!onCancel || isPending) return
+    onCancel()
+  }
+
+  useImperativeHandle(ref, () => ({
+    submit: async () => {
+      const wasSaved = await saveQuestion()
+      if (wasSaved) {
+        onSave?.()
+      }
+      return wasSaved
+    },
+  }))
 
   const handleDelete = async () => {
     if (!question) return
@@ -184,16 +299,22 @@ export function QuestionEditor({
   const isPending = createQuestion.isPending || updateQuestion.isPending || deleteQuestion.isPending
 
   return (
-    <Card className="mb-4">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+    <Card className="mb-4 border-slate-200/70 shadow-sm">
+      <CardHeader
+        className={`flex flex-row items-center justify-between space-y-0 border-b border-slate-200/70 bg-slate-50/70 pb-4 ${
+          onCancel ? 'cursor-pointer' : ''
+        }`}
+        onClick={handleHeaderClick}
+      >
         <div className="flex items-center space-x-2">
           <GripVerticalIcon className="w-4 h-4 text-gray-400" />
           <CardTitle className="text-base">
             {isEditing ? `Question ${orderIndex + 1}` : 'New Question'}
           </CardTitle>
+          {isEditing && <span className="text-xs text-slate-400">{typeLabel}</span>}
         </div>
         {isEditing && (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2" onClick={(event) => event.stopPropagation()}>
             {confirmDelete ? (
               <>
                 <Button
@@ -227,8 +348,8 @@ export function QuestionEditor({
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -244,7 +365,11 @@ export function QuestionEditor({
           {!isEditing && (
             <div className="space-y-2">
               <Label>Question Type</Label>
-              <Select value={type} onValueChange={(value) => setType(value as Question['type'])}>
+              <Select
+                value={type}
+                onValueChange={(value) => setType(value as Question['type'])}
+                disabled={isPending}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select question type" />
                 </SelectTrigger>
@@ -289,14 +414,14 @@ export function QuestionEditor({
           </div>
 
           {isChoiceType && (
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
               <Label>Options</Label>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {options.map((option, index) => {
                   return (
                     <div
                       key={option.id}
-                      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:gap-2"
+                      className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:gap-2"
                     >
                       <Input
                         placeholder={`Option ${index + 1}`}
@@ -365,7 +490,7 @@ export function QuestionEditor({
           )}
 
           {isRatingType && (
-            <div className="space-y-2">
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
               <Label>Rating Scale</Label>
               <Select
                 value={ratingScale.toString()}
@@ -386,7 +511,7 @@ export function QuestionEditor({
             </div>
           )}
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
             <Checkbox
               id="required"
               checked={required}
@@ -396,7 +521,7 @@ export function QuestionEditor({
             <Label htmlFor="required">Required question</Label>
           </div>
 
-          <div className="flex space-x-2 pt-4">
+          <div className="flex space-x-2 pt-2">
             {onCancel && (
               <Button
                 type="button"
@@ -418,4 +543,6 @@ export function QuestionEditor({
       </CardContent>
     </Card>
   )
-}
+})
+
+QuestionEditor.displayName = 'QuestionEditor'
