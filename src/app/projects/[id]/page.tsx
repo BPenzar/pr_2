@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import { useProject } from '@/hooks/use-projects'
 import { useDeleteForm } from '@/hooks/use-forms'
 import { usePlanLimits } from '@/hooks/use-plans'
@@ -28,6 +29,7 @@ import { useRouter } from 'next/navigation'
 export default function ProjectPage() {
   const params = useParams()
   const router = useRouter()
+  const { signOut, loading: authLoading, authLoading: signOutLoading } = useAuth()
   const projectId = params.id as string
   const [showCreateFormModal, setShowCreateFormModal] = useState(false)
   const { data: project, isLoading, error } = useProject(projectId)
@@ -87,6 +89,15 @@ export default function ProjectPage() {
     ])
   }
 
+  const handleSignOut = async () => {
+    const { error } = await signOut()
+    if (error) {
+      console.warn('Sign out reported an error but session was cleared locally.', error)
+    }
+    router.push('/auth/login')
+    router.refresh()
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow">
@@ -119,12 +130,15 @@ export default function ProjectPage() {
                     Upgrade Plan
                   </Button>
                 </Link>
-              ) : (
-                <Button size="sm" onClick={() => setShowCreateFormModal(true)}>
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  New Form
-                </Button>
-              )}
+              ) : null}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSignOut}
+                disabled={authLoading || signOutLoading}
+              >
+                Sign out
+              </Button>
             </div>
           </div>
         </div>
