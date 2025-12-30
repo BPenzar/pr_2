@@ -64,7 +64,7 @@ type QuestionSnapshot = {
   title: string
   description: string
   required: boolean
-  options: Array<{ label: string; color: OptionColorKey | 'none' }>
+  options: Array<{ label: string; color: string }>
   ratingScale: number | null
 }
 
@@ -76,7 +76,7 @@ const buildSnapshotFromQuestion = (question?: Question): QuestionSnapshot => {
     question && (question.type === 'choice' || question.type === 'multiselect')
       ? normalizedOptions.map((option) => ({
           label: option.label ?? '',
-          color: (option.color ?? 'none') as OptionColorKey | 'none',
+          color: option.color ?? 'none',
         }))
       : []
 
