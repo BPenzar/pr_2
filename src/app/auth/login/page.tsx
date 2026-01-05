@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from '@/components/auth/login-form'
 import { Header } from '@/components/layout/Header'
 
@@ -16,7 +17,9 @@ export default function LoginPage() {
               QR-powered feedback collection platform
             </p>
           </div>
-          <LoginForm />
+          <Suspense fallback={<div className="rounded-lg border border-border bg-white p-6 text-sm text-muted-foreground">Loading...</div>}>
+            <LoginForm />
+          </Suspense>
         </div>
       </main>
 

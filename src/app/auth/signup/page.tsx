@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { SignupForm } from '@/components/auth/signup-form'
 import { Header } from '@/components/layout/Header'
 
@@ -16,7 +17,9 @@ export default function SignupPage() {
               Create your free account and start collecting feedback
             </p>
           </div>
-          <SignupForm />
+          <Suspense fallback={<div className="rounded-lg border border-border bg-white p-6 text-sm text-muted-foreground">Loading...</div>}>
+            <SignupForm />
+          </Suspense>
         </div>
       </main>
 
