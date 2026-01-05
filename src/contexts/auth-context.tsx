@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useCallback, useEffect, useRef, useState } from 'react'
-import { User, Session, AuthChangeEvent } from '@supabase/supabase-js'
+import { User, Session, AuthChangeEvent, Provider } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase-client'
 import { Account } from '@/types/database'
 
@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean
   authLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
+  signInWithOAuth: (provider: Provider, userData?: Record<string, unknown>) => Promise<{ error: any }>
   signUp: (
     email: string,
     password: string,
@@ -30,11 +31,14 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   authLoading: false,
   signIn: async () => ({ error: null }),
+  signInWithOAuth: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => ({ error: null }),
   resetPassword: async () => ({ error: null }),
   refreshAccount: async () => {},
 })
+
+const OAUTH_METADATA_KEY = 'oauth-pending-metadata'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -43,6 +47,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [initializing, setInitializing] = useState(true)
   const [authLoading, setAuthLoading] = useState(false)
   const userIdRef = useRef<string | null>(null)
+
+  const applyPendingOAuthMetadata = useCallback(async (session: Session | null) => {
+    if (!session?.user || typeof window === 'undefined') return
+
+    let rawMetadata: string | null = null
+    try {
+      rawMetadata = window.sessionStorage.getItem(OAUTH_METADATA_KEY)
+    } catch (error) {
+      console.warn('Unable to read pending OAuth metadata.', error)
+      return
+    }
+
+    if (!rawMetadata) return
+
+    if (session.user.user_metadata?.legal_version) {
+      window.sessionStorage.removeItem(OAUTH_METADATA_KEY)
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(rawMetadata)
+      if (parsed && typeof parsed === 'object') {
+        await supabase.auth.updateUser({ data: parsed })
+      }
+    } catch (error) {
+      console.warn('Failed to apply OAuth metadata.', error)
+    } finally {
+      window.sessionStorage.removeItem(OAUTH_METADATA_KEY)
+    }
+  }, [])
 
   const fetchAccount = useCallback(async (userId: string) => {
     const fetchPromise = supabase
@@ -120,6 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(currentSession)
         setUser(currentSession?.user ?? null)
 
+        await applyPendingOAuthMetadata(currentSession)
+
         if (currentSession?.user) {
           let resolved = false
           const timeoutId = setTimeout(() => {
@@ -158,6 +194,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
 
+      applyPendingOAuthMetadata(session).catch((error) => {
+        console.warn('Unable to apply OAuth metadata on auth change.', error)
+      })
+
       if (session?.user) {
         fetchAccount(session.user.id).catch((error) => {
           console.error('Account refresh failed:', error)
@@ -173,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false
       subscription.unsubscribe()
     }
-  }, [fetchAccount])
+  }, [applyPendingOAuthMetadata, fetchAccount])
   const refreshAccount = async () => {
     if (!user?.id) return
     await fetchAccount(user.id)
@@ -190,6 +230,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error }
       }
       return { error: null }
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const signInWithOAuth = async (provider: Provider, userData?: Record<string, unknown>) => {
+    setAuthLoading(true)
+    try {
+      if (typeof window === 'undefined') {
+        return { error: new Error('OAuth sign-in must be initiated in the browser.') }
+      }
+
+      if (userData) {
+        try {
+          window.sessionStorage.setItem(OAUTH_METADATA_KEY, JSON.stringify(userData))
+        } catch (error) {
+          console.warn('Unable to persist OAuth metadata.', error)
+        }
+      }
+
+      const redirectTo = new URL('/auth/callback', window.location.origin).toString()
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+        },
+      })
+
+      return { error }
     } finally {
       setAuthLoading(false)
     }
@@ -312,6 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading: initializing,
         authLoading,
         signIn,
+        signInWithOAuth,
         signUp,
         signOut,
         resetPassword,

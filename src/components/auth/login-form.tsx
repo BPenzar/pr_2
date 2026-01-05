@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
+import { GoogleButton } from '@/components/auth/google-button'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { signIn, authLoading } = useAuth()
+  const { signIn, signInWithOAuth, authLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -38,6 +39,17 @@ export function LoginForm() {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    setIsSubmitting(true)
+    setError(null)
+
+    const { error } = await signInWithOAuth('google')
+
+    if (error) {
+      setError(error.message ?? 'Failed to sign in with Google.')
+    }
+  }
+
   const isLoading = isSubmitting || authLoading
 
   return (
@@ -55,6 +67,17 @@ export function LoginForm() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          <GoogleButton
+            disabled={isLoading}
+            onClick={handleGoogleSignIn}
+          />
+
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            <span>or sign in with email</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
+import { GoogleButton } from '@/components/auth/google-button'
 
 export function SignupForm() {
   const [email, setEmail] = useState('')
@@ -17,7 +18,7 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [acceptedLegal, setAcceptedLegal] = useState(false)
-  const { signUp, authLoading } = useAuth()
+  const { signUp, signInWithOAuth, authLoading } = useAuth()
 
   useEffect(() => {
     if (!authLoading) {
@@ -51,6 +52,29 @@ export function SignupForm() {
     }
   }
 
+  const handleGoogleSignUp = async () => {
+    setIsSubmitting(true)
+    setError(null)
+    setMessage(null)
+
+    if (!acceptedLegal) {
+      setIsSubmitting(false)
+      setError('Please accept the Terms of Service and Privacy Policy to continue.')
+      return
+    }
+
+    const acceptedAt = new Date().toISOString()
+    const { error } = await signInWithOAuth('google', {
+      legal_version: '2025-12-15',
+      terms_accepted_at: acceptedAt,
+      privacy_accepted_at: acceptedAt,
+    })
+
+    if (error) {
+      setError(error.message ?? 'Failed to continue with Google.')
+    }
+  }
+
   const isLoading = isSubmitting || authLoading
 
   return (
@@ -74,6 +98,17 @@ export function SignupForm() {
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
+
+          <GoogleButton
+            disabled={isLoading}
+            onClick={handleGoogleSignUp}
+          />
+
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            <span>or sign up with email</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
