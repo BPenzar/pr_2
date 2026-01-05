@@ -6,10 +6,10 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "cross-env VITE_CJS_IGNORE_WARNING=1 vitest run",
+    "test:watch": "cross-env VITE_CJS_IGNORE_WARNING=1 vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -39,13 +39,16 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@types/node": "^20.8.10",
     "@types/papaparse": "^5.3.14",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.33",
     "@types/react-dom": "^18.2.14",
     "autoprefixer": "^10.4.16",
-    "eslint": "^8.52.0",
+    "baseline-browser-mapping": "^2.9.11",
+    "cross-env": "^7.0.3",
+    "eslint": "^9",
     "eslint-config-next": "^15.5.9",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
