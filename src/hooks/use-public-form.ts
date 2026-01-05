@@ -20,6 +20,8 @@ export function usePublicForm(shortUrl: string) {
             name,
             description,
             is_active,
+            submission_layout,
+            questions_per_step,
             questions:questions(
               id,
               type,
@@ -33,9 +35,13 @@ export function usePublicForm(shortUrl: string) {
           )
         `)
         .eq('short_url', shortUrl)
-        .single()
+        .maybeSingle()
 
       if (qrError) throw qrError
+
+      if (!qrCode || !qrCode.form) {
+        throw new Error('This form could not be found or is no longer active.')
+      }
 
       if (!(qrCode.form as any).is_active) {
         throw new Error('This form is no longer active')

@@ -137,13 +137,21 @@ export function useUpdateForm() {
       name: string
       description?: string | null
       is_active?: boolean
+      submission_layout?: 'single' | 'step'
+      questions_per_step?: number
     }) => {
+      const questionsPerStep =
+        typeof data.questions_per_step === 'number' && Number.isFinite(data.questions_per_step)
+          ? Math.max(1, Math.floor(data.questions_per_step))
+          : undefined
       const { data: form, error } = await supabase
         .from('forms')
         .update({
           name: data.name,
           description: data.description,
           is_active: data.is_active,
+          submission_layout: data.submission_layout,
+          questions_per_step: questionsPerStep,
         })
         .eq('id', data.id)
         .select()

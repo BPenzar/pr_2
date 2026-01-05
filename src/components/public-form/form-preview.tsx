@@ -14,6 +14,8 @@ interface FormPreviewProps {
     id: string
     name: string
     description?: string
+    submission_layout?: 'single' | 'step'
+    questions_per_step?: number
     questions: Question[]
   }
   stacked?: boolean
@@ -49,15 +51,18 @@ export function FormPreview({ form, stacked = false }: FormPreviewProps) {
     setSubmitError(null)
   }, [sortedQuestions])
 
-  const isMultiStep = sortedQuestions.length > 3
-  const questionsPerStep = isMultiStep ? 1 : Math.max(sortedQuestions.length, 1)
-  const totalSteps = isMultiStep ? sortedQuestions.length : 1
+  const layoutMode = form.submission_layout ?? 'single'
+  const configuredPerStep = form.questions_per_step ?? 1
+  const normalizedPerStep = Math.max(1, Math.min(sortedQuestions.length || 1, configuredPerStep))
+  const isMultiStep = layoutMode === 'step' && sortedQuestions.length > normalizedPerStep
+  const questionsPerStep = isMultiStep ? normalizedPerStep : Math.max(sortedQuestions.length, 1)
+  const totalSteps = isMultiStep ? Math.ceil(sortedQuestions.length / questionsPerStep) : 1
   const isLastStep = currentStep >= totalSteps - 1
   const isSubmittingResponse = false
 
   const currentQuestions = useMemo(() => {
     return isMultiStep
-      ? sortedQuestions.slice(currentStep, currentStep + questionsPerStep)
+      ? sortedQuestions.slice(currentStep * questionsPerStep, (currentStep + 1) * questionsPerStep)
       : sortedQuestions
   }, [currentStep, isMultiStep, questionsPerStep, sortedQuestions])
 

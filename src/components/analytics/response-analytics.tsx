@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { formatDistanceToNow } from 'date-fns'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
+import type { PieLabelRenderProps } from 'recharts'
 import { getOptionColorConfig } from '@/lib/option-colors'
 import { normalizeChoiceOptions } from '@/lib/question-utils'
 import type { OptionColorKey } from '@/lib/option-colors'
@@ -237,12 +238,60 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
 
   const PALETTE = ['#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ef4444', '#06b6d4', '#facc15', '#ec4899']
 
-  const ratingColor = (value: number) => {
-    if (value <= 6) return '#ef4444'
-    if (value <= 8) return '#facc15'
-    if (value === 9) return '#10b981'
+  const ratingColor = (value: number, scale: number) => {
+    const normalized = Math.max(0, Math.min(scale, value))
+
+    if (scale <= 5) {
+      if (normalized <= 2) return '#ef4444'
+      if (normalized <= 3) return '#f97316'
+      if (normalized <= 4) return '#facc15'
+      return '#10b981'
+    }
+
+    if (normalized <= 6) return '#ef4444'
+    if (normalized <= 8) return '#facc15'
+    if (normalized <= 9) return '#10b981'
     return '#047857'
   }
+
+  const hexToRgba = (hex: string, alpha: number) => {
+    const normalized = hex.replace('#', '')
+    if (normalized.length !== 6) return hex
+    const r = parseInt(normalized.slice(0, 2), 16)
+    const g = parseInt(normalized.slice(2, 4), 16)
+    const b = parseInt(normalized.slice(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
+
+  const RADIAN = Math.PI / 180
+  const renderChoiceLabel =
+    (summaryIndex: number, counts: ChoiceSummary['counts']) =>
+    ({ cx, cy, midAngle, outerRadius, percent, index }: PieLabelRenderProps) => {
+      if (!percent || index == null) return null
+      const radius = outerRadius + 12
+      const x = cx + radius * Math.cos(-midAngle * RADIAN)
+      const y = cy + radius * Math.sin(-midAngle * RADIAN)
+      const isRight = x > cx
+      const textAnchor = isRight ? 'end' : 'start'
+      const offset = isRight ? -6 : 6
+      const entry = counts[index]
+      const fallback = PALETTE[(summaryIndex * 4 + index) % PALETTE.length]
+      const fillColor = entry?.color ? getOptionColorConfig(entry.color).hex : fallback
+
+      return (
+        <text
+          x={x + offset}
+          y={y}
+          fill={fillColor}
+          textAnchor={textAnchor}
+          dominantBaseline="central"
+          fontSize={14}
+          fontWeight={600}
+        >
+          {`${Math.round(percent * 100)}%`}
+        </text>
+      )
+    }
 
   return (
     <div className="space-y-6">
@@ -265,7 +314,11 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Rating Breakdown</h2>
           <div className="grid gap-6">
-            {ratingSummaries.map((summary, index) => (
+            {ratingSummaries.map((summary, index) => {
+              const averageColor = ratingColor(summary.average, summary.scale)
+              const averageBackground = hexToRgba(averageColor, 0.15)
+
+              return (
               <Card key={summary.questionId}>
                 <CardHeader>
                   <CardTitle>{summary.questionTitle}</CardTitle>
@@ -288,14 +341,21 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
                             dataKey="value"
                           >
                             {summary.distribution.map(({ value }) => (
-                              <Cell key={value} fill={ratingColor(value)} />
+                              <Cell key={value} fill={ratingColor(value, summary.scale)} />
                             ))}
                           </Pie>
                       <Tooltip formatter={(value: number, label: string) => [value, label]} />
                         </PieChart>
                       </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                      <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-emerald-100 text-emerald-700 shadow-inner">
+                      <div
+                        className="flex h-20 w-20 flex-col items-center justify-center rounded-full border shadow-inner"
+                        style={{
+                          backgroundColor: averageBackground,
+                          borderColor: averageColor,
+                          color: averageColor,
+                        }}
+                      >
                         <span className="text-xl font-semibold">{summary.average.toFixed(1)}</span>
                         <span className="text-xs text-muted-foreground">avg</span>
                       </div>
@@ -306,7 +366,7 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
                         <div key={value} className="flex items-center gap-4 text-sm text-gray-700">
                           <span
                             className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white"
-                            style={{ backgroundColor: ratingColor(value) }}
+                            style={{ backgroundColor: ratingColor(value, summary.scale) }}
                           >
                             {value}
                           </span>
@@ -321,7 +381,7 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
         </div>
       )}
@@ -350,7 +410,7 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
                             outerRadius={110}
                             innerRadius={70}
                             labelLine={false}
-                            label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                            label={renderChoiceLabel(summaryIndex, summary.counts)}
                           >
                             {summary.counts.map((entry, optionIndex) => {
                               const fallback = PALETTE[(summaryIndex * 4 + optionIndex) % PALETTE.length]

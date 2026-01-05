@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { QuestionEditor, QuestionEditorHandle } from './question-editor'
 import { PlusIcon, ArrowUpIcon, ArrowDownIcon, FileTextIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -34,6 +35,9 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const updateForm = useUpdateForm()
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
+  const [submissionLayout, setSubmissionLayout] = useState<'single' | 'step'>('single')
+  const [questionsPerStep, setQuestionsPerStep] = useState(1)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [hasMetaChanges, setHasMetaChanges] = useState(false)
   const [hasQuestionChanges, setHasQuestionChanges] = useState(false)
   const [isSavingAll, setIsSavingAll] = useState(false)
@@ -78,6 +82,12 @@ export function FormBuilder({ formId }: FormBuilderProps) {
     if (!form) return
     setFormName(form.name ?? '')
     setFormDescription(form.description ?? '')
+    setSubmissionLayout(form.submission_layout ?? 'single')
+    setQuestionsPerStep(
+      typeof form.questions_per_step === 'number' && Number.isFinite(form.questions_per_step)
+        ? Math.max(1, Math.floor(form.questions_per_step))
+        : 1
+    )
     setHasMetaChanges(false)
   }, [form])
 
@@ -161,9 +171,24 @@ export function FormBuilder({ formId }: FormBuilderProps) {
     setHasMetaChanges(true)
   }
 
+  const handleLayoutChange = (layout: 'single' | 'step') => {
+    setSubmissionLayout(layout)
+    setSaveError(null)
+    setHasMetaChanges(true)
+  }
+
+  const handleQuestionsPerStepChange = (value: string) => {
+    const parsed = Number(value)
+    const sanitized = Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : 1
+    setQuestionsPerStep(sanitized)
+    setSaveError(null)
+    setHasMetaChanges(true)
+  }
+
   const handleMetaSave = async () => {
     if (!hasMetaChanges && !hasQuestionChanges) return
     setIsSavingAll(true)
+    setSaveError(null)
     try {
       if (hasQuestionChanges && questionEditorRef.current) {
         const questionSaved = await questionEditorRef.current.submit()
@@ -177,11 +202,14 @@ export function FormBuilder({ formId }: FormBuilderProps) {
           id: formId,
           name: formName.trim(),
           description: formDescription.trim() === '' ? null : formDescription.trim(),
+          submission_layout: submissionLayout,
+          questions_per_step: submissionLayout === 'step' ? questionsPerStep : 1,
         })
         setHasMetaChanges(false)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update form details:', err)
+      setSaveError(err?.message || 'Failed to save form settings.')
     } finally {
       setIsSavingAll(false)
     }
@@ -265,6 +293,53 @@ export function FormBuilder({ formId }: FormBuilderProps) {
             )}
           </div> */}
 
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200/70 shadow-sm">
+        <CardHeader className="flex flex-col gap-4 border-b border-slate-200/70 bg-slate-50/70 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>Form Experience</CardTitle>
+            <CardDescription>
+              Choose how respondents move through your questions.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-6">
+          {saveError && (
+            <Alert variant="destructive">
+              <AlertDescription>{saveError}</AlertDescription>
+            </Alert>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="builder-form-layout">Question flow</Label>
+            <select
+              id="builder-form-layout"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              value={submissionLayout}
+              onChange={(event) => handleLayoutChange(event.target.value as 'single' | 'step')}
+            >
+              <option value="single">All questions on one page (scroll)</option>
+              <option value="step">Step-by-step sections</option>
+            </select>
+          </div>
+
+          {submissionLayout === 'step' && (
+            <div className="space-y-2">
+              <Label htmlFor="builder-questions-per-step">Questions per section</Label>
+              <Input
+                id="builder-questions-per-step"
+                type="number"
+                min={1}
+                max={50}
+                value={questionsPerStep}
+                onChange={(event) => handleQuestionsPerStepChange(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Respondents will see this many questions before tapping Next.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

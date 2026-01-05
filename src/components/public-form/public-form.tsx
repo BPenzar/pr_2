@@ -59,11 +59,16 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
     return Array.isArray(rawQuestions) ? rawQuestions : []
   }, [formData?.form])
 
-  const isMultiStep = questions.length > 3
-  const questionsPerStep = isMultiStep ? 1 : Math.max(questions.length, 1)
-  const totalSteps = isMultiStep ? questions.length : 1
+  const layoutMode =
+    (formData?.form as { submission_layout?: 'single' | 'step' } | undefined)?.submission_layout ?? 'single'
+  const configuredPerStep =
+    (formData?.form as { questions_per_step?: number } | undefined)?.questions_per_step ?? 1
+  const normalizedPerStep = Math.max(1, Math.min(questions.length || 1, configuredPerStep))
+  const isMultiStep = layoutMode === 'step' && questions.length > normalizedPerStep
+  const questionsPerStep = isMultiStep ? normalizedPerStep : Math.max(questions.length, 1)
+  const totalSteps = isMultiStep ? Math.ceil(questions.length / questionsPerStep) : 1
   const currentQuestions = isMultiStep
-    ? questions.slice(currentStep, currentStep + questionsPerStep)
+    ? questions.slice(currentStep * questionsPerStep, (currentStep + 1) * questionsPerStep)
     : questions
   const isLastStep = currentStep >= totalSteps - 1
 

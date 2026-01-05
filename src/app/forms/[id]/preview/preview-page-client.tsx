@@ -45,6 +45,8 @@ export function FormPreviewPageClient({ formId }: FormPreviewPageClientProps) {
     id: form.id,
     name: form.name,
     description: form.description,
+    submission_layout: form.submission_layout,
+    questions_per_step: form.questions_per_step,
     questions,
   }
 
