@@ -266,13 +266,17 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
   const RADIAN = Math.PI / 180
   const renderChoiceLabel = (summaryIndex: number, counts: ChoiceSummary['counts']) => {
     const ChoiceLabel = ({ cx, cy, midAngle, outerRadius, percent, index }: PieLabelRenderProps) => {
-      if (!percent || index == null) return null
-      if (typeof cx !== 'number' || typeof cy !== 'number' || typeof midAngle !== 'number') return null
+      if (index == null) return null
+      const safePercent = typeof percent === 'number' ? percent : 0
+      if (!Number.isFinite(safePercent) || safePercent <= 0) return null
+      const safeCx = typeof cx === 'number' ? cx : 0
+      const safeCy = typeof cy === 'number' ? cy : 0
+      const safeMidAngle = typeof midAngle === 'number' ? midAngle : 0
       const fallbackRadius = typeof outerRadius === 'number' ? outerRadius : 110
       const radius = fallbackRadius + 12
-      const x = cx + radius * Math.cos(-midAngle * RADIAN)
-      const y = cy + radius * Math.sin(-midAngle * RADIAN)
-      const isRight = x > cx
+      const x = safeCx + radius * Math.cos(-safeMidAngle * RADIAN)
+      const y = safeCy + radius * Math.sin(-safeMidAngle * RADIAN)
+      const isRight = x > safeCx
       const textAnchor = isRight ? 'end' : 'start'
       const offset = isRight ? -6 : 6
       const entry = counts[index]
@@ -289,7 +293,7 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
           fontSize={14}
           fontWeight={600}
         >
-          {`${Math.round(percent * 100)}%`}
+          {`${Math.round(safePercent * 100)}%`}
         </text>
       )
     }
