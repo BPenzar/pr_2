@@ -263,6 +263,16 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
+  const getContrastTextColor = (hex: string) => {
+    const normalized = hex.replace('#', '')
+    if (normalized.length !== 6) return '#0f172a'
+    const r = parseInt(normalized.slice(0, 2), 16)
+    const g = parseInt(normalized.slice(2, 4), 16)
+    const b = parseInt(normalized.slice(4, 6), 16)
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000
+    return brightness > 160 ? '#0f172a' : '#ffffff'
+  }
+
   const RADIAN = Math.PI / 180
   const renderChoiceLabel = (summaryIndex: number, counts: ChoiceSummary['counts']) => {
     const ChoiceLabel = ({ cx, cy, midAngle, outerRadius, innerRadius, percent, index }: PieLabelRenderProps) => {
@@ -280,12 +290,13 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
       const entry = counts[index]
       const fallback = PALETTE[(summaryIndex * 4 + index) % PALETTE.length]
       const fillColor = entry?.color ? getOptionColorConfig(entry.color).hex : fallback
+      const labelColor = getContrastTextColor(fillColor)
 
       return (
         <text
           x={x}
           y={y}
-          fill={fillColor}
+          fill={labelColor}
           textAnchor="middle"
           dominantBaseline="central"
           fontSize={14}
