@@ -264,9 +264,8 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
   }
 
   const RADIAN = Math.PI / 180
-  const renderChoiceLabel =
-    (summaryIndex: number, counts: ChoiceSummary['counts']) =>
-    ({ cx, cy, midAngle, outerRadius, percent, index }: PieLabelRenderProps) => {
+  const renderChoiceLabel = (summaryIndex: number, counts: ChoiceSummary['counts']) => {
+    const ChoiceLabel = ({ cx, cy, midAngle, outerRadius, percent, index }: PieLabelRenderProps) => {
       if (!percent || index == null) return null
       const radius = outerRadius + 12
       const x = cx + radius * Math.cos(-midAngle * RADIAN)
@@ -292,6 +291,10 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
         </text>
       )
     }
+
+    ChoiceLabel.displayName = 'ChoiceLabel'
+    return ChoiceLabel
+  }
 
   return (
     <div className="space-y-6">
