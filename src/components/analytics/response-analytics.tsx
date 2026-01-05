@@ -267,7 +267,8 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
   const renderChoiceLabel = (summaryIndex: number, counts: ChoiceSummary['counts']) => {
     const ChoiceLabel = ({ cx, cy, midAngle, outerRadius, percent, index }: PieLabelRenderProps) => {
       if (!percent || index == null) return null
-      const radius = outerRadius + 12
+      const fallbackRadius = typeof outerRadius === 'number' ? outerRadius : 110
+      const radius = fallbackRadius + 12
       const x = cx + radius * Math.cos(-midAngle * RADIAN)
       const y = cy + radius * Math.sin(-midAngle * RADIAN)
       const isRight = x > cx
