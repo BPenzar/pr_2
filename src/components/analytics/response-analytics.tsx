@@ -265,30 +265,28 @@ export function ResponseAnalytics({ formId }: ResponseAnalyticsProps) {
 
   const RADIAN = Math.PI / 180
   const renderChoiceLabel = (summaryIndex: number, counts: ChoiceSummary['counts']) => {
-    const ChoiceLabel = ({ cx, cy, midAngle, outerRadius, percent, index }: PieLabelRenderProps) => {
+    const ChoiceLabel = ({ cx, cy, midAngle, outerRadius, innerRadius, percent, index }: PieLabelRenderProps) => {
       if (index == null) return null
       const safePercent = typeof percent === 'number' ? percent : 0
       if (!Number.isFinite(safePercent) || safePercent <= 0) return null
       const safeCx = typeof cx === 'number' ? cx : 0
       const safeCy = typeof cy === 'number' ? cy : 0
       const safeMidAngle = typeof midAngle === 'number' ? midAngle : 0
-      const fallbackRadius = typeof outerRadius === 'number' ? outerRadius : 110
-      const radius = fallbackRadius + 12
+      const safeOuterRadius = typeof outerRadius === 'number' ? outerRadius : 110
+      const safeInnerRadius = typeof innerRadius === 'number' ? innerRadius : 70
+      const radius = safeInnerRadius + (safeOuterRadius - safeInnerRadius) * 0.55
       const x = safeCx + radius * Math.cos(-safeMidAngle * RADIAN)
       const y = safeCy + radius * Math.sin(-safeMidAngle * RADIAN)
-      const isRight = x > safeCx
-      const textAnchor = isRight ? 'end' : 'start'
-      const offset = isRight ? -6 : 6
       const entry = counts[index]
       const fallback = PALETTE[(summaryIndex * 4 + index) % PALETTE.length]
       const fillColor = entry?.color ? getOptionColorConfig(entry.color).hex : fallback
 
       return (
         <text
-          x={x + offset}
+          x={x}
           y={y}
           fill={fillColor}
-          textAnchor={textAnchor}
+          textAnchor="middle"
           dominantBaseline="central"
           fontSize={14}
           fontWeight={600}
