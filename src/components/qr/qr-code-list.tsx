@@ -472,7 +472,8 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
           }
 
           const pdfBytes = await pdfDoc.save()
-          const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+          const pdfBuffer = Uint8Array.from(pdfBytes).buffer
+          const blob = new Blob([pdfBuffer], { type: 'application/pdf' })
           const url = URL.createObjectURL(blob)
           updatePreviewUrl(url)
         } catch (error: any) {
