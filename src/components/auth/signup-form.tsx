@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
 import { GoogleButton } from '@/components/auth/google-button'
+import { LEGAL_VERSION } from '@/lib/legal'
 
 export function SignupForm() {
   const [email, setEmail] = useState('')
@@ -50,7 +51,7 @@ export function SignupForm() {
 
     const acceptedAt = new Date().toISOString()
     const { error } = await signUp(email, password, undefined, {
-      legal_version: '2025-12-15',
+      legal_version: LEGAL_VERSION,
       terms_accepted_at: acceptedAt,
       privacy_accepted_at: acceptedAt,
     })
@@ -77,7 +78,7 @@ export function SignupForm() {
     const { error } = await signInWithOAuth(
       'google',
       {
-        legal_version: '2025-12-15',
+        legal_version: LEGAL_VERSION,
         terms_accepted_at: acceptedAt,
         privacy_accepted_at: acceptedAt,
       },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { LEGAL_VERSION } from '@/lib/legal'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -53,13 +54,25 @@ export async function GET(request: NextRequest) {
     }
   )
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
     console.error('OAuth code exchange failed:', error)
     const fallbackUrl = new URL('/auth/login', request.url)
     fallbackUrl.searchParams.set('error', 'oauth_exchange_failed')
     return NextResponse.redirect(fallbackUrl)
+  }
+
+  const userMetadata = data?.user?.user_metadata ?? {}
+  const hasAcceptedLegal =
+    userMetadata.legal_version === LEGAL_VERSION &&
+    userMetadata.terms_accepted_at &&
+    userMetadata.privacy_accepted_at
+
+  if (!hasAcceptedLegal) {
+    const acceptUrl = new URL('/auth/accept-terms', request.url)
+    acceptUrl.searchParams.set('redirectTo', safeRedirectPath)
+    response.headers.set('Location', acceptUrl.toString())
   }
 
   return response

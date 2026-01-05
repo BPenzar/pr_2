@@ -1,0 +1,1 @@
+export const LEGAL_VERSION = '2025-12-15'
