@@ -236,8 +236,9 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
   }, [])
 
   const getQrPngBytes = useCallback(async (qrCode: any) => {
-    if (qrImageCacheRef.current?.id === qrCode.id) {
-      return qrImageCacheRef.current.bytes
+    const cached = qrImageCacheRef.current
+    if (cached && cached.id === qrCode.id) {
+      return cached.bytes
     }
 
     const dataUrl = await QRCode.toDataURL(qrCode.full_url, {
