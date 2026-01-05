@@ -235,6 +235,29 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
     })
   }, [])
 
+  const decodeDataUrlToArrayBuffer = useCallback((dataUrl: string) => {
+    const [, meta, data] = dataUrl.match(/^data:(.*?),(.*)$/) ?? []
+    if (!meta || !data) {
+      throw new Error('Invalid data URL')
+    }
+
+    if (meta.includes(';base64')) {
+      const binary = atob(data)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i)
+      }
+      return bytes.buffer
+    }
+
+    const decoded = decodeURIComponent(data)
+    const bytes = new Uint8Array(decoded.length)
+    for (let i = 0; i < decoded.length; i += 1) {
+      bytes[i] = decoded.charCodeAt(i)
+    }
+    return bytes.buffer
+  }, [])
+
   const getQrPngBytes = useCallback(async (qrCode: any) => {
     const cached = qrImageCacheRef.current
     if (cached && cached.id === qrCode.id) {
@@ -246,11 +269,10 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
       margin: 2,
       errorCorrectionLevel: 'M',
     })
-    const response = await fetch(dataUrl)
-    const bytes = await response.arrayBuffer()
+    const bytes = decodeDataUrlToArrayBuffer(dataUrl)
     qrImageCacheRef.current = { id: qrCode.id, bytes }
     return bytes
-  }, [])
+  }, [decodeDataUrlToArrayBuffer])
 
   const wrapText = useCallback(
     (text: string, font: any, fontSize: number, maxWidth: number, maxLines: number) => {

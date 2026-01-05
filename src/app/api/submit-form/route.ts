@@ -8,8 +8,7 @@ import {
 } from '@/lib/rate-limit'
 import {
   checkForSpam,
-  decodeFormLoadToken,
-  verifyCaptcha
+  decodeFormLoadToken
 } from '@/lib/anti-spam'
 
 interface SubmissionRequest {
@@ -20,8 +19,7 @@ interface SubmissionRequest {
   // Anti-spam fields
   honeypotValue?: string
   formLoadToken?: string
-  captchaQuestion?: string
-  captchaAnswer?: string
+  captchaToken?: string
   userAgent?: string
   referrer?: string
 }
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
     const hashedIP = hashIP(clientIP)
 
     // Rate limiting check
-    const rateLimitResult = formSubmissionRateLimit.check(clientIP)
+    const rateLimitResult = await formSubmissionRateLimit.check(clientIP)
 
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
@@ -77,11 +75,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify CAPTCHA if provided
-    if (body.captchaQuestion && body.captchaAnswer) {
-      // Extract expected answer from question (simple implementation)
-      const expectedAnswer = extractCaptchaAnswer(body.captchaQuestion)
-      if (!verifyCaptcha(expectedAnswer, body.captchaAnswer)) {
+    const requiresCaptcha = spamCheck.score >= 20
+
+    if (requiresCaptcha) {
+      if (!body.captchaToken) {
+        return NextResponse.json(
+          {
+            error: 'Verification required. Please try again.',
+            type: 'CAPTCHA_REQUIRED'
+          },
+          { status: 400 }
+        )
+      }
+
+      const captchaVerification = await verifyTurnstileToken(body.captchaToken, clientIP)
+
+      if (!captchaVerification.success) {
+        if (captchaVerification.reason === 'missing_secret') {
+          return NextResponse.json(
+            {
+              error: 'CAPTCHA is not configured. Please contact support.',
+              type: 'CAPTCHA_NOT_CONFIGURED'
+            },
+            { status: 500 }
+          )
+        }
+
         return NextResponse.json(
           {
             error: 'CAPTCHA verification failed. Please try again.',
@@ -187,14 +206,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Log successful submission (for monitoring)
-    console.log('Form submission successful:', {
-      formId: body.formId,
-      responseId: response.id,
-      hashedIP,
-      spamScore: spamCheck.score
-    })
-
     return NextResponse.json(
       {
         success: true,
@@ -214,21 +225,38 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Extract expected answer from CAPTCHA question
- */
-function extractCaptchaAnswer(question: string): string {
-  // Simple math questions
-  if (question.includes('2 + 3')) return '5'
-  if (question.includes('4 + 6')) return '10'
-  if (question.includes('7 - 2')) return '5'
-  if (question.includes('8 - 3')) return '5'
-  if (question.includes('3 × 2')) return '6'
-  if (question.includes('4 × 3')) return '12'
+async function verifyTurnstileToken(token: string, ip: string) {
+  const secret = process.env.TURNSTILE_SECRET_KEY
 
-  // Simple knowledge questions
-  if (question.includes('color is the sky')) return 'blue'
-  if (question.includes('days are in a week')) return '7'
+  if (!secret) {
+    console.error('Missing TURNSTILE_SECRET_KEY')
+    return { success: false, reason: 'missing_secret' as const }
+  }
 
-  return ''
+  try {
+    const params = new URLSearchParams({
+      secret,
+      response: token,
+      remoteip: ip
+    })
+
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: params
+    })
+
+    if (!response.ok) {
+      console.error('Turnstile verification failed with status:', response.status)
+      return { success: false, reason: 'request_failed' as const }
+    }
+
+    const data = await response.json()
+    if (data?.success) {
+      return { success: true }
+    }
+    return { success: false, reason: 'invalid' as const }
+  } catch (error) {
+    console.error('Turnstile verification error:', error)
+    return { success: false, reason: 'request_failed' as const }
+  }
 }

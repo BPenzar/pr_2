@@ -7,16 +7,14 @@ import { useProjects } from '@/hooks/use-projects'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ProjectList } from '@/components/projects/project-list'
-import { SettingsIcon, TrendingUpIcon, SparklesIcon, Menu, X } from 'lucide-react'
+import { SettingsIcon, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase-client'
-import { usePlanLimits } from '@/hooks/use-plans'
 
 export default function DashboardPage() {
   const router = useRouter()
   const { user, account, signOut, loading, authLoading } = useAuth()
   const { data: projects } = useProjects()
-  const planLimits = usePlanLimits()
   const [hasCreateAccess, setHasCreateAccess] = useState(true)
   const [onboardingChecked, setOnboardingChecked] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -83,32 +81,8 @@ export default function DashboardPage() {
     router.replace('/')
   }
 
-  const projectUsage = planLimits?.projects
-  const projectsCount = projectUsage?.current ?? projects?.length ?? 0
-  const projectLimitValue = projectUsage?.limit ?? null
-  const reachedProjectLimit =
-    projectLimitValue !== null &&
-    projectLimitValue !== -1 &&
-    projectsCount >= projectLimitValue
-  const canCreateProject = hasCreateAccess && !reachedProjectLimit
-
-  const formatAvailability = (usage?: { current: number; limit: number }) => {
-    if (!usage || usage.limit === undefined || usage.limit === null) {
-      return { display: null, suffix: null }
-    }
-
-    const limitDisplay = usage.limit === -1 ? '∞' : usage.limit
-
-    return {
-      display: `${usage.current}/${limitDisplay}`,
-      suffix: 'available',
-    }
-  }
-
-  const projectsAvailability = formatAvailability(planLimits?.projects)
-  const formsAvailability = formatAvailability(planLimits?.forms)
-  const responsesAvailability = formatAvailability(planLimits?.responses)
-  const qrCodesAvailability = formatAvailability(planLimits?.qrCodes)
+  const projectsCount = projects?.length ?? 0
+  const canCreateProject = hasCreateAccess
 
 
   return (
@@ -125,16 +99,6 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center justify-end gap-3">
                 <div className="hidden sm:flex items-center gap-3">
-                  <Link href="/billing" className="self-center">
-                    <Button
-                      variant={reachedProjectLimit ? 'default' : 'outline'}
-                      size="sm"
-                      className={`h-9 items-center ${reachedProjectLimit ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}`}
-                    >
-                      <TrendingUpIcon className="w-4 h-4 mr-2" />
-                      {reachedProjectLimit ? 'Upgrade plan' : 'Your Plan'}
-                    </Button>
-                  </Link>
                   <Link href="/settings" className="self-center">
                     <Button variant="outline" size="sm" className="h-9 items-center">
                       <SettingsIcon className="w-4 h-4 mr-2" />
@@ -162,12 +126,6 @@ export default function DashboardPage() {
                   </Button>
                   {mobileActionsOpen && (
                     <div className="absolute right-0 z-10 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                      <Link href="/billing" onClick={() => setMobileActionsOpen(false)}>
-                        <Button variant="ghost" size="sm" className="w-full justify-start">
-                          <TrendingUpIcon className="w-4 h-4 mr-2" />
-                          Your Plan
-                        </Button>
-                      </Link>
                       <Link href="/settings" onClick={() => setMobileActionsOpen(false)}>
                         <Button variant="ghost" size="sm" className="w-full justify-start">
                           <SettingsIcon className="w-4 h-4 mr-2" />
@@ -188,7 +146,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            {!canCreateProject && reachedProjectLimit && null}
+            {!canCreateProject && null}
           </div>
         </div>
       </div>
@@ -200,11 +158,8 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Projects</CardTitle>
               <div className="flex items-baseline gap-2 text-slate-900">
                 <span className="text-2xl font-semibold">
-                  {projectsAvailability.display ?? projectsCount}
+                  {projectsCount}
                 </span>
-                {projectsAvailability.suffix && (
-                  <span className="text-xs text-muted-foreground">{projectsAvailability.suffix}</span>
-                )}
               </div>
               <CardDescription>Active projects</CardDescription>
             </CardHeader>
@@ -214,11 +169,8 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Forms</CardTitle>
               <div className="flex items-baseline gap-2 text-slate-900">
                 <span className="text-2xl font-semibold">
-                  {formsAvailability.display ?? planLimits?.forms.current ?? 0}
+                  {projects?.reduce((total, project) => total + (project.usage?.forms_count ?? 0), 0) ?? 0}
                 </span>
-                {formsAvailability.suffix && (
-                  <span className="text-xs text-muted-foreground">{formsAvailability.suffix}</span>
-                )}
               </div>
               <CardDescription>Across all projects</CardDescription>
             </CardHeader>
@@ -228,11 +180,8 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">Responses</CardTitle>
               <div className="flex items-baseline gap-2 text-slate-900">
                 <span className="text-2xl font-semibold">
-                  {responsesAvailability.display ?? planLimits?.responses.current ?? 0}
+                  {projects?.reduce((total, project) => total + (project.usage?.responses_count ?? 0), 0) ?? 0}
                 </span>
-                {responsesAvailability.suffix && (
-                  <span className="text-xs text-muted-foreground">{responsesAvailability.suffix}</span>
-                )}
               </div>
               <CardDescription>This month</CardDescription>
             </CardHeader>
@@ -242,11 +191,8 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">QR Codes</CardTitle>
               <div className="flex items-baseline gap-2 text-slate-900">
                 <span className="text-2xl font-semibold">
-                  {qrCodesAvailability.display ?? planLimits?.qrCodes.current ?? 0}
+                  {projects?.reduce((total, project) => total + (project.usage?.qr_codes_count ?? 0), 0) ?? 0}
                 </span>
-                {qrCodesAvailability.suffix && (
-                  <span className="text-xs text-muted-foreground">{qrCodesAvailability.suffix}</span>
-                )}
               </div>
               <CardDescription>Generated to date</CardDescription>
             </CardHeader>
@@ -255,7 +201,7 @@ export default function DashboardPage() {
         <ProjectList
           canCreateProject={canCreateProject}
           projectsCount={projectsCount}
-          reachedProjectLimit={reachedProjectLimit}
+          reachedProjectLimit={!canCreateProject}
           showCreateModal={showCreateModal}
           onShowCreateModalChange={setShowCreateModal}
         />

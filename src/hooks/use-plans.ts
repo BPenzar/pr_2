@@ -272,9 +272,6 @@ export function useUpgradePlan() {
       // 2. Redirect to payment page
       // 3. Handle webhooks to update plan after payment
 
-      // For now, we'll just log the upgrade intent
-      console.log('Upgrade initiated:', { accountId: account.id, planId })
-
       // Simulate upgrade process
       return {
         checkoutUrl: '/upgrade/checkout',
@@ -299,9 +296,6 @@ export function useCancelPlan() {
   return useMutation({
     mutationFn: async () => {
       if (!account?.id) throw new Error('No account')
-
-      // In a real implementation, this would cancel the Stripe subscription
-      console.log('Plan cancellation initiated:', { accountId: account.id })
 
       return { success: true }
     },

@@ -24,14 +24,13 @@ QR-code powered feedback collection platform built with Next.js + TypeScript + S
 - **CSV export**: Export responses and form structure
 
 ### 🛡️ **Security & Performance**
-- **Rate limiting**: Form submissions (default 10 / 15 minutes per IP)
+- **Rate limiting**: Form submissions (default 10 / 15 minutes per IP via Upstash Redis)
 - **Anti-spam**: Honeypot + timing + content checks
-- **Simple CAPTCHA**: Optional challenge on suspicious submissions
+- **CAPTCHA**: Cloudflare Turnstile verification on suspicious submissions
 - **Privacy**: IP hashing via `IP_HASH_SALT`
 
 ### 🎯 **User Experience**
 - **Auth + onboarding**: Signup/login and onboarding flow
-- **Usage & plan page**: Usage meters and plan comparison (seeded in `supabase/seed/001_plans.sql`)
 - **Legal pages**: `/terms`, `/privacy`, `/dpa`
 
 ## 🏗️ Tech Stack
@@ -57,8 +56,8 @@ QR-code powered feedback collection platform built with Next.js + TypeScript + S
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/BPenzar/pr_2.git
-cd pr_2
+git clone https://github.com/BPenzar/qr-2.git
+cd qr-2
 ```
 
 ### 2. Install dependencies
@@ -83,6 +82,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 IP_HASH_SALT=your_random_salt_here
+UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
+TURNSTILE_SECRET_KEY=your_turnstile_secret_key
 ```
 
 Optional variables (only if you enable those features):
@@ -122,7 +125,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 src/
 ├── app/                    # Next.js App Router pages
 │   ├── auth/              # Authentication pages
-│   ├── billing/           # Plan management and billing
 │   ├── dashboard/         # Main dashboard
 │   ├── forms/             # Form builder and analytics
 │   ├── onboarding/        # User onboarding flow
@@ -136,7 +138,7 @@ src/
 │   ├── public-form/       # Public submission interface
 │   ├── qr/                # QR code generation and management
 │   ├── ui/                # Reusable UI components
-│   └── upgrade/           # Plan upgrade components
+│   └── upgrade/           # Legacy plan components
 ├── hooks/                 # Custom React hooks
 ├── lib/                   # Utilities and configurations
 │   ├── anti-spam.ts       # Anti-spam protection
@@ -167,16 +169,12 @@ Templates live in `src/lib/form-templates.ts` and are used by onboarding + the �
 - **Honeypot Fields**: Hidden fields to catch bots
 - **Timing Analysis**: Detect suspiciously fast submissions
 - **Content Filtering**: Identify spam patterns in responses
-- **CAPTCHA Challenges**: Dynamic verification when needed
+- **CAPTCHA Challenges**: Turnstile verification when needed
 
 ### Data Privacy
 - **IP Hashing**: SHA-256 hashing for GDPR compliance
 - **RLS Policies**: Row-level security in Supabase
 - **Minimal Data Collection**: Only essential information stored
-
-## 📊 Plan Structure
-
-Plans are seeded in `supabase/seed/001_plans.sql` (Free, Starter, Professional, Enterprise). Limits are enforced via database functions (see `supabase/migrations/*`) and surfaced in the UI on `/billing`.
 
 ## 🧪 Useful Commands
 
@@ -199,7 +197,7 @@ GitHub Actions runs:
 ### Vercel (Recommended)
 
 1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`)
+2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`)
 3. Deploy automatically on every push to main
 
 For QR generation, the Supabase Edge Function `generate-qr-code` uses `NEXT_PUBLIC_APP_URL` to build the public short link (`/f/[shortUrl]`).

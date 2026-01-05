@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useForm } from '@/hooks/use-forms'
 import { FormBuilder } from '@/components/forms/form-builder'
@@ -12,12 +12,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeftIcon, SettingsIcon, EyeIcon, LayoutDashboard, Wrench, Table, QrCode } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function FormBuilderPage() {
   const params = useParams()
   const formId = params.id as string
   const { data: form, isLoading } = useForm(formId)
   const [activeTab, setActiveTab] = useState<'response-analytics' | 'qr-analytics' | 'builder' | 'responses' | 'qr-codes'>('response-analytics')
+  const queryClient = useQueryClient()
+
+  const handleTabChange = useCallback((value: string) => {
+    const nextTab = value as typeof activeTab
+    setActiveTab(nextTab)
+
+    if (nextTab === 'response-analytics' || nextTab === 'qr-analytics' || nextTab === 'responses') {
+      queryClient.invalidateQueries({ queryKey: ['responses', formId] })
+    }
+
+    if (nextTab === 'response-analytics' || nextTab === 'qr-analytics') {
+      queryClient.invalidateQueries({ queryKey: ['form-analytics', formId] })
+    }
+  }, [formId, queryClient])
 
   if (isLoading) {
     return (
@@ -83,7 +98,7 @@ export default function FormBuilderPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+          onValueChange={handleTabChange}
           className="space-y-6"
         >
           <TabsList className="flex flex-wrap gap-2 mb-3 sm:mb-4">
@@ -110,23 +125,23 @@ export default function FormBuilderPage() {
           </TabsList>
 
           <TabsContent value="response-analytics" className="space-y-6 pt-4 sm:pt-6">
-            <ResponseAnalytics formId={formId} />
+            {activeTab === 'response-analytics' && <ResponseAnalytics formId={formId} />}
           </TabsContent>
 
           <TabsContent value="qr-analytics" className="space-y-6 pt-4 sm:pt-6">
-            <AnalyticsDashboard formId={formId} />
+            {activeTab === 'qr-analytics' && <AnalyticsDashboard formId={formId} />}
           </TabsContent>
 
           <TabsContent value="builder" className="space-y-6 pt-4 sm:pt-6">
-            <FormBuilder formId={formId} />
+            {activeTab === 'builder' && <FormBuilder formId={formId} />}
           </TabsContent>
 
           <TabsContent value="responses" className="space-y-6 pt-4 sm:pt-6">
-            <ResponseViewer formId={formId} formName={form.name} />
+            {activeTab === 'responses' && <ResponseViewer formId={formId} formName={form.name} />}
           </TabsContent>
 
           <TabsContent value="qr-codes" className="space-y-6 pt-4 sm:pt-6">
-            <QRCodeList formId={formId} formName={form.name} />
+            {activeTab === 'qr-codes' && <QRCodeList formId={formId} formName={form.name} />}
           </TabsContent>
         </Tabs>
       </div>

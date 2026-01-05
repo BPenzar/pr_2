@@ -16,4 +16,9 @@ export default [
     ],
   },
   ...compat.extends('next/core-web-vitals'),
+  {
+    rules: {
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
 ]

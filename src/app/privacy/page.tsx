@@ -82,8 +82,9 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-gray-900">4) Retention</h2>
             <p>
               Account data is retained until you delete your account or request deletion. Feedback data is retained
-              according to the controller’s instructions and deleted upon their request or account deletion. Residual
-              copies may remain in backups for up to 30 days.
+              according to the controller’s instructions and deleted upon their request or account deletion. Account
+              deletion cascades removal of associated projects, forms, responses, and QR codes. Residual copies may
+              remain in backups for up to 30 days.
             </p>
           </section>
 

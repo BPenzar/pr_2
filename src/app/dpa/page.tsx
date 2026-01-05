@@ -116,8 +116,9 @@ export default function DataProcessingAddendumPage() {
           <section className="mt-10 space-y-3 text-gray-700">
             <h2 className="text-xl font-semibold text-gray-900">11) Deletion or return</h2>
             <p>
-              Upon account deletion or request, we will delete data unless retention is required by law. Backup
-              retention up to 30 days.
+              Upon account deletion or request, we will delete data unless retention is required by law. Account
+              deletion cascades removal of associated projects, forms, responses, and QR codes. Backup retention up to
+              30 days.
             </p>
           </section>
 

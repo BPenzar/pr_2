@@ -67,6 +67,7 @@ export function useResponses(formId?: string) {
       }))
     },
     enabled: !!formId && !!account?.id,
+    refetchInterval: 10 * 1000,
   })
 }
 
@@ -192,6 +193,7 @@ export function useFormAnalytics(formId?: string) {
       }
     },
     enabled: !!formId && !!account?.id,
+    refetchInterval: 10 * 1000,
   })
 }
 

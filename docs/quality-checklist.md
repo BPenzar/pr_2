@@ -27,13 +27,14 @@ Use this as a quick pre-release checklist for BSP Feedback. It is tailored to Ne
 - Unit tests for core helpers (anti-spam, question normalization, rate limit helpers).
 - Smoke test that `/auth/login` and `/auth/signup` render without errors.
 - Manual OAuth flow test on a fresh account to verify terms acceptance.
+- Pilot flow: see `docs/pilot-smoke-test.md`.
 
 ## Data and migrations
 - Run database migrations in order for new environments.
 - Confirm `create_user_account` trigger remains compatible with OAuth signups.
 
 ## Deployment
-- Vercel env vars set: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`, `IP_HASH_SALT`.
+- Vercel env vars set: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`, `IP_HASH_SALT`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`.
 - Supabase URL configuration and redirect URLs match production and preview domains.
 
 ## Commands

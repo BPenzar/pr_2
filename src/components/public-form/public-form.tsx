@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { usePublicForm, useSubmitResponse } from '@/hooks/use-public-form'
 import { QuestionRenderer } from './question-renderer'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,26 @@ import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircleIcon, AlertCircleIcon } from 'lucide-react'
-import { createFormLoadToken, generateSimpleCaptcha } from '@/lib/anti-spam'
+import { createFormLoadToken } from '@/lib/anti-spam'
+import Script from 'next/script'
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string
+          callback: (token: string) => void
+          'error-callback': () => void
+          'expired-callback': () => void
+        }
+      ) => string
+      reset: (widgetId: string) => void
+      remove: (widgetId: string) => void
+    }
+  }
+}
 
 interface PublicFormProps {
   shortUrl: string
@@ -29,8 +48,11 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
   const [honeypotValue, setHoneypotValue] = useState('')
   const [formLoadToken] = useState(() => createFormLoadToken())
   const [showCaptcha, setShowCaptcha] = useState(false)
-  const [captcha, setCaptcha] = useState<{ question: string; answer: string } | null>(null)
-  const [captchaInput, setCaptchaInput] = useState('')
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [turnstileReady, setTurnstileReady] = useState(false)
+  const [turnstileWidgetId, setTurnstileWidgetId] = useState<string | null>(null)
+  const turnstileRef = useRef<HTMLDivElement | null>(null)
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
 
   const questions = useMemo(() => {
     const rawQuestions = (formData?.form as any)?.questions
@@ -62,6 +84,35 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
   useEffect(() => {
     setSubmitError(null)
   }, [currentStep])
+
+  useEffect(() => {
+    if (!showCaptcha) {
+      if (turnstileWidgetId && typeof window !== 'undefined' && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId)
+      }
+      setTurnstileWidgetId(null)
+      setCaptchaToken(null)
+      return
+    }
+
+    if (!turnstileReady || !turnstileSiteKey) return
+    if (!turnstileRef.current) return
+    if (typeof window === 'undefined' || !window.turnstile) return
+
+    if (turnstileWidgetId) {
+      window.turnstile.reset(turnstileWidgetId)
+      return
+    }
+
+    const widgetId = window.turnstile.render(turnstileRef.current, {
+      sitekey: turnstileSiteKey,
+      callback: (token) => setCaptchaToken(token),
+      'error-callback': () => setCaptchaToken(null),
+      'expired-callback': () => setCaptchaToken(null),
+    })
+
+    setTurnstileWidgetId(widgetId)
+  }, [showCaptcha, turnstileReady, turnstileSiteKey, turnstileWidgetId])
 
   const handleResponseChange = (questionId: string, value: string | string[]) => {
     setResponses((prev) => ({
@@ -110,11 +161,9 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
       return
     }
 
-    if (showCaptcha && captcha) {
-      if (!captchaInput.trim()) {
-        setSubmitError('Please complete the verification challenge')
-        return
-      }
+    if (showCaptcha && !captchaToken) {
+      setSubmitError('Please complete the verification challenge')
+      return
     }
 
     try {
@@ -125,8 +174,7 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
         responses,
         honeypotValue,
         formLoadToken,
-        captchaQuestion: captcha?.question,
-        captchaAnswer: captchaInput,
+        captchaToken: captchaToken ?? undefined,
       })
       setIsSubmitted(true)
     } catch (error: any) {
@@ -134,16 +182,23 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
         setSubmitError('Too many submissions. Please wait a few minutes and try again.')
       } else if (error.type === 'SPAM_DETECTED') {
         setSubmitError('Submission failed validation. Please try again.')
+      } else if (error.type === 'CAPTCHA_REQUIRED') {
+        setShowCaptcha(true)
+        setSubmitError('Please complete the verification challenge.')
+      } else if (error.type === 'CAPTCHA_NOT_CONFIGURED') {
+        setSubmitError('Verification is unavailable right now. Please try again later.')
       } else if (error.type === 'CAPTCHA_FAILED') {
+        setShowCaptcha(true)
+        setCaptchaToken(null)
+        if (turnstileWidgetId && typeof window !== 'undefined' && window.turnstile) {
+          window.turnstile.reset(turnstileWidgetId)
+        }
         setSubmitError('Verification failed. Please try again.')
-        setCaptcha(generateSimpleCaptcha())
-        setCaptchaInput('')
       } else if (error.type === 'LIMIT_EXCEEDED') {
         setSubmitError('This form has reached its response limit.')
       } else {
         if (!showCaptcha && (error.message?.toLowerCase().includes('validation') || error.message?.toLowerCase().includes('failed'))) {
           setShowCaptcha(true)
-          setCaptcha(generateSimpleCaptcha())
         }
         setSubmitError(error.message ?? 'Something went wrong. Please try again.')
       }
@@ -256,20 +311,18 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
                 />
               </div>
 
-              {showCaptcha && captcha && (
+              {showCaptcha && (
                 <div className="p-4 border rounded-2xl bg-yellow-50 space-y-3">
                   <Label htmlFor="captcha" className="text-sm font-medium text-gray-800">
                     Security Check
                   </Label>
-                  <p className="text-sm text-gray-600">{captcha.question}</p>
-                  <Input
-                    id="captcha"
-                    type="text"
-                    value={captchaInput}
-                    onChange={(e) => setCaptchaInput(e.target.value)}
-                    placeholder="Your answer"
-                    required
-                  />
+                  {!turnstileSiteKey ? (
+                    <p className="text-sm text-red-600">
+                      Verification is currently unavailable. Please try again later.
+                    </p>
+                  ) : (
+                    <div id="turnstile" ref={turnstileRef} />
+                  )}
                 </div>
               )}
 
@@ -280,8 +333,8 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-4 sm:static sm:border-none sm:bg-transparent sm:px-0 sm:py-8">
-        <div className={`mx-auto flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:items-center ${isMultiStep ? 'sm:justify-between' : 'sm:justify-center'}`}>
-          {isMultiStep ? (
+      <div className={`mx-auto flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:items-center ${isMultiStep ? 'sm:justify-between' : 'sm:justify-center'}`}>
+        {isMultiStep ? (
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:gap-4">
               <Button
                 type="button"
@@ -313,6 +366,14 @@ export function PublicForm({ shortUrl }: PublicFormProps) {
           )}
         </div>
       </div>
+
+      {showCaptcha && turnstileSiteKey && (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="afterInteractive"
+          onLoad={() => setTurnstileReady(true)}
+        />
+      )}
     </div>
   )
 }

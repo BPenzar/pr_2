@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useCreateProject } from '@/hooks/use-projects'
-import { useCanPerformAction } from '@/hooks/use-plans'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
-import { UpgradePrompt } from '@/components/upgrade/upgrade-prompt'
-import { CrownIcon, SparklesIcon, PencilIcon, ArrowLeftIcon } from 'lucide-react'
+import { SparklesIcon, PencilIcon, ArrowLeftIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase-client'
@@ -24,7 +22,6 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false)
   const [serverCanCreate, setServerCanCreate] = useState(true)
   const [isCheckingLimit, setIsCheckingLimit] = useState(false)
   const [mode, setMode] = useState<'options' | 'manual'>('options')
@@ -32,11 +29,7 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
   const router = useRouter()
   const { account } = useAuth()
   const createProject = useCreateProject()
-  const { canCreateProject, getRemainingQuota } = useCanPerformAction()
-
-  const allowedByPlan = canCreateProject()
-  const remainingProjects = getRemainingQuota('projects')
-  const canCreate = allowedByPlan && serverCanCreate
+  const canCreate = serverCanCreate
 
   useEffect(() => {
     if (!account?.id) return
@@ -77,11 +70,6 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
     e.preventDefault()
     setError(null)
 
-    if (!canCreate) {
-      setShowUpgradePrompt(true)
-      return
-    }
-
     try {
       await createProject.mutateAsync({
         name: name.trim(),
@@ -90,42 +78,14 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
       onSuccess?.()
       onClose()
     } catch (err: any) {
-      if (err.message.includes('limit')) {
-        setShowUpgradePrompt(true)
-      } else {
-        setError(err.message)
-      }
+      setError(err.message)
     }
-  }
-
-  const handleUpgrade = () => {
-    router.push('/billing')
-    onClose()
   }
 
   const handleGuidedSetup = () => {
-    if (!canCreate) {
-      setShowUpgradePrompt(true)
-      return
-    }
+    if (!canCreate) return
     onClose()
     router.push('/onboarding?from=guided-setup')
-  }
-
-  if (showUpgradePrompt) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="w-full max-w-lg mx-4">
-          <UpgradePrompt
-            feature="projects"
-            currentLimit={remainingProjects === Infinity ? 3 : 3 - remainingProjects}
-            upgradeLimit={-1}
-            onUpgrade={handleUpgrade}
-            onDismiss={() => setShowUpgradePrompt(false)}
-          />
-        </div>
-      </div>
-    )
   }
 
   if (mode === 'options') {
@@ -139,9 +99,8 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
             </CardDescription>
             {!canCreate && !isCheckingLimit && (
               <Alert className="mt-3">
-                <CrownIcon className="h-4 w-4" />
                 <AlertDescription>
-                  You&apos;ve reached your project limit. Upgrade to create more projects.
+                  You&apos;ve reached the project limit. Remove a project to create a new one.
                 </AlertDescription>
               </Alert>
             )}
@@ -194,18 +153,8 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
           </Button>
           {!canCreate && !isCheckingLimit && (
             <Alert className="mt-3">
-              <CrownIcon className="h-4 w-4" />
               <AlertDescription>
-                You&apos;ve reached your project limit. Upgrade to Pro for unlimited projects.
-              </AlertDescription>
-            </Alert>
-          )}
-          {canCreate && remainingProjects !== Infinity && remainingProjects <= 1 && (
-            <Alert className="mt-3 border-orange-200 bg-orange-50">
-              <CrownIcon className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800">
-                You have {remainingProjects} project{remainingProjects !== 1 ? 's' : ''} remaining.
-                Consider upgrading for unlimited projects.
+                You&apos;ve reached the project limit. Remove a project to create a new one.
               </AlertDescription>
             </Alert>
           )}
@@ -252,24 +201,13 @@ export function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalPro
               >
                 Cancel
               </Button>
-              {!canCreate ? (
-                <Button
-                  type="button"
-                  onClick={() => setShowUpgradePrompt(true)}
-                  className="flex-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <CrownIcon className="h-4 w-4 mr-2" />
-                  Upgrade to Create
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={createProject.isPending || !name.trim() || isCheckingLimit}
-                  className="flex-1"
-                >
-                  {createProject.isPending ? 'Creating...' : 'Create Project'}
-                </Button>
-              )}
+              <Button
+                type="submit"
+                disabled={!canCreate || createProject.isPending || !name.trim() || isCheckingLimit}
+                className="flex-1"
+              >
+                {createProject.isPending ? 'Creating...' : 'Create Project'}
+              </Button>
             </div>
           </form>
         </CardContent>

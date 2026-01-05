@@ -1,4 +1,6 @@
 import { createHash } from 'crypto'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 interface RateLimitEntry {
   count: number
@@ -10,34 +12,41 @@ interface RateLimitConfig {
   window: number // in milliseconds
 }
 
-// In-memory store for rate limiting (in production, use Redis or similar)
+export interface RateLimitResult {
+  allowed: boolean
+  remaining: number
+  resetTime: number
+}
+
+export interface RateLimiter {
+  check: (identifier: string) => Promise<RateLimitResult>
+}
+
 const rateLimitStore = new Map<string, RateLimitEntry>()
 let warnedMissingIPHashSalt = false
+let warnedMissingUpstash = false
 
-/**
- * Rate limiting implementation using sliding window
- */
-export class RateLimit {
+const hasUpstashEnv = () =>
+  Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+
+const toSecondsWindow = (windowMs: number) => Math.max(1, Math.ceil(windowMs / 1000))
+
+class InMemoryRateLimiter implements RateLimiter {
   private config: RateLimitConfig
 
   constructor(config: RateLimitConfig) {
     this.config = config
   }
 
-  /**
-   * Check if a request should be allowed based on rate limiting
-   */
-  check(identifier: string): { allowed: boolean; remaining: number; resetTime: number } {
+  async check(identifier: string): Promise<RateLimitResult> {
     const now = Date.now()
-    const key = this.createKey(identifier)
+    const key = createKey(identifier)
 
-    // Clean up expired entries periodically
-    this.cleanup()
+    cleanupExpired(now)
 
     const entry = rateLimitStore.get(key)
 
     if (!entry) {
-      // First request for this identifier
       rateLimitStore.set(key, {
         count: 1,
         resetTime: now + this.config.window
@@ -50,9 +59,7 @@ export class RateLimit {
       }
     }
 
-    // Check if window has expired
     if (now >= entry.resetTime) {
-      // Reset the window
       rateLimitStore.set(key, {
         count: 1,
         resetTime: now + this.config.window
@@ -65,9 +72,7 @@ export class RateLimit {
       }
     }
 
-    // Window is still active
     if (entry.count >= this.config.requests) {
-      // Rate limit exceeded
       return {
         allowed: false,
         remaining: 0,
@@ -75,7 +80,6 @@ export class RateLimit {
       }
     }
 
-    // Increment counter
     entry.count++
 
     return {
@@ -84,18 +88,64 @@ export class RateLimit {
       resetTime: entry.resetTime
     }
   }
+}
 
-  private createKey(identifier: string): string {
-    return `rate_limit:${createHash('sha256').update(identifier).digest('hex')}`
+class UpstashRateLimiter implements RateLimiter {
+  private ratelimit: Ratelimit
+  private config: RateLimitConfig
+
+  constructor(config: RateLimitConfig) {
+    this.config = config
+    this.ratelimit = new Ratelimit({
+      redis: new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL ?? '',
+        token: process.env.UPSTASH_REDIS_REST_TOKEN ?? ''
+      }),
+      limiter: Ratelimit.slidingWindow(config.requests, `${toSecondsWindow(config.window)} s`),
+      analytics: true,
+      prefix: 'rate_limit'
+    })
   }
 
-  private cleanup(): void {
-    const now = Date.now()
+  async check(identifier: string): Promise<RateLimitResult> {
+    const key = createKey(identifier)
+    const result = await this.ratelimit.limit(key)
+    const resetTime =
+      typeof result.reset === 'number'
+        ? result.reset
+        : Date.now() + this.config.window
 
-    for (const [key, entry] of rateLimitStore.entries()) {
-      if (now >= entry.resetTime) {
-        rateLimitStore.delete(key)
-      }
+    return {
+      allowed: result.success,
+      remaining: result.remaining ?? 0,
+      resetTime
+    }
+  }
+}
+
+function createRateLimiter(config: RateLimitConfig): RateLimiter {
+  if (hasUpstashEnv()) {
+    return new UpstashRateLimiter(config)
+  }
+
+  if (!warnedMissingUpstash) {
+    warnedMissingUpstash = true
+    console.warn(
+      'Missing Upstash Redis env vars; falling back to in-memory rate limiting. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.'
+    )
+  }
+
+  return new InMemoryRateLimiter(config)
+}
+
+function createKey(identifier: string): string {
+  return `rate_limit:${createHash('sha256').update(identifier).digest('hex')}`
+}
+
+function cleanupExpired(now: number): void {
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (now >= entry.resetTime) {
+      rateLimitStore.delete(key)
     }
   }
 }
@@ -104,7 +154,7 @@ export class RateLimit {
  * Create a rate limiter for form submissions
  * Allows 10 submissions per 15 minutes per IP
  */
-export const formSubmissionRateLimit = new RateLimit({
+export const formSubmissionRateLimit = createRateLimiter({
   requests: 10,
   window: 15 * 60 * 1000 // 15 minutes
 })
@@ -113,7 +163,7 @@ export const formSubmissionRateLimit = new RateLimit({
  * Create a rate limiter for general API requests
  * Allows 100 requests per 10 minutes per IP
  */
-export const apiRateLimit = new RateLimit({
+export const apiRateLimit = createRateLimiter({
   requests: 100,
   window: 10 * 60 * 1000 // 10 minutes
 })
@@ -122,7 +172,7 @@ export const apiRateLimit = new RateLimit({
  * Create a strict rate limiter for authentication
  * Allows 5 attempts per 5 minutes per IP
  */
-export const authRateLimit = new RateLimit({
+export const authRateLimit = createRateLimiter({
   requests: 5,
   window: 5 * 60 * 1000 // 5 minutes
 })
@@ -131,12 +181,10 @@ export const authRateLimit = new RateLimit({
  * Get client IP address from request headers
  */
 export function getClientIP(request: Request): string {
-  // Try to get real IP from various headers (for proxies/load balancers)
   const headers = request.headers
 
   const forwarded = headers.get('x-forwarded-for')
   if (forwarded) {
-    // Take the first IP if there are multiple
     return forwarded.split(',')[0].trim()
   }
 
@@ -150,7 +198,6 @@ export function getClientIP(request: Request): string {
     return clientIP
   }
 
-  // Fallback to a default if we can't determine IP
   return 'unknown'
 }
 
@@ -161,7 +208,7 @@ export function createRateLimitHeaders(result: { remaining: number; resetTime: n
   return {
     'X-RateLimit-Remaining': result.remaining.toString(),
     'X-RateLimit-Reset': result.resetTime.toString(),
-    'X-RateLimit-Reset-After': Math.ceil((result.resetTime - Date.now()) / 1000).toString()
+    'X-RateLimit-Reset-After': Math.max(0, Math.ceil((result.resetTime - Date.now()) / 1000)).toString()
   }
 }
 

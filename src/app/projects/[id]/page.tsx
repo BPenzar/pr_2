@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { useProject } from '@/hooks/use-projects'
 import { useDeleteForm } from '@/hooks/use-forms'
-import { usePlanLimits } from '@/hooks/use-plans'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreateFormModal } from '@/components/forms/create-form-modal'
@@ -21,7 +20,6 @@ import {
   TrashIcon,
   CheckCircle2Icon,
   AlertTriangleIcon,
-  TrendingUpIcon,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
@@ -36,7 +34,6 @@ export default function ProjectPage() {
   const deleteForm = useDeleteForm()
   const [confirmFormId, setConfirmFormId] = useState<string | null>(null)
   const queryClient = useQueryClient()
-  const planLimits = usePlanLimits()
 
   if (isLoading) {
     return (
@@ -73,14 +70,6 @@ export default function ProjectPage() {
       (sum: number, form: any) => sum + (form.qr_codes?.[0]?.count || 0),
       0
     ) || 0
-
-  const formsUsage = planLimits?.forms
-  const formsLimit = formsUsage?.limit ?? null
-  const formsCount = project.forms?.length ?? formsUsage?.current ?? 0
-  const reachedFormsLimit =
-    formsLimit !== null &&
-    formsLimit !== -1 &&
-    formsCount >= formsLimit
 
   const handleFormCreated = async (formId: string) => {
     await Promise.all([
@@ -120,17 +109,6 @@ export default function ProjectPage() {
                   Project Settings
                 </Link>
               </Button>
-              {reachedFormsLimit ? (
-                <Link href="/billing">
-                  <Button
-                    size="sm"
-                    className="bg-orange-500 hover:bg-orange-600 text-white border-none"
-                  >
-                    <TrendingUpIcon className="w-4 h-4 mr-2" />
-                    Upgrade Plan
-                  </Button>
-                </Link>
-              ) : null}
               <Button
                 size="sm"
                 variant="outline"
@@ -198,15 +176,10 @@ export default function ProjectPage() {
                 </CardDescription>
               </div>
               <div className="flex flex-col items-start gap-2 sm:items-end">
-                <Button onClick={() => setShowCreateFormModal(true)} disabled={reachedFormsLimit}>
+                <Button onClick={() => setShowCreateFormModal(true)}>
                   <PlusIcon className="w-4 h-4 mr-2" />
                   Create Form
                 </Button>
-                {reachedFormsLimit && (
-                  <p className="text-xs text-orange-600 sm:text-right">
-                    You&apos;ve reached your forms limit. Upgrade to add more.
-                  </p>
-                )}
               </div>
             </div>
           </CardHeader>
@@ -218,7 +191,7 @@ export default function ProjectPage() {
                 <p className="text-gray-600 mb-6">
                   Create your first form to start collecting feedback for this project
                 </p>
-                <Button onClick={() => setShowCreateFormModal(true)} disabled={reachedFormsLimit}>
+                <Button onClick={() => setShowCreateFormModal(true)}>
                   <PlusIcon className="w-4 h-4 mr-2" />
                   Create Your First Form
                 </Button>

@@ -95,7 +95,7 @@ export function useCreateForm() {
         .rpc('can_create_form', { project_uuid: data.projectId })
 
       if (limitError) throw limitError
-      if (!canCreate) throw new Error('Form limit reached for your plan')
+      if (!canCreate) throw new Error('Form limit reached')
 
       const { data: form, error } = await supabase
         .from('forms')

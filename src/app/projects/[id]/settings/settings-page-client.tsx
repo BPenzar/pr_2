@@ -228,7 +228,7 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
                   aria-describedby="project-delete-hint"
                 />
                 <p id="project-delete-hint" className="text-xs text-muted-foreground">
-                  This action cannot be undone and will free up the project slot in your plan.
+                  This action cannot be undone and will free up a project slot.
                 </p>
               </div>
               <Button

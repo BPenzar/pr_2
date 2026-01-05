@@ -53,6 +53,7 @@ export function useProjects() {
       })) as Array<Project & { usage: ProjectUsage }>
     },
     enabled: !!account?.id,
+    refetchInterval: 30 * 1000,
   })
 }
 
@@ -85,6 +86,7 @@ export function useProject(projectId: string) {
       return data
     },
     enabled: !!projectId && !!account?.id,
+    refetchInterval: 30 * 1000,
   })
 }
 
@@ -101,7 +103,7 @@ export function useCreateProject() {
         .rpc('can_create_project', { account_uuid: account.id })
 
       if (limitError) throw limitError
-      if (!canCreate) throw new Error('Project limit reached for your plan')
+      if (!canCreate) throw new Error('Project limit reached')
 
       const { data: project, error } = await supabase
         .from('projects')

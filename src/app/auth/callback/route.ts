@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { LEGAL_VERSION } from '@/lib/legal'
+import { authRateLimit, createRateLimitHeaders, getClientIP } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
+  const clientIP = getClientIP(request)
+  const rateLimitResult = await authRateLimit.check(clientIP)
+
+  if (!rateLimitResult.allowed) {
+    const fallbackUrl = new URL('/auth/login', request.url)
+    fallbackUrl.searchParams.set('error', 'rate_limited')
+    const response = NextResponse.redirect(fallbackUrl)
+    Object.entries(createRateLimitHeaders(rateLimitResult)).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+    return response
+  }
+
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const providerError = requestUrl.searchParams.get('error')

@@ -34,7 +34,7 @@ export function useCreateFormFromTemplate() {
 
       if (limitError) throw limitError
       if (!canCreate) {
-        throw new Error('You have reached your form limit for this plan')
+        throw new Error('Form limit reached')
       }
 
       // Create the form
@@ -127,7 +127,7 @@ export function useCreateQuickSetupForm() {
 
       if (limitError) throw limitError
       if (!canCreate) {
-        throw new Error('You have reached your form limit for this plan')
+        throw new Error('Form limit reached')
       }
 
       // Create a basic feedback form
@@ -239,7 +239,7 @@ export function useCompleteOnboarding() {
 
       if (projectLimitError) throw projectLimitError
       if (!canCreateProject) {
-        throw new Error('You have reached your project limit for this plan')
+        throw new Error('Project limit reached')
       }
 
       // Create project first

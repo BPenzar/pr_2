@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase-admin'
+import { authRateLimit, createRateLimitHeaders, getClientIP } from '@/lib/rate-limit'
 
 export async function DELETE(request: NextRequest) {
   try {
+    const clientIP = getClientIP(request)
+    const rateLimitResult = await authRateLimit.check(clientIP)
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.', type: 'RATE_LIMIT_EXCEEDED' },
+        { status: 429, headers: createRateLimitHeaders(rateLimitResult) }
+      )
+    }
+
     // Get the user's session from the request
     const authorization = request.headers.get('Authorization')
     if (!authorization?.startsWith('Bearer ')) {
@@ -50,13 +61,6 @@ export async function DELETE(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    // Log successful deletion
-    console.log('Account successfully deleted:', {
-      userId,
-      accountId: account.id,
-      deletedAt: new Date().toISOString()
-    })
 
     return NextResponse.json({ success: true })
 

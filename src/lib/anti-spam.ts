@@ -225,29 +225,3 @@ export function shouldBlockIP(ip: string): boolean {
 
   return blockedRanges.includes(ip)
 }
-
-/**
- * Simple CAPTCHA challenge (text-based)
- */
-export function generateSimpleCaptcha(): { question: string; answer: string } {
-  const operations = [
-    { question: 'What is 2 + 3?', answer: '5' },
-    { question: 'What is 4 + 6?', answer: '10' },
-    { question: 'What is 7 - 2?', answer: '5' },
-    { question: 'What is 8 - 3?', answer: '5' },
-    { question: 'What is 3 × 2?', answer: '6' },
-    { question: 'What is 4 × 3?', answer: '12' },
-    { question: 'What color is the sky?', answer: 'blue' },
-    { question: 'How many days are in a week?', answer: '7' }
-  ]
-
-  const selected = operations[Math.floor(Math.random() * operations.length)]
-  return selected
-}
-
-/**
- * Verify CAPTCHA answer
- */
-export function verifyCaptcha(expected: string, provided: string): boolean {
-  return expected.toLowerCase().trim() === provided.toLowerCase().trim()
-}

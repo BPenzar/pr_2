@@ -87,17 +87,6 @@ export function usePublicForm(shortUrl: string) {
             : Number(question.rating_scale),
       }))
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(
-          '[PublicForm] Loaded questions',
-          normalizedQuestions.map((question: any) => ({
-            id: question.id,
-            type: question.type,
-            rating_scale: question.rating_scale,
-          }))
-        )
-      }
-
       return {
         qrCodeId: qrCode.id,
         locationName: qrCode.location_name,
@@ -122,8 +111,7 @@ export function useSubmitResponse() {
       // Anti-spam fields
       honeypotValue?: string
       formLoadToken?: string
-      captchaQuestion?: string
-      captchaAnswer?: string
+      captchaToken?: string
     }) => {
       const response = await fetch('/api/submit-form', {
         method: 'POST',

@@ -54,15 +54,6 @@ export function QuestionRenderer({ question, value, onChange, className }: Quest
         : parseInt(question.rating_scale as unknown as string)
     const maxRating = Number.isFinite(parsedScale) && parsedScale > 0 ? parsedScale : 10
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.debug('Rendering rating question', {
-        questionId: question.id,
-        title: question.title,
-        ratingScaleRaw: question.rating_scale,
-        parsedScale,
-        maxRating,
-      })
-    }
     const isStarRating = maxRating === 5
     const ratingValues = Array.from({ length: maxRating }, (_, i) => i + 1)
 

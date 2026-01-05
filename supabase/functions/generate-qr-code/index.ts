@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Ratelimit } from "https://esm.sh/@upstash/ratelimit@1.2.3"
+import { Redis } from "https://esm.sh/@upstash/redis@1.34.3"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +15,35 @@ interface RequestBody {
 
 const SHORT_URL_LENGTH = 8
 const SHORT_URL_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+let warnedMissingUpstash = false
+
+const createRateLimiter = () => {
+  const url = Deno.env.get('UPSTASH_REDIS_REST_URL') ?? ''
+  const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN') ?? ''
+
+  if (!url || !token) {
+    if (!warnedMissingUpstash) {
+      warnedMissingUpstash = true
+      console.warn('Missing UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN; rate limiting disabled.')
+    }
+    return null
+  }
+
+  return new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(30, '10 m'),
+    analytics: true,
+    prefix: 'rate_limit'
+  })
+}
+
+const rateLimiter = createRateLimiter()
+
+const createRateLimitHeaders = (remaining: number, resetTime: number) => ({
+  'X-RateLimit-Remaining': remaining.toString(),
+  'X-RateLimit-Reset': resetTime.toString(),
+  'X-RateLimit-Reset-After': Math.max(0, Math.ceil((resetTime - Date.now()) / 1000)).toString()
+})
 
 function generateShortUrl(length: number = SHORT_URL_LENGTH): string {
   const bytes = new Uint8Array(length)
@@ -73,6 +104,26 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
+    }
+
+    if (rateLimiter) {
+      const rateResult = await rateLimiter.limit(`qr:${user.id}`)
+      if (!rateResult.success) {
+        const resetTime = typeof rateResult.reset === 'number'
+          ? rateResult.reset
+          : Date.now() + 10 * 60 * 1000
+        return new Response(
+          JSON.stringify({ error: 'Too many QR code requests. Please try again later.' }),
+          {
+            status: 429,
+            headers: {
+              ...corsHeaders,
+              ...createRateLimitHeaders(rateResult.remaining ?? 0, resetTime),
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+      }
     }
 
     // Get the request body

@@ -75,7 +75,7 @@ export function ProjectList({
           </Button>
           {!canCreateProject && reachedProjectLimit && (
             <p className="text-xs text-orange-600 sm:text-right">
-              You&apos;ve reached your project limit. Upgrade to add more.
+              You&apos;ve reached the project limit. Remove a project to add a new one.
             </p>
           )}
         </div>
@@ -172,7 +172,7 @@ export function ProjectList({
           </Button>
           {!canCreateProject && reachedProjectLimit && (
             <p className="mt-3 text-sm text-orange-600">
-              You&apos;ve reached your project limit. Upgrade to add more.
+              You&apos;ve reached the project limit. Remove a project to add a new one.
             </p>
           )}
         </div>
