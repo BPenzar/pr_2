@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { LEGAL_VERSION } from '@/lib/legal'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -56,6 +57,13 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
+  const userMetadata = session?.user?.user_metadata ?? {}
+  const needsLegalAcceptance = Boolean(session) && (
+    userMetadata.legal_version !== LEGAL_VERSION ||
+    !userMetadata.terms_accepted_at ||
+    !userMetadata.privacy_accepted_at
+  )
+
   const protectedPaths = ['/dashboard', '/projects', '/forms', '/settings']
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
@@ -71,6 +79,22 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   )
 
+  const acceptTermsPath = '/auth/accept-terms'
+  const isAcceptTermsPath = request.nextUrl.pathname.startsWith(acceptTermsPath)
+  const isAuthCallbackPath = request.nextUrl.pathname.startsWith('/auth/callback')
+
+  if (session && needsLegalAcceptance) {
+    const isLegalInfoPath = ['/terms', '/privacy', '/dpa'].some((path) =>
+      request.nextUrl.pathname.startsWith(path)
+    )
+
+    if (!isAcceptTermsPath && !isAuthCallbackPath && !isPublicPath && !isLegalInfoPath) {
+      const redirectUrl = new URL(acceptTermsPath, request.url)
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
+
   if (isPublicPath) {
     return supabaseResponse
   }
@@ -81,7 +105,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  if (isAcceptTermsPath && session && !needsLegalAcceptance) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   if (isAuthPath && session) {
+    if (needsLegalAcceptance) {
+      const redirectUrl = new URL(acceptTermsPath, request.url)
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
