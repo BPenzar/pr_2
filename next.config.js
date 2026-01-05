@@ -14,7 +14,7 @@ const nextConfig = {
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in https://challenges.cloudflare.com http://127.0.0.1:* http://localhost:*",
-      "frame-src https://challenges.cloudflare.com",
+      "frame-src https://challenges.cloudflare.com blob:",
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
