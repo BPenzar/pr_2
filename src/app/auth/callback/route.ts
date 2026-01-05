@@ -4,9 +4,20 @@ import { createServerClient } from '@supabase/ssr'
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const providerError = requestUrl.searchParams.get('error')
+  const providerErrorDescription = requestUrl.searchParams.get('error_description')
   const redirectPath = requestUrl.searchParams.get('redirectTo')
   const safeRedirectPath =
     redirectPath && redirectPath.startsWith('/') ? redirectPath : '/dashboard'
+
+  if (providerError) {
+    const fallbackUrl = new URL('/auth/login', request.url)
+    fallbackUrl.searchParams.set('error', providerError)
+    if (providerErrorDescription) {
+      fallbackUrl.searchParams.set('error_description', providerErrorDescription)
+    }
+    return NextResponse.redirect(fallbackUrl)
+  }
 
   if (!code) {
     const fallbackUrl = new URL('/auth/login', request.url)

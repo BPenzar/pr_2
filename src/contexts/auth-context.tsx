@@ -12,7 +12,11 @@ interface AuthContextType {
   loading: boolean
   authLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
-  signInWithOAuth: (provider: Provider, userData?: Record<string, unknown>) => Promise<{ error: any }>
+  signInWithOAuth: (
+    provider: Provider,
+    userData?: Record<string, unknown>,
+    redirectTo?: string
+  ) => Promise<{ error: any }>
   signUp: (
     email: string,
     password: string,
@@ -235,7 +239,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signInWithOAuth = async (provider: Provider, userData?: Record<string, unknown>) => {
+  const signInWithOAuth = async (
+    provider: Provider,
+    userData?: Record<string, unknown>,
+    redirectTo?: string
+  ) => {
     setAuthLoading(true)
     try {
       if (typeof window === 'undefined') {
@@ -250,11 +258,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const redirectTo = new URL('/auth/callback', window.location.origin).toString()
+      const redirectUrl = new URL('/auth/callback', window.location.origin)
+      if (redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')) {
+        redirectUrl.searchParams.set('redirectTo', redirectTo)
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo,
+          redirectTo: redirectUrl.toString(),
         },
       })
 

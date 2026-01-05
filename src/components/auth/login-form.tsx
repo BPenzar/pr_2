@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,34 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const { signIn, signInWithOAuth, authLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const redirectTo = (() => {
+    const value = searchParams.get('redirectTo')
+    if (!value || !value.startsWith('/') || value.startsWith('//')) {
+      return null
+    }
+    return value
+  })()
+
+  useEffect(() => {
+    const oauthError = searchParams.get('error')
+    if (!oauthError) return
+
+    const errorDescription = searchParams.get('error_description')
+    if (errorDescription) {
+      setError(errorDescription)
+      return
+    }
+
+    const errorMap: Record<string, string> = {
+      oauth_missing_code: 'Google sign-in did not complete. Please try again.',
+      oauth_exchange_failed: 'We could not finish Google sign-in. Please try again.',
+      access_denied: 'Google sign-in was cancelled. Please try again.',
+    }
+
+    setError(errorMap[oauthError] ?? 'Unable to sign in with Google. Please try again.')
+  }, [searchParams])
 
   useEffect(() => {
     if (!authLoading) {
@@ -35,7 +63,7 @@ export function LoginForm() {
     if (error) {
       setError(error.message)
     } else {
-      router.push('/dashboard')
+      router.push(redirectTo ?? '/dashboard')
     }
   }
 
@@ -43,7 +71,7 @@ export function LoginForm() {
     setIsSubmitting(true)
     setError(null)
 
-    const { error } = await signInWithOAuth('google')
+    const { error } = await signInWithOAuth('google', undefined, redirectTo ?? undefined)
 
     if (error) {
       setError(error.message ?? 'Failed to sign in with Google.')

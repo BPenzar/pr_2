@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,6 +20,15 @@ export function SignupForm() {
   const [message, setMessage] = useState<string | null>(null)
   const [acceptedLegal, setAcceptedLegal] = useState(false)
   const { signUp, signInWithOAuth, authLoading } = useAuth()
+  const searchParams = useSearchParams()
+
+  const redirectTo = (() => {
+    const value = searchParams.get('redirectTo')
+    if (!value || !value.startsWith('/') || value.startsWith('//')) {
+      return null
+    }
+    return value
+  })()
 
   useEffect(() => {
     if (!authLoading) {
@@ -64,11 +74,15 @@ export function SignupForm() {
     }
 
     const acceptedAt = new Date().toISOString()
-    const { error } = await signInWithOAuth('google', {
-      legal_version: '2025-12-15',
-      terms_accepted_at: acceptedAt,
-      privacy_accepted_at: acceptedAt,
-    })
+    const { error } = await signInWithOAuth(
+      'google',
+      {
+        legal_version: '2025-12-15',
+        terms_accepted_at: acceptedAt,
+        privacy_accepted_at: acceptedAt,
+      },
+      redirectTo ?? undefined
+    )
 
     if (error) {
       setError(error.message ?? 'Failed to continue with Google.')
