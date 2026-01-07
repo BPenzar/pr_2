@@ -45,21 +45,23 @@ export default function Home() {
                 <p className="text-lg leading-relaxed text-gray-600 sm:text-xl">
                   Collect meaningful insights through QR code forms. Perfect for physical locations, events, and any team that wants simple feedback with clean analytics.
                 </p>
-                <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
-                  <Link href="/auth/signup" className="w-full sm:w-auto">
-                    <Button size="lg" className="w-full sm:w-auto">
-                      Sign Up (free)
-                    </Button>
-                  </Link>
-                  <Link href="/auth/login" className="w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full sm:w-auto bg-white/90 backdrop-blur hover:bg-white"
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
+                <div className="flex w-full flex-col items-center gap-3 sm:gap-4">
+                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+                    <Link href="/auth/signup" className="w-full sm:w-auto">
+                      <Button size="lg" className="w-full sm:w-auto">
+                        Sign up - it's free
+                      </Button>
+                    </Link>
+                    <Link href="/auth/login" className="w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full sm:w-auto bg-white/90 backdrop-blur hover:bg-white"
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                  </div>
                   <a
                     href="https://qr.bsp-lab.dev/f/wxEpRhWB"
                     target="_blank"
