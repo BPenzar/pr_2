@@ -87,7 +87,7 @@ export function Header({ showAuth = true }: HeaderProps) {
                   </Link>
                   <Link href="/auth/signup">
                     <Button size="sm" className="text-sm">
-                      Get Started
+                      Sign Up (free)
                     </Button>
                   </Link>
                 </>

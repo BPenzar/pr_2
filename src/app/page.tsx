@@ -48,7 +48,7 @@ export default function Home() {
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
                   <Link href="/auth/signup" className="w-full sm:w-auto">
                     <Button size="lg" className="w-full sm:w-auto">
-                      Get Started Free
+                      Sign Up (free)
                     </Button>
                   </Link>
                   <Link href="/auth/login" className="w-full sm:w-auto">
@@ -71,7 +71,7 @@ export default function Home() {
                       size="lg"
                       className="w-full sm:w-auto border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                     >
-                      Leave us your feedback
+                      Live example: Leave us your feedback
                     </Button>
                   </a>
                 </div>
