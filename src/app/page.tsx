@@ -33,16 +33,16 @@ export default function Home() {
       <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex-1">
-          <section className="flex min-h-screen items-start bg-white pb-12 pt-12 sm:pb-16 sm:pt-16">
+          <section className="flex min-h-screen items-center bg-slate-50 py-12 sm:py-16">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
                 <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
                   Feedback Collector
                 </h1>
-                <p className="mt-3 text-lg leading-relaxed text-gray-600 sm:text-lg">
+                <p className="mt-6 text-lg leading-relaxed text-gray-600 sm:text-lg">
                   Create simple feedback forms and share them instantly with a link or QR code. Customers scan, answer, and you see the results in one clear dashboard. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
                 </p>
-                <div className="mt-12 flex w-full flex-col items-center gap-3 sm:mt-14">
+                <div className="mt-16 flex w-full flex-col items-center gap-3 sm:mt-20">
                   <span className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
                     Live example
                   </span>
@@ -50,7 +50,7 @@ export default function Home() {
                     Try the form instantly by clicking or scanning.
                   </span>
                 </div>
-                <div className="mt-8 grid w-full max-w-4xl items-center gap-6 sm:grid-cols-[auto_auto_auto] sm:justify-center">
+                <div className="mt-10 grid w-full max-w-4xl items-center gap-6 sm:grid-cols-[auto_auto_auto] sm:justify-center">
                   <div className="flex flex-col items-center gap-2 sm:items-center">
                     <a
                       href="https://qr.bsp-lab.dev/f/wxEpRhWB"
@@ -89,7 +89,7 @@ export default function Home() {
             </div>
           </section>
 
-          <section id="how-it-works" className="flex min-h-screen items-center bg-slate-50 py-12 sm:py-16">
+          <section id="how-it-works" className="flex min-h-screen items-center bg-white py-12 sm:py-16">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-4xl text-center">
                 <h2 className="mb-3 text-2xl font-semibold text-gray-900 sm:text-3xl">
