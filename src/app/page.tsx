@@ -29,40 +29,40 @@ export default function Home() {
   // Show landing page for non-authenticated users
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-indigo-50/60 to-blue-100/60">
+      <div className="flex min-h-screen flex-col bg-slate-50">
         <Header />
         <main className="flex-1">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <section className="relative pb-7 pt-10 sm:pb-9 sm:pt-12">
-              <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_60%)]" />
+          <section className="relative flex min-h-screen items-center py-12 sm:py-16">
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_60%)]" />
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
                 <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700">
                   Effortlessly collecting customer feedback
                 </span>
                 <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-                    Feedback Collector
+                  Feedback Collector
                 </h1>
-                <p className="text-lg leading-relaxed text-gray-600 sm:text-xl">
-                  Collect meaningful insights through QR code forms. Perfect for physical locations, events, and any team that wants simple feedback with clean analytics.
+                <p className="text-lg leading-relaxed text-gray-600 sm:text-lg">
+                  Collect meaningful insights through forms, via QR codes or links. Perfect for physical locations, events, websites, or any team that wants simple feedback with clean analytics.
                 </p>
                 <div className="flex w-full flex-col items-center gap-3 sm:gap-4">
-                {/* <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
-                    <Link href="/auth/signup" className="w-full sm:w-auto">
-                      <Button size="lg" className="w-full sm:w-auto">
-                        Sign up - it's free
-                      </Button>
-                    </Link>
-                    <Link href="/auth/login" className="w-full sm:w-auto">
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="w-full sm:w-auto bg-white/90 backdrop-blur hover:bg-white"
-                      >
-                        Sign In
-                      </Button>
-                    </Link>
-                  </div>
-                  */}
+                  {/* <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+                      <Link href="/auth/signup" className="w-full sm:w-auto">
+                        <Button size="lg" className="w-full sm:w-auto">
+                          Sign up - it's free
+                        </Button>
+                      </Link>
+                      <Link href="/auth/login" className="w-full sm:w-auto">
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="w-full sm:w-auto bg-white/90 backdrop-blur hover:bg-white"
+                        >
+                          Sign In
+                        </Button>
+                      </Link>
+                    </div>
+                    */}
                   <a
                     href="https://qr.bsp-lab.dev/f/wxEpRhWB"
                     target="_blank"
@@ -79,9 +79,11 @@ export default function Home() {
                   </a>
                 </div>
               </div>
-            </section>
+            </div>
+          </section>
 
-            <section id="how-it-works" className="pb-14">
+          <section id="how-it-works" className="flex min-h-screen items-center bg-white py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-4xl text-center">
                 <h2 className="mb-3 text-2xl font-semibold text-gray-900 sm:text-3xl">
                   See How It Works
@@ -103,10 +105,10 @@ export default function Home() {
                   .
                 </p>
               </div>
-            </section>
+            </div>
+          </section>
 
-            {/* Intentionally minimal: avoid feature "boxes" per preference */}
-          </div>
+          {/* Intentionally minimal: avoid feature "boxes" per preference */}
         </main>
       </div>
     )
