@@ -40,7 +40,9 @@ export default function Home() {
                   Feedback Collector
                 </h1>
                 <p className="mt-4 text-lg leading-relaxed text-gray-600 sm:text-lg">
-                  Create simple feedback forms and share them instantly with a link or QR code. Customers scan and answer, while you see the results directly in clear dashboards. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
+                  Create simple feedback forms and share them instantly with a link or QR code.
+                  <br />
+                  Customers scan and answer, while you see the results directly in clear dashboards. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
                 </p>
                 
                 <div className="mt-14 flex w-full flex-col items-center gap-3 sm:mt-18">
