@@ -41,7 +41,9 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   const [hasMetaChanges, setHasMetaChanges] = useState(false)
   const [hasQuestionChanges, setHasQuestionChanges] = useState(false)
   const [isSavingAll, setIsSavingAll] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const questionEditorRef = useRef<QuestionEditorHandle | null>(null)
+  const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reorderQuestions = useReorderQuestions()
   const exportStructure = useExportFormStructure()
 
@@ -91,6 +93,14 @@ export function FormBuilder({ formId }: FormBuilderProps) {
     setHasMetaChanges(false)
   }, [form])
 
+  useEffect(() => {
+    return () => {
+      if (saveSuccessTimeoutRef.current) {
+        clearTimeout(saveSuccessTimeoutRef.current)
+      }
+    }
+  }, [])
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -109,15 +119,28 @@ export function FormBuilder({ formId }: FormBuilderProps) {
   }
 
   const handleAddQuestion = () => {
-    setIsAddingQuestion(true)
-    setEditingQuestionId(null)
-    setHasQuestionChanges(false)
+    void (async () => {
+      const metaSaved = await autoSaveMetaChanges()
+      if (!metaSaved) return
+      const questionSaved = await autoSaveQuestionEdits()
+      if (!questionSaved) return
+      setIsAddingQuestion(true)
+      setEditingQuestionId(null)
+      setHasQuestionChanges(false)
+    })()
   }
 
   const handleEditQuestion = (questionId: string) => {
-    setEditingQuestionId(questionId)
-    setIsAddingQuestion(false)
-    setHasQuestionChanges(false)
+    if (editingQuestionId === questionId && !isAddingQuestion) return
+    void (async () => {
+      const metaSaved = await autoSaveMetaChanges()
+      if (!metaSaved) return
+      const questionSaved = await autoSaveQuestionEdits()
+      if (!questionSaved) return
+      setEditingQuestionId(questionId)
+      setIsAddingQuestion(false)
+      setHasQuestionChanges(false)
+    })()
   }
 
   const handleQuestionSaved = () => {
@@ -169,12 +192,14 @@ export function FormBuilder({ formId }: FormBuilderProps) {
     if (kind === 'name') setFormName(value)
     if (kind === 'description') setFormDescription(value)
     setHasMetaChanges(true)
+    clearSaveSuccess()
   }
 
   const handleLayoutChange = (layout: 'single' | 'step') => {
     setSubmissionLayout(layout)
     setSaveError(null)
     setHasMetaChanges(true)
+    clearSaveSuccess()
   }
 
   const handleQuestionsPerStepChange = (value: string) => {
@@ -183,35 +208,87 @@ export function FormBuilder({ formId }: FormBuilderProps) {
     setQuestionsPerStep(sanitized)
     setSaveError(null)
     setHasMetaChanges(true)
+    clearSaveSuccess()
   }
 
   const handleMetaSave = async () => {
     if (!hasMetaChanges && !hasQuestionChanges) return
     setIsSavingAll(true)
     setSaveError(null)
+    clearSaveSuccess()
+    let saveCompleted = false
     try {
-      if (hasQuestionChanges && questionEditorRef.current) {
-        const questionSaved = await questionEditorRef.current.submit()
-        if (questionSaved) {
-          setHasQuestionChanges(false)
-        }
-      }
-
-      if (hasMetaChanges) {
-        await updateForm.mutateAsync({
-          id: formId,
-          name: formName.trim(),
-          description: formDescription.trim() === '' ? null : formDescription.trim(),
-          submission_layout: submissionLayout,
-          questions_per_step: submissionLayout === 'step' ? questionsPerStep : 1,
-        })
-        setHasMetaChanges(false)
-      }
+      const questionSaved = await autoSaveQuestionEdits()
+      if (!questionSaved) return
+      const metaSaved = await autoSaveMetaChanges()
+      if (!metaSaved) return
+      saveCompleted = true
     } catch (err: any) {
       console.error('Failed to update form details:', err)
       setSaveError(err?.message || 'Failed to save form settings.')
     } finally {
       setIsSavingAll(false)
+    }
+    if (saveCompleted) {
+      triggerSaveSuccess()
+    }
+  }
+
+  const buildMetaPayload = () => ({
+    id: formId,
+    name: formName.trim(),
+    description: formDescription.trim() === '' ? null : formDescription.trim(),
+    submission_layout: submissionLayout,
+    questions_per_step: submissionLayout === 'step' ? questionsPerStep : 1,
+  })
+
+  const autoSaveMetaChanges = async () => {
+    if (!hasMetaChanges) return true
+    setSaveError(null)
+    try {
+      await updateForm.mutateAsync(buildMetaPayload())
+      setHasMetaChanges(false)
+      return true
+    } catch (err: any) {
+      console.error('Failed to auto-save form settings:', err)
+      setSaveError(err?.message || 'Failed to save form settings.')
+      return false
+    }
+  }
+
+  const autoSaveQuestionEdits = async () => {
+    if (!hasQuestionChanges || !questionEditorRef.current) return true
+    const saved = await questionEditorRef.current.submit()
+    if (saved) {
+      setHasQuestionChanges(false)
+    }
+    return saved
+  }
+
+  const clearSaveSuccess = () => {
+    if (saveSuccessTimeoutRef.current) {
+      clearTimeout(saveSuccessTimeoutRef.current)
+      saveSuccessTimeoutRef.current = null
+    }
+    setSaveSuccess(false)
+  }
+
+  const triggerSaveSuccess = () => {
+    clearSaveSuccess()
+    setSaveSuccess(true)
+    saveSuccessTimeoutRef.current = setTimeout(() => {
+      setSaveSuccess(false)
+    }, 2000)
+  }
+
+  const handleMetaFocus = () => {
+    void autoSaveQuestionEdits()
+  }
+
+  const handleQuestionDirtyChange = (dirty: boolean) => {
+    setHasQuestionChanges(dirty)
+    if (dirty) {
+      clearSaveSuccess()
     }
   }
 
@@ -232,7 +309,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
               disabled={(!hasMetaChanges && !hasQuestionChanges) || updateForm.isPending || isSavingAll}
               size="sm"
             >
-              {updateForm.isPending || isSavingAll ? 'Saving...' : 'Save All Changes'}
+              {updateForm.isPending || isSavingAll ? 'Saving...' : saveSuccess ? 'Saved ✓' : 'Save All Changes'}
             </Button>
             <Button
               variant="outline"
@@ -268,6 +345,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
               id="builder-form-name"
               value={formName}
               onChange={(event) => handleMetaChange('name', event.target.value)}
+              onFocus={handleMetaFocus}
               placeholder="Enter form name"
             />
           </div>
@@ -277,6 +355,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
               id="builder-form-description"
               value={formDescription}
               onChange={(event) => handleMetaChange('description', event.target.value)}
+              onFocus={handleMetaFocus}
               placeholder="Enter form description (optional)"
               rows={3}
             />
@@ -318,6 +397,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               value={submissionLayout}
               onChange={(event) => handleLayoutChange(event.target.value as 'single' | 'step')}
+              onFocus={handleMetaFocus}
             >
               <option value="single">All questions on one page (scroll)</option>
               <option value="step">Step-by-step sections</option>
@@ -334,6 +414,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
                 max={50}
                 value={questionsPerStep}
                 onChange={(event) => handleQuestionsPerStepChange(event.target.value)}
+                onFocus={handleMetaFocus}
               />
               <p className="text-xs text-muted-foreground">
                 Respondents will see this many questions before tapping Next.
@@ -374,7 +455,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
                   onSave={handleQuestionSaved}
                   onCancel={handleCancelEdit}
                   onDelete={handleQuestionSaved}
-                  onDirtyChange={setHasQuestionChanges}
+                  onDirtyChange={handleQuestionDirtyChange}
                 />
               ) : (
                 <Card className="cursor-pointer border-slate-200/70 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md">
@@ -451,7 +532,7 @@ export function FormBuilder({ formId }: FormBuilderProps) {
             orderIndex={nextOrderIndex}
             onSave={handleQuestionSaved}
             onCancel={handleCancelEdit}
-            onDirtyChange={setHasQuestionChanges}
+            onDirtyChange={handleQuestionDirtyChange}
           />
         ) : (
           <Card className="border-dashed border-2 border-slate-200 bg-slate-50/70 hover:border-slate-300 transition-colors">

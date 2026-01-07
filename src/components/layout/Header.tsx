@@ -53,7 +53,7 @@ export function Header({ showAuth = true }: HeaderProps) {
               className="flex flex-col hover:text-primary transition-colors"
             >
               <span className="text-sm font-semibold text-gray-900">
-                BSP Feedback
+                Feedback Collector
               </span>
               <span className="hidden text-xs text-gray-500 sm:inline">
                 QR-powered feedback collection platform

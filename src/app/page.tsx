@@ -25,7 +25,7 @@ export default function Home() {
       </div>
     )
   }
-
+  {/**/}
   // Show landing page for non-authenticated users
   if (!user) {
     return (
@@ -37,16 +37,16 @@ export default function Home() {
               <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_60%)]" />
               <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
                 <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1 text-sm font-medium text-blue-700">
-                  Customer feedback, made effortless
+                  Effortlessly collecting customer feedback
                 </span>
-                <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">
-                  BSP Feedback
+                <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+                    Feedback Collector
                 </h1>
                 <p className="text-lg leading-relaxed text-gray-600 sm:text-xl">
                   Collect meaningful insights through QR code forms. Perfect for physical locations, events, and any team that wants simple feedback with clean analytics.
                 </p>
                 <div className="flex w-full flex-col items-center gap-3 sm:gap-4">
-                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+                {/* <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
                     <Link href="/auth/signup" className="w-full sm:w-auto">
                       <Button size="lg" className="w-full sm:w-auto">
                         Sign up - it's free
@@ -62,6 +62,7 @@ export default function Home() {
                       </Button>
                     </Link>
                   </div>
+                  */}
                   <a
                     href="https://qr.bsp-lab.dev/f/wxEpRhWB"
                     target="_blank"

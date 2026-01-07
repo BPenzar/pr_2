@@ -237,11 +237,6 @@ export const QuestionEditor = forwardRef<QuestionEditorHandle, QuestionEditorPro
     }
   }
 
-  const handleHeaderClick = () => {
-    if (!onCancel || isPending) return
-    onCancel()
-  }
-
   useImperativeHandle(ref, () => ({
     submit: async () => {
       const wasSaved = await saveQuestion()
@@ -301,10 +296,7 @@ export const QuestionEditor = forwardRef<QuestionEditorHandle, QuestionEditorPro
   return (
     <Card className="mb-4 border-slate-200/70 shadow-sm">
       <CardHeader
-        className={`flex flex-row items-center justify-between space-y-0 border-b border-slate-200/70 bg-slate-50/70 pb-4 ${
-          onCancel ? 'cursor-pointer' : ''
-        }`}
-        onClick={handleHeaderClick}
+        className="flex flex-row items-center justify-between space-y-0 border-b border-slate-200/70 bg-slate-50/70 pb-4"
       >
         <div className="flex items-center space-x-2">
           <GripVerticalIcon className="w-4 h-4 text-gray-400" />
