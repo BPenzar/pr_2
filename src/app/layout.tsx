@@ -8,7 +8,7 @@ import { Footer } from '@/components/layout/Footer'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'BSP Feedback',
+  title: 'Feedback Collector',
   description: 'QR-powered feedback collection platform by BSP Lab',
 }
 

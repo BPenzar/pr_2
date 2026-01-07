@@ -1,4 +1,4 @@
--- Row Level Security Policies for BSP Feedback Tool
+-- Row Level Security Policies for Feedback Collector Tool
 -- Ensures users can only access data belonging to their account
 
 -- Enable RLS on all tables

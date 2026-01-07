@@ -1,4 +1,4 @@
--- Utility functions and triggers for BSP Feedback Tool
+-- Utility functions and triggers for Feedback Collector Tool
 
 -- Function to generate short URL for QR codes
 CREATE OR REPLACE FUNCTION generate_short_url()

@@ -4,7 +4,7 @@ export type HowItWorksSlide = {
   alt: string
 }
 
-const HOW_IT_WORKS_START = 3
+const HOW_IT_WORKS_START = 4
 const HOW_IT_WORKS_END = 23
 
 export const HOW_IT_WORKS_SLIDES: HowItWorksSlide[] = Array.from(

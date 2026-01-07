@@ -1,6 +1,6 @@
 # Quality Checklist
 
-Use this as a quick pre-release checklist for BSP Feedback. It is tailored to Next.js + Supabase + Vercel.
+Use this as a quick pre-release checklist for Feedback Collector. It is tailored to Next.js + Supabase + Vercel.
 
 ## Security and auth
 - Confirm Supabase RLS is enabled for all tables and policies cover read/write for accounts, projects, forms, responses, and QR codes.

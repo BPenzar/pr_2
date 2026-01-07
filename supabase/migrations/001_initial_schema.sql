@@ -1,4 +1,4 @@
--- BSP Feedback Tool Database Schema
+-- Feedback Collector Tool Database Schema
 -- Based on PRD structure: User → Account → Project → Form → Question → QR → Response → ResponseItem
 
 -- Enable necessary extensions

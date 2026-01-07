@@ -43,7 +43,7 @@ export default function TermsOfServicePage() {
           <section className="mt-10 space-y-3 text-gray-700">
             <h2 className="text-xl font-semibold text-gray-900">2) Service</h2>
             <p>
-              BSP Feedback is a software service that enables users to create feedback forms, generate QR codes, and
+              Feedback Collector is a software service that enables users to create feedback forms, generate QR codes or links, and
               collect responses (“Service”).
             </p>
           </section>
