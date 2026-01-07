@@ -33,7 +33,7 @@ export default function Home() {
       <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex-1">
-          <section className="flex min-h-screen items-start bg-slate-50 pb-12 pt-16 sm:pb-16 sm:pt-24">
+          <section className="flex min-h-screen items-start bg-slate-50 pb-12 pt-18 sm:pb-16 sm:pt-28">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
                 <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
