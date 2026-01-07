@@ -40,18 +40,18 @@ export default function Home() {
                   Feedback Collector
                 </h1>
                 <p className="mt-3 text-lg leading-relaxed text-gray-600 sm:text-lg">
-                  Effortlessly collecting customer feedback. Collect meaningful insights through forms, via QR codes or links. Perfect for physical locations, events, websites, or any team that wants simple feedback with clean analytics.
+                  Create simple feedback forms and share them instantly with a link or QR code. Customers scan, answer, and you see the results in one clear dashboard. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
                 </p>
-                <div className="mt-10 w-full max-w-4xl rounded-3xl border border-slate-200 bg-slate-50 px-6 py-7 sm:px-8">
-                  <div className="flex flex-col items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
-                      Live example
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      Try the form instantly by clicking or scanning.
-                    </span>
-                  </div>
-                  <div className="mt-6 grid w-full items-center gap-6 sm:grid-cols-[auto_auto_auto] sm:justify-center">
+                <div className="mt-12 flex w-full flex-col items-center gap-3 sm:mt-14">
+                  <span className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
+                    Live example
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    Try the form instantly by clicking or scanning.
+                  </span>
+                </div>
+                <div className="mt-8 grid w-full max-w-4xl items-center gap-6 sm:grid-cols-[auto_auto_auto] sm:justify-center">
+                  <div className="flex flex-col items-center gap-2 sm:items-center">
                     <a
                       href="https://qr.bsp-lab.dev/f/wxEpRhWB"
                       target="_blank"
@@ -66,24 +66,21 @@ export default function Home() {
                         Leave us your feedback
                       </Button>
                     </a>
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      or use
-                    </span>
-                    <div className="flex items-center justify-center">
-                      <Image
-                        src="/qr-demo.png"
-                        alt="QR code for the live feedback form"
-                        width={180}
-                        height={180}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3 grid w-full gap-2 text-xs text-slate-500 sm:grid-cols-[auto_auto_auto] sm:justify-center">
-                    <span className="text-center sm:text-left">
+                    <span className="text-xs text-slate-500">
                       Open the live form in a new tab.
                     </span>
-                    <span className="hidden sm:block" />
-                    <span className="text-center sm:text-right">
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    or use
+                  </span>
+                  <div className="flex flex-col items-center gap-2">
+                    <Image
+                      src="/qr-demo.png"
+                      alt="QR code for the live feedback form"
+                      width={220}
+                      height={220}
+                    />
+                    <span className="text-xs text-slate-500">
                       Scan with your phone to open the form.
                     </span>
                   </div>
