@@ -33,7 +33,7 @@ export default function Home() {
       <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex-1">
-          <section className="flex min-h-screen items-center bg-slate-50 py-12 sm:py-16">
+          <section className="flex min-h-screen items-center bg-slate-50 pb-12 pt-16 sm:pb-16 sm:pt-20">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
                 <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
@@ -42,7 +42,7 @@ export default function Home() {
                 <p className="mt-6 text-lg leading-relaxed text-gray-600 sm:text-lg">
                   Create simple feedback forms and share them instantly with a link or QR code. Customers scan, answer, and you see the results in one clear dashboard. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
                 </p>
-                <div className="mt-16 flex w-full flex-col items-center gap-3 sm:mt-20">
+                <div className="mt-20 flex w-full flex-col items-center gap-3 sm:mt-24">
                   <span className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
                     Live example
                   </span>
