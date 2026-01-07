@@ -34,14 +34,16 @@ export function Header({ showAuth = true }: HeaderProps) {
               rel="noopener noreferrer"
               className="flex items-center gap-3 hover:opacity-90 transition-opacity"
             >
-              <Image
-                src="/bsp-lab-logo.webp"
-                alt="BSP Lab logo"
-                width={40}
-                height={40}
-                className="h-10 w-10 rounded-full object-cover"
-                priority
-              />
+              <span className="h-10 w-10 overflow-hidden rounded-full">
+                <Image
+                  src="/bsp-lab-logo.webp"
+                  alt="BSP Lab logo"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  priority
+                />
+              </span>
               <span className="hidden text-sm font-semibold text-gray-900 sm:inline">
                 BSP Lab
               </span>
