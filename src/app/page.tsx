@@ -33,16 +33,19 @@ export default function Home() {
       <div className="flex min-h-screen flex-col bg-white">
         <Header />
         <main className="flex-1">
-          <section className="flex min-h-screen items-center bg-slate-50 pb-12 pt-16 sm:pb-16 sm:pt-20">
+          <section className="flex min-h-screen items-center bg-slate-50 pb-12 pt-10 sm:pb-16 sm:pt-14">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
                 <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
                   Feedback Collector
                 </h1>
-                <p className="mt-6 text-lg leading-relaxed text-gray-600 sm:text-lg">
-                  Create simple feedback forms and share them instantly with a link or QR code. Customers scan, answer, and you see the results in one clear dashboard. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
+                <p className="mt-4 text-lg leading-relaxed text-gray-600 sm:text-lg">
+                  Create simple feedback forms and share them instantly with a link or QR code.
                 </p>
-                <div className="mt-20 flex w-full flex-col items-center gap-3 sm:mt-24">
+                <p className="mt-6 text-lg leading-relaxed text-gray-600 sm:text-lg">
+                  Customers scan and answer, while you see the results in clear dashboards. Designed for physical locations, events, and websites where fast, low-friction feedback matters — no complexity, just usable insights.
+                </p>
+                <div className="mt-14 flex w-full flex-col items-center gap-3 sm:mt-16">
                   <span className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-600">
                     Live example
                   </span>
@@ -61,7 +64,7 @@ export default function Home() {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="w-full sm:w-auto border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                        className="w-full sm:w-auto border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                       >
                         Leave us your feedback
                       </Button>

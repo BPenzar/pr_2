@@ -84,7 +84,7 @@ export function Footer() {
             href="/"
             className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
           >
-            BSP Feedback
+            Feedback Collector
           </Link>
           <p className="mt-2 text-sm text-gray-600">
             © {year}{' '}
@@ -148,7 +148,7 @@ export function Footer() {
               href="https://qr.bsp-lab.dev/f/wxEpRhWB"
               target="_blank"
               rel="noopener noreferrer"
-              className="mb-2 inline-block text-sm font-medium text-amber-600 transition-colors hover:text-amber-700"
+              className="mb-2 inline-block text-sm font-medium text-emerald-600 transition-colors hover:text-emerald-700"
             >
               Leave us your feedback
             </a>
