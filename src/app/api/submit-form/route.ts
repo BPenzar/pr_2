@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase-admin'
 import {
@@ -11,11 +12,13 @@ import {
   decodeFormLoadToken
 } from '@/lib/anti-spam'
 
+type ResponseValue = string | string[]
+
 interface SubmissionRequest {
   formId: string
   qrCodeId?: string
   locationName?: string
-  responses: Record<string, string | string[]>
+  responses: Record<string, ResponseValue>
   // Anti-spam fields
   honeypotValue?: string
   formLoadToken?: string
@@ -24,9 +27,68 @@ interface SubmissionRequest {
   referrer?: string
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isValidResponseValue(value: unknown): value is ResponseValue {
+  if (typeof value === 'string') return true
+  if (Array.isArray(value)) {
+    return value.every((entry) => typeof entry === 'string')
+  }
+  return false
+}
+
+function hasNonEmptyResponse(value: ResponseValue): boolean {
+  if (Array.isArray(value)) {
+    return value.some((entry) => entry.trim() !== '')
+  }
+  return value.trim() !== ''
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: SubmissionRequest = await request.json()
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Invalid request payload', type: 'INVALID_REQUEST' },
+        { status: 400 }
+      )
+    }
+
+    const formId = typeof body.formId === 'string' ? body.formId.trim() : ''
+    if (!formId) {
+      return NextResponse.json(
+        { error: 'Missing form identifier', type: 'INVALID_REQUEST' },
+        { status: 400 }
+      )
+    }
+
+    if (!isPlainObject(body.responses)) {
+      return NextResponse.json(
+        { error: 'Invalid responses payload', type: 'INVALID_REQUEST' },
+        { status: 400 }
+      )
+    }
+
+    const responses = body.responses as Record<string, ResponseValue>
+    const responseEntries = Object.entries(responses)
+    if (responseEntries.length === 0) {
+      return NextResponse.json(
+        { error: 'Responses cannot be empty', type: 'INVALID_REQUEST' },
+        { status: 400 }
+      )
+    }
+
+    for (const [questionId, value] of responseEntries) {
+      if (!questionId || typeof questionId !== 'string' || !isValidResponseValue(value)) {
+        return NextResponse.json(
+          { error: 'Invalid response entry', type: 'INVALID_REQUEST' },
+          { status: 400 }
+        )
+      }
+    }
+
     const clientIP = getClientIP(request)
     const hashedIP = hashIP(clientIP)
 
@@ -54,7 +116,7 @@ export async function POST(request: NextRequest) {
       referrer: body.referrer || request.headers.get('referer') || '',
       submissionTime: Date.now(),
       formLoadTime: formLoadTime,
-      responses: Object.values(body.responses).map(value => ({
+      responses: responseEntries.map(([, value]) => ({
         value: Array.isArray(value) ? value.join(' ') : value
       }))
     })
@@ -123,7 +185,7 @@ export async function POST(request: NextRequest) {
           account_id
         )
       `)
-      .eq('id', body.formId)
+      .eq('id', formId)
       .single()
 
     if (formError) {
@@ -140,9 +202,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { data: questions, error: questionsError } = await supabase
+      .from('questions')
+      .select('id, required')
+      .eq('form_id', formId)
+
+    if (questionsError) {
+      console.error('Error loading form questions:', questionsError)
+      return NextResponse.json(
+        { error: 'Failed to validate submission' },
+        { status: 500 }
+      )
+    }
+
+    const questionIdSet = new Set((questions ?? []).map((question) => question.id))
+    const unknownQuestion = responseEntries.find(([questionId]) => !questionIdSet.has(questionId))
+
+    if (unknownQuestion) {
+      return NextResponse.json(
+        { error: 'Submission includes unknown questions', type: 'INVALID_QUESTION' },
+        { status: 400 }
+      )
+    }
+
+    const missingRequired = (questions ?? [])
+      .filter((question) => question.required)
+      .filter((question) => {
+        const value = responses[question.id]
+        if (!value) return true
+        return !hasNonEmptyResponse(value)
+      })
+
+    if (missingRequired.length > 0) {
+      return NextResponse.json(
+        { error: 'Required questions are missing responses', type: 'MISSING_REQUIRED_QUESTION' },
+        { status: 400 }
+      )
+    }
+
     // Check if form can accept more responses (plan limits)
     const { data: canAccept, error: limitError } = await supabase
-      .rpc('can_accept_response', { form_uuid: body.formId })
+      .rpc('can_accept_response', { form_uuid: formId })
 
     if (limitError) {
       console.error('Error checking response limits:', limitError)
@@ -164,13 +264,13 @@ export async function POST(request: NextRequest) {
 
     // Create response record
     const userAgentHash = body.userAgent ?
-      Buffer.from(body.userAgent).toString('base64').slice(0, 64) :
+      createHash('sha256').update(body.userAgent).digest('hex') :
       null
 
     const { data: response, error: responseError } = await supabase
       .from('responses')
       .insert({
-        form_id: body.formId,
+        form_id: formId,
         qr_code_id: body.qrCodeId,
         ip_hash: hashedIP,
         location_name: body.locationName,
@@ -188,7 +288,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create response items
-    const responseItems = Object.entries(body.responses).map(([questionId, value]) => ({
+    const responseItems = responseEntries.map(([questionId, value]) => ({
       response_id: response.id,
       question_id: questionId,
       value: Array.isArray(value) ? JSON.stringify(value) : String(value),
@@ -200,6 +300,13 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) {
       console.error('Error creating response items:', itemsError)
+      const { error: cleanupError } = await supabase
+        .from('responses')
+        .delete()
+        .eq('id', response.id)
+      if (cleanupError) {
+        console.error('Failed to cleanup response after item error:', cleanupError)
+      }
       return NextResponse.json(
         { error: 'Failed to save response details' },
         { status: 500 }
