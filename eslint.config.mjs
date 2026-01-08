@@ -1,4 +1,5 @@
 import { FlatCompat } from '@eslint/eslintrc'
+import next from '@next/eslint-plugin-next'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -14,6 +15,11 @@ export default [
       'eslint.config.mjs',
       'supabase/functions/**',
     ],
+  },
+  {
+    plugins: {
+      '@next/next': next,
+    },
   },
   ...compat.extends('next/core-web-vitals'),
   {
