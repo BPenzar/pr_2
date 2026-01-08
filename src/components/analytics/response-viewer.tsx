@@ -44,8 +44,8 @@ export function ResponseViewer({ formId, formName }: ResponseViewerProps) {
     const exportableResponses = responses.map(response => ({
       id: response.id,
       submitted_at: response.submitted_at,
-      ip_hash: response.ip_hash,
-      user_agent: (response as any).user_agent_hash,
+      ip_hash: response.ip_hash ?? undefined,
+      user_agent: (response as any).user_agent_hash ?? undefined,
       items: response.response_items.map(item => ({
         id: item.id,
         question_id: item.question_id,
