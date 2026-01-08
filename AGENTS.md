@@ -53,9 +53,8 @@ Required environment variables
 | NEXT_PUBLIC_TURNSTILE_SITE_KEY | Cloudflare Turnstile site key for client CAPTCHA | src/components/public-form/public-form.tsx | `0x...` | Optional (CAPTCHA) |
 | TURNSTILE_SECRET_KEY | Cloudflare Turnstile secret for server verification | src/app/api/submit-form/route.ts | `0x...` | Optional (CAPTCHA) |
 
-Notes on env templates and mismatches:
-- `.env.example` and `.env.local.example` list `NEXTAUTH_SECRET`, `NEXT_PUBLIC_APP_URL`, Stripe, and MailerSend variables, but these names do not appear in `src/` during this audit; only `APP_URL` appears in the edge function (supabase/functions/generate-qr-code/index.ts, .env.example, .env.local.example).
-- The edge function uses `APP_URL`, not `NEXT_PUBLIC_APP_URL`, so you must set `APP_URL` in the Supabase Edge Function environment even if you set `NEXT_PUBLIC_APP_URL` in Next.js (supabase/functions/generate-qr-code/index.ts).
+Notes on env templates:
+- `.env.example` and `.env.local.example` align with runtime usage; the `generate-qr-code` edge function requires `APP_URL` and `SUPABASE_URL`, which must be set in the Supabase Edge Function environment (supabase/functions/generate-qr-code/index.ts, .env.example, .env.local.example).
 
 ## 3) Repository map
 
@@ -319,6 +318,7 @@ Observability:
 Coding style and patterns:
 - Prefer data access via React Query hooks in `src/hooks/*` and Supabase JS client (src/hooks/*, src/lib/supabase-client.ts).
 - After updating the live Supabase schema or `supabase/remote-schema.sql`, run `python3 scripts/reconcile-schema.py` to detect drift (scripts/reconcile-schema.py).
+- Regenerate `src/types/supabase.ts` from the linked project after schema changes (`npx supabase@latest gen types typescript --linked --schema public`) (src/types/supabase.ts).
 - Keep DB constraints and RPCs in Supabase migrations and reference them from hooks (supabase/migrations/*.sql, src/hooks/*).
 - Use `@/*` path alias for imports (tsconfig.json).
 - UI components are composed from primitives in `src/components/ui/*` (src/components/ui/*).
@@ -334,15 +334,11 @@ Do-not-break invariants:
 ## 11) Known issues / tech debt / roadmap hints
 
 - TODOs: add Sentry monitoring and Playwright e2e tests (todo.md).
-- Missing docs: `docs/quality-checklist.md` references `docs/pilot-smoke-test.md`, but that file is not in repo (docs/quality-checklist.md).
 - Auth UX gaps: `/auth/forgot-password` and `/auth/reset-password` pages are referenced but not implemented (src/components/auth/login-form.tsx, src/contexts/auth-context.tsx).
-- Env mismatch: `.env.example` uses `NEXT_PUBLIC_APP_URL`, but the edge function expects `APP_URL` (supabase/functions/generate-qr-code/index.ts, .env.example).
 - Plan schema mismatch: `use-plans` expects fields like `max_responses_per_month` and `max_qr_codes_per_form` which do not exist in migrations (src/hooks/use-plans.ts vs supabase/migrations/001_initial_schema.sql).
-- Type mismatch: `Response` omits `qr_code_id` and `user_agent_hash` columns present in the DB and used on insert (supabase/migrations/001_initial_schema.sql, src/types/database.ts, src/app/api/submit-form/route.ts).
 - Seed data mismatch: migrations mark Free plan unlimited and disable paid plans, but `supabase/seed.sql` and `supabase/seed/001_plans.sql` include multiple paid plans with different pricing (supabase/migrations/019_make_free_unlimited.sql, supabase/seed.sql, supabase/seed/001_plans.sql).
 - Analytics freshness depends on the pg_cron job that refreshes materialized views; if pg_cron is not available in an environment, analytics can be stale (supabase/migrations/004_materialized_views.sql).
 - Unused code: `src/lib/supabase.ts` and `src/lib/supabase-server.ts` exist but are not imported in `src/` during this audit (src/lib/supabase.ts, src/lib/supabase-server.ts).
-- Supabase types file is a lightweight stub and may not reflect actual DB schema (src/types/supabase.ts).
 
 ## 12) Agent workflow: how to use and maintain AGENTS.md
 

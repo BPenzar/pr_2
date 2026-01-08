@@ -80,21 +80,13 @@ Required variables:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+SUPABASE_URL=your_supabase_project_url
+APP_URL=http://localhost:3000
 IP_HASH_SALT=your_random_salt_here
 UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
 UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
 TURNSTILE_SECRET_KEY=your_turnstile_secret_key
-```
-
-Optional variables (only if you enable those features):
-
-```env
-STRIPE_SECRET_KEY=...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
-STRIPE_WEBHOOK_SECRET=...
-MAILER_SEND_API_KEY=...
 ```
 
 ### 4. Set up the database
@@ -200,7 +192,7 @@ GitHub Actions runs:
 2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`)
 3. Deploy automatically on every push to main
 
-For QR generation, the Supabase Edge Function `generate-qr-code` uses `NEXT_PUBLIC_APP_URL` to build the public short link (`/f/[shortUrl]`).
+For QR generation, the Supabase Edge Function `generate-qr-code` uses `APP_URL` and `SUPABASE_URL` to build the public short link (`/f/[shortUrl]`) and connect to the database.
 
 ### Manual Deployment
 

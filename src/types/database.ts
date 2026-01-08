@@ -15,7 +15,7 @@ export interface Account {
   user_id: string
   name: string
   plan_id: string
-  onboarding_completed?: boolean
+  onboarding_completed: boolean
   created_at: string
   updated_at: string
 }
@@ -28,7 +28,9 @@ export interface Plan {
   max_forms_per_project: number
   max_responses_per_form: number
   features: string[]
+  is_active: boolean
   created_at: string
+  updated_at: string
 }
 
 export interface Project {
@@ -47,8 +49,8 @@ export interface Form {
   name: string
   description?: string
   is_active: boolean
-  submission_layout?: 'single' | 'step'
-  questions_per_step?: number
+  submission_layout: 'single' | 'step'
+  questions_per_step: number
   created_at: string
   updated_at: string
 }
@@ -60,7 +62,7 @@ export interface Question {
   title: string
   description?: string
   required: boolean
-  options?: ChoiceOption[] | string[] // For choice/multiselect questions
+  options?: ChoiceOption[] | string[] | null // For choice/multiselect questions
   rating_scale?: number // For rating questions: 5 or 10
   order_index: number
   created_at: string
@@ -71,7 +73,7 @@ export interface QRCode {
   form_id: string
   short_url: string
   full_url: string
-  location_name?: string
+  location_name?: string | null
   scan_count: number
   created_at: string
 }
@@ -79,8 +81,10 @@ export interface QRCode {
 export interface Response {
   id: string
   form_id: string
-  ip_hash?: string
-  location_name?: string
+  qr_code_id?: string | null
+  ip_hash?: string | null
+  location_name?: string | null
+  user_agent_hash?: string | null
   submitted_at: string
 }
 
@@ -101,6 +105,8 @@ export interface UsageCounter {
   forms_count: number
   responses_count: number
   qr_scans_count: number
+  created_at: string
+  updated_at: string
 }
 
 export interface Subscription {
@@ -111,6 +117,7 @@ export interface Subscription {
   status: 'active' | 'canceled' | 'past_due' | 'trialing'
   current_period_start: string
   current_period_end: string
+  cancel_at_period_end: boolean
   created_at: string
   updated_at: string
 }
