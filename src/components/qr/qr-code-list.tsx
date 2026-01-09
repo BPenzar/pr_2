@@ -24,7 +24,18 @@ interface QRCodeListProps {
 
 const PAGE_WIDTH_MM = 210
 const PAGE_HEIGHT_MM = 297
-const DEFAULT_TEMPLATE_ID = 'size-60'
+const LABEL_COLS = 3
+const LABEL_ROWS = 4
+const LABEL_WIDTH_MM = 70
+const LABEL_HEIGHT_MM = 67.7
+const QR_SIZE_MM = 50
+const HEADER_OFFSET_MM = 6
+const FOOTER_OFFSET_MM = 6
+const QR_TEXT_GAP_MM = 3.5
+const TEXT_SIZE_MIN = 6
+const TEXT_SIZE_MAX = 16
+const TEXT_LINE_HEIGHT = 1.15
+const MAX_TITLE_LINES = 2
 const MM_TO_PT = 72 / 25.4
 
 const TITLE_COLORS = {
@@ -34,15 +45,20 @@ const TITLE_COLORS = {
   red: rgb(0.7, 0.15, 0.15),
 }
 
-const PRINT_TEMPLATES = [
-  { id: 'custom', label: 'Custom size', mode: 'custom' as const },
-  { id: 'full', label: '1 label (full sheet)', rows: 1, cols: 1, mode: 'auto' as const, defaultMargin: 5, defaultGap: 0 },
-  { id: 'size-90', label: '90 x 90 mm (6 labels)', rows: 3, cols: 2, width: 90, height: 90, defaultMargin: 5, defaultGap: 3 },
-  { id: 'size-80', label: '80 x 80 mm (6 labels)', rows: 3, cols: 2, width: 80, height: 80, defaultMargin: 5, defaultGap: 3 },
-  { id: 'size-60', label: '60 x 60 mm (12 labels)', rows: 4, cols: 3, width: 60, height: 60, defaultMargin: 5, defaultGap: 3 },
-  { id: 'size-55', label: '55 x 55 mm (15 labels)', rows: 5, cols: 3, width: 55, height: 55, defaultMargin: 5, defaultGap: 3 },
-  { id: 'size-51', label: '51 x 51 mm (20 labels)', rows: 5, cols: 4, width: 51, height: 51, defaultMargin: 1.5, defaultGap: 1 },
-]
+const clampNumber = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value))
+
+const clampLines = (value: number) => clampNumber(value, 1, MAX_TITLE_LINES)
+
+const clampTextSize = (value: number, lines: number, offsetMm: number) => {
+  if (lines <= 1) {
+    return clampNumber(value, TEXT_SIZE_MIN, TEXT_SIZE_MAX)
+  }
+
+  const offsetPt = offsetMm * MM_TO_PT
+  const maxSize = Math.min(TEXT_SIZE_MAX, offsetPt / (TEXT_LINE_HEIGHT * (lines - 1)))
+  return clampNumber(value, TEXT_SIZE_MIN, maxSize)
+}
 
 export function QRCodeList({ formId, formName }: QRCodeListProps) {
   const [showGenerator, setShowGenerator] = useState(false)
@@ -53,19 +69,16 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
   const [isEnsuringDefault, setIsEnsuringDefault] = useState(false)
   const [ensureError, setEnsureError] = useState<string | null>(null)
   const [downloadSize, setDownloadSize] = useState(512)
-  const [printTemplateId, setPrintTemplateId] = useState(DEFAULT_TEMPLATE_ID)
-  const [printMarginMm, setPrintMarginMm] = useState(5)
-  const [printGapMm, setPrintGapMm] = useState(3)
-  const [customWidthMm, setCustomWidthMm] = useState(60)
-  const [customHeightMm, setCustomHeightMm] = useState(60)
-  const [printTopText, setPrintTopText] = useState('')
-  const [printBottomText, setPrintBottomText] = useState('')
-  const [topTitleWeight, setTopTitleWeight] = useState<'regular' | 'bold'>('regular')
+  const [printTopText, setPrintTopText] = useState('Feedback Collector')
+  const [printBottomText, setPrintBottomText] = useState('Leave us your feedback.')
+  const [topTitleWeight, setTopTitleWeight] = useState<'regular' | 'bold'>('bold')
   const [bottomTitleWeight, setBottomTitleWeight] = useState<'regular' | 'bold'>('regular')
   const [topTitleColor, setTopTitleColor] = useState<keyof typeof TITLE_COLORS>('black')
   const [bottomTitleColor, setBottomTitleColor] = useState<keyof typeof TITLE_COLORS>('black')
   const [topTitleLines, setTopTitleLines] = useState(1)
   const [bottomTitleLines, setBottomTitleLines] = useState(1)
+  const [topTitleSize, setTopTitleSize] = useState(9)
+  const [bottomTitleSize, setBottomTitleSize] = useState(8)
   const [activePrintQr, setActivePrintQr] = useState<any | null>(null)
   const [printPreviewUrl, setPrintPreviewUrl] = useState<string | null>(null)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
@@ -135,80 +148,37 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
   }
 
   const layoutSettings = useMemo(() => {
-    const template =
-      PRINT_TEMPLATES.find((item) => item.id === printTemplateId) ?? PRINT_TEMPLATES[0]
-    const margin = Math.max(0, Math.min(printMarginMm, 20))
-    const gap = Math.max(0, Math.min(printGapMm, 10))
-
-    let rows = template.rows ?? 0
-    let cols = template.cols ?? 0
-    let labelWidthMm = template.width ?? 0
-    let labelHeightMm = template.height ?? 0
+    const rows = LABEL_ROWS
+    const cols = LABEL_COLS
+    const labelWidthMm = LABEL_WIDTH_MM
+    const labelHeightMm = LABEL_HEIGHT_MM
+    const labelsPerSheet = rows * cols
+    const requiredWidthMm = labelWidthMm * cols
+    const requiredHeightMm = labelHeightMm * rows
+    const startX = Math.max(0, (PAGE_WIDTH_MM - requiredWidthMm) / 2)
+    const startY = Math.max(0, (PAGE_HEIGHT_MM - requiredHeightMm) / 2)
     let error: string | null = null
 
-    if (template.mode === 'custom') {
-      labelWidthMm = customWidthMm
-      labelHeightMm = customHeightMm
-
-      if (!Number.isFinite(labelWidthMm) || !Number.isFinite(labelHeightMm)) {
-        error = 'Enter a valid custom size.'
-      } else if (labelWidthMm <= 0 || labelHeightMm <= 0) {
-        error = 'Custom size must be greater than 0.'
-      } else {
-        const availableWidth = PAGE_WIDTH_MM - 2 * margin
-        const availableHeight = PAGE_HEIGHT_MM - 2 * margin
-        cols = Math.floor((availableWidth + gap) / (labelWidthMm + gap))
-        rows = Math.floor((availableHeight + gap) / (labelHeightMm + gap))
-        if (cols < 1 || rows < 1) {
-          error = 'Custom size is too large for A4.'
-        }
-      }
-    } else if (template.mode === 'auto') {
-      rows = template.rows ?? 1
-      cols = template.cols ?? 1
-      labelWidthMm = PAGE_WIDTH_MM - 2 * margin
-      labelHeightMm = PAGE_HEIGHT_MM - 2 * margin
+    if (requiredWidthMm > PAGE_WIDTH_MM) {
+      error = 'Page width is too small for this layout.'
+    } else if (requiredHeightMm > PAGE_HEIGHT_MM) {
+      error = 'Page height is too small for this layout.'
     }
-
-    const labelsPerSheet = rows > 0 && cols > 0 ? rows * cols : 0
-    const requiredWidthMm =
-      rows > 0 && cols > 0 ? labelWidthMm * cols + gap * (cols - 1) : 0
-    const requiredHeightMm =
-      rows > 0 && cols > 0 ? labelHeightMm * rows + gap * (rows - 1) : 0
-
-    if (!error) {
-      if (requiredWidthMm + 2 * margin > PAGE_WIDTH_MM) {
-        error = 'Page width is too small for this layout.'
-      } else if (requiredHeightMm + 2 * margin > PAGE_HEIGHT_MM) {
-        error = 'Page height is too small for this layout.'
-      }
-    }
-
-    const offsetX = Math.max(
-      0,
-      (PAGE_WIDTH_MM - (requiredWidthMm + 2 * margin)) / 2
-    )
-    const offsetY = Math.max(
-      0,
-      (PAGE_HEIGHT_MM - (requiredHeightMm + 2 * margin)) / 2
-    )
 
     return {
-      template,
       rows,
       cols,
       labelWidthMm,
       labelHeightMm,
       labelsPerSheet,
-      margin,
-      gap,
-      startX: margin + offsetX,
-      startY: margin + offsetY,
+      startX,
+      startY,
+      gap: 0,
       requiredWidthMm,
       requiredHeightMm,
       error,
     }
-  }, [customHeightMm, customWidthMm, printGapMm, printMarginMm, printTemplateId])
+  }, [])
 
   const labelsPerSheet = layoutSettings.labelsPerSheet
 
@@ -219,12 +189,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
     return `qr-stickers-${safe || 'qr'}.pdf`
   }, [activePrintQr])
 
-  const layoutLabel = useMemo(() => {
-    if (layoutSettings.template.mode === 'custom') {
-      return `Custom ${customWidthMm} x ${customHeightMm} mm`
-    }
-    return layoutSettings.template.label
-  }, [customHeightMm, customWidthMm, layoutSettings.template])
+  const layoutLabel = 'A4 70 x 67.7 mm'
 
   const updatePreviewUrl = useCallback((nextUrl: string | null) => {
     setPrintPreviewUrl((prev) => {
@@ -380,31 +345,23 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
           const gapPt = layoutSettings.gap * MM_TO_PT
           const labelWidthPt = layoutSettings.labelWidthMm * MM_TO_PT
           const labelHeightPt = layoutSettings.labelHeightMm * MM_TO_PT
-          const paddingPt = 1.5 * MM_TO_PT
-          const baseTextSize = Math.max(6, Math.min(12, labelHeightPt * 0.12))
-          const textGap = baseTextSize * 0.2
-          const maxTextWidth = labelWidthPt - 2 * paddingPt
+          const headerOffsetPt = HEADER_OFFSET_MM * MM_TO_PT
+          const footerOffsetPt = FOOTER_OFFSET_MM * MM_TO_PT
+          const qrSizePt = QR_SIZE_MM * MM_TO_PT
+          const qrGapPt = QR_TEXT_GAP_MM * MM_TO_PT
+          const textPaddingPt = 1.5 * MM_TO_PT
+          const maxTextWidth = labelWidthPt - 2 * textPaddingPt
 
           const topTextValue = printTopText.trim()
           const bottomTextValue = printBottomText.trim()
 
-          const fitTextSize = (text: string, font: any, maxLines: number) => {
-            let size = baseTextSize
-            while (size > 6) {
-              const lines = wrapText(text, font, size, maxTextWidth, maxLines)
-              if (lines.length <= maxLines) break
-              size -= 0.5
-            }
-            return size
-          }
-
           const topFont = topTitleWeight === 'bold' ? boldFont : regularFont
           const bottomFont = bottomTitleWeight === 'bold' ? boldFont : regularFont
           const topTextSize = topTextValue
-            ? fitTextSize(topTextValue, topFont, topTitleLines)
+            ? clampTextSize(topTitleSize, topTitleLines, HEADER_OFFSET_MM)
             : 0
           const bottomTextSize = bottomTextValue
-            ? fitTextSize(bottomTextValue, bottomFont, bottomTitleLines)
+            ? clampTextSize(bottomTitleSize, bottomTitleLines, FOOTER_OFFSET_MM)
             : 0
           const topLines = topTextValue
             ? wrapText(topTextValue, topFont, topTextSize, maxTextWidth, topTitleLines)
@@ -418,12 +375,8 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                 bottomTitleLines
               )
             : []
-          const topLineHeight = topTextSize * 1.15
-          const bottomLineHeight = bottomTextSize * 1.15
-          const topBlock = topLines.length ? topLineHeight * topLines.length + textGap : 0
-          const bottomBlock = bottomLines.length
-            ? bottomLineHeight * bottomLines.length + textGap
-            : 0
+          const topLineHeight = topTextSize * TEXT_LINE_HEIGHT
+          const bottomLineHeight = bottomTextSize * TEXT_LINE_HEIGHT
 
           let pageIndex = -1
 
@@ -442,29 +395,24 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             const yTop = pageHeightPt - startYPt - row * (labelHeightPt + gapPt)
             const yBottom = yTop - labelHeightPt
 
-            const availableHeight =
-              labelHeightPt - topBlock - bottomBlock - paddingPt * 2
-            const qrSize = Math.max(
-              0,
-              Math.min(labelWidthPt - paddingPt * 2, availableHeight)
-            )
-            const qrX = x + (labelWidthPt - qrSize) / 2
-            const qrY =
-              yBottom + paddingPt + bottomBlock + (availableHeight - qrSize) / 2
+            const headerY = yTop - headerOffsetPt
+            const footerY = yBottom + footerOffsetPt
+            const qrCenterY = (headerY - qrGapPt + footerY + qrGapPt) / 2
+            const qrX = x + (labelWidthPt - qrSizePt) / 2
+            const qrY = qrCenterY - qrSizePt / 2
 
-            if (qrSize > 0) {
-              page.drawImage(qrImage, {
-                x: qrX,
-                y: qrY,
-                width: qrSize,
-                height: qrSize,
-              })
-            }
+            page.drawImage(qrImage, {
+              x: qrX,
+              y: qrY,
+              width: qrSizePt,
+              height: qrSizePt,
+            })
 
             if (topLines.length) {
+              const topStartY = headerY + topLineHeight * (topLines.length - 1)
               topLines.forEach((lineText, index) => {
                 const textWidth = topFont.widthOfTextAtSize(lineText, topTextSize)
-                const textY = yTop - paddingPt - topLineHeight * (index + 1)
+                const textY = topStartY - topLineHeight * index
                 page.drawText(lineText, {
                   x: x + (labelWidthPt - textWidth) / 2,
                   y: textY,
@@ -478,10 +426,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             if (bottomLines.length) {
               bottomLines.forEach((lineText, index) => {
                 const textWidth = bottomFont.widthOfTextAtSize(lineText, bottomTextSize)
-                const textY =
-                  yBottom +
-                  paddingPt +
-                  bottomLineHeight * (bottomLines.length - 1 - index)
+                const textY = footerY - bottomLineHeight * index
                 page.drawText(lineText, {
                   x: x + (labelWidthPt - textWidth) / 2,
                   y: textY,
@@ -517,11 +462,13 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
     layoutSettings,
     bottomTitleColor,
     bottomTitleLines,
+    bottomTitleSize,
     bottomTitleWeight,
     printBottomText,
     printTopText,
     topTitleColor,
     topTitleLines,
+    topTitleSize,
     topTitleWeight,
     updatePreviewUrl,
     wrapText,
@@ -715,110 +662,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="print-template" className="text-xs text-muted-foreground">
-                  Template size
-                </Label>
-                <select
-                  id="print-template"
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  value={printTemplateId}
-                  onChange={(event) => {
-                    const nextId = event.target.value
-                    setPrintTemplateId(nextId)
-                    const selected = PRINT_TEMPLATES.find((item) => item.id === nextId)
-                    if (selected?.defaultMargin !== undefined) {
-                      setPrintMarginMm(selected.defaultMargin)
-                    }
-                    if (selected?.defaultGap !== undefined) {
-                      setPrintGapMm(selected.defaultGap)
-                    }
-                  }}
-                >
-                  {PRINT_TEMPLATES.map((template) => (
-                    <option key={template.id} value={template.id}>
-                      {template.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="print-margin" className="text-xs text-muted-foreground">
-                  Page margin (mm)
-                </Label>
-                <Input
-                  id="print-margin"
-                  type="number"
-                  min={0}
-                  max={20}
-                  step="0.5"
-                  value={printMarginMm}
-                  onChange={(event) => {
-                    const next = Number(event.target.value)
-                    setPrintMarginMm(Number.isFinite(next) ? next : 0)
-                  }}
-                  className="h-9"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="print-gap" className="text-xs text-muted-foreground">
-                  Gap (mm)
-                </Label>
-                <Input
-                  id="print-gap"
-                  type="number"
-                  min={0}
-                  max={10}
-                  step="0.5"
-                  value={printGapMm}
-                  onChange={(event) => {
-                    const next = Number(event.target.value)
-                    setPrintGapMm(Number.isFinite(next) ? next : 0)
-                  }}
-                  className="h-9"
-                />
-              </div>
-              {printTemplateId === 'custom' && (
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="custom-width" className="text-xs text-muted-foreground">
-                    Custom width (mm)
-                  </Label>
-                  <Input
-                    id="custom-width"
-                    type="number"
-                    min={1}
-                    max={200}
-                    step="1"
-                    value={customWidthMm}
-                    onChange={(event) => {
-                      const next = Number(event.target.value)
-                      setCustomWidthMm(Number.isFinite(next) ? Math.max(1, next) : 1)
-                    }}
-                    className="h-9"
-                  />
-                </div>
-              )}
-              {printTemplateId === 'custom' && (
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="custom-height" className="text-xs text-muted-foreground">
-                    Custom height (mm)
-                  </Label>
-                  <Input
-                    id="custom-height"
-                    type="number"
-                    min={1}
-                    max={280}
-                    step="1"
-                    value={customHeightMm}
-                    onChange={(event) => {
-                      const next = Number(event.target.value)
-                      setCustomHeightMm(Number.isFinite(next) ? Math.max(1, next) : 1)
-                    }}
-                    className="h-9"
-                  />
-                </div>
-              )}
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1">
                 <Label htmlFor="print-title-top" className="text-xs text-muted-foreground">
                   Title (top)
@@ -855,7 +699,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Top title
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="grid gap-2 sm:grid-cols-4">
                     <div className="flex flex-col gap-1">
                       <Label htmlFor="top-title-weight" className="text-xs text-muted-foreground">
                         Weight
@@ -871,6 +715,30 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         <option value="regular">Regular</option>
                         <option value="bold">Bold</option>
                       </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="top-title-size" className="text-xs text-muted-foreground">
+                        Size (pt)
+                      </Label>
+                      <Input
+                        id="top-title-size"
+                        type="number"
+                        min={TEXT_SIZE_MIN}
+                        max={TEXT_SIZE_MAX}
+                        step="0.5"
+                        value={topTitleSize}
+                        onChange={(event) => {
+                          const next = Number(event.target.value)
+                          setTopTitleSize(
+                            clampTextSize(
+                              Number.isFinite(next) ? next : TEXT_SIZE_MIN,
+                              topTitleLines,
+                              HEADER_OFFSET_MM
+                            )
+                          )
+                        }}
+                        className="h-9"
+                      />
                     </div>
                     <div className="flex flex-col gap-1">
                       <Label htmlFor="top-title-color" className="text-xs text-muted-foreground">
@@ -898,11 +766,16 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         id="top-title-lines"
                         className="h-9 rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         value={topTitleLines}
-                        onChange={(event) => setTopTitleLines(Number(event.target.value))}
+                        onChange={(event) => {
+                          const nextLines = clampLines(Number(event.target.value))
+                          setTopTitleLines(nextLines)
+                          setTopTitleSize((current) =>
+                            clampTextSize(current, nextLines, HEADER_OFFSET_MM)
+                          )
+                        }}
                       >
                         <option value={1}>1 line</option>
                         <option value={2}>2 lines</option>
-                        <option value={3}>3 lines</option>
                       </select>
                     </div>
                   </div>
@@ -911,7 +784,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Bottom title
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="grid gap-2 sm:grid-cols-4">
                     <div className="flex flex-col gap-1">
                       <Label htmlFor="bottom-title-weight" className="text-xs text-muted-foreground">
                         Weight
@@ -927,6 +800,30 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         <option value="regular">Regular</option>
                         <option value="bold">Bold</option>
                       </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label htmlFor="bottom-title-size" className="text-xs text-muted-foreground">
+                        Size (pt)
+                      </Label>
+                      <Input
+                        id="bottom-title-size"
+                        type="number"
+                        min={TEXT_SIZE_MIN}
+                        max={TEXT_SIZE_MAX}
+                        step="0.5"
+                        value={bottomTitleSize}
+                        onChange={(event) => {
+                          const next = Number(event.target.value)
+                          setBottomTitleSize(
+                            clampTextSize(
+                              Number.isFinite(next) ? next : TEXT_SIZE_MIN,
+                              bottomTitleLines,
+                              FOOTER_OFFSET_MM
+                            )
+                          )
+                        }}
+                        className="h-9"
+                      />
                     </div>
                     <div className="flex flex-col gap-1">
                       <Label htmlFor="bottom-title-color" className="text-xs text-muted-foreground">
@@ -954,11 +851,16 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
                         id="bottom-title-lines"
                         className="h-9 rounded-md border border-input bg-background px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         value={bottomTitleLines}
-                        onChange={(event) => setBottomTitleLines(Number(event.target.value))}
+                        onChange={(event) => {
+                          const nextLines = clampLines(Number(event.target.value))
+                          setBottomTitleLines(nextLines)
+                          setBottomTitleSize((current) =>
+                            clampTextSize(current, nextLines, FOOTER_OFFSET_MM)
+                          )
+                        }}
                       >
                         <option value={1}>1 line</option>
                         <option value={2}>2 lines</option>
-                        <option value={3}>3 lines</option>
                       </select>
                     </div>
                   </div>
