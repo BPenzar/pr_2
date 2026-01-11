@@ -106,25 +106,6 @@ export function Footer() {
               Feedback Collector
             </Link>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            <span className="inline-flex items-center gap-1">
-              <Image
-                src="/logo.png"
-                alt="BSP Lab logo"
-                width={18}
-                height={18}
-                className="h-4 w-4 rounded-full"
-              />
-              <a
-                href="https://www.bsp-lab.dev/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-gray-900 transition-colors hover:text-primary"
-              >
-                BSP Lab
-              </a>
-            </span>
-          </p>
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-900">
               Privacy
