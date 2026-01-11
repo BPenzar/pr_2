@@ -83,15 +83,13 @@ export function Footer() {
         <div className="mx-auto w-full max-w-3xl px-4 text-center sm:px-6">
           <div className="flex flex-col items-center gap-3">
             <div className="flex items-center justify-center gap-3">
-              <div className="rounded-full border border-gray-200 bg-white p-1 shadow-sm">
-                <Image
-                  src="/logo.png"
-                  alt="BSP Lab logo"
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 rounded-full"
-                />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="BSP Lab logo"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+              />
               <Link
                 href="/"
                 className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
@@ -110,7 +108,13 @@ export function Footer() {
             >
               BSP Lab
             </a>{' '}
-            • Bruno Penzar
+            <Image
+              src="/logo.png"
+              alt="BSP Lab logo"
+              width={18}
+              height={18}
+              className="ml-2 inline h-4 w-4 align-[-2px]"
+            />
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-900">
