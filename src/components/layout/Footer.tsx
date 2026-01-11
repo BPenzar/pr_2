@@ -90,22 +90,24 @@ export function Footer() {
             </Link>
           </div>
           <p className="mt-2 text-sm text-gray-600">
-            © {year}{' '}
-            <Image
-              src="/logo.png"
-              alt="BSP Lab logo"
-              width={18}
-              height={18}
-              className="mx-1 inline h-4 w-4 rounded-full align-[-2px]"
-            />
-            <a
-              href="https://www.bsp-lab.dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-gray-900 transition-colors hover:text-primary"
-            >
-              BSP Lab
-            </a>{' '}
+            <span className="inline-flex items-center gap-1">
+              © {year}
+              <Image
+                src="/logo.png"
+                alt="BSP Lab logo"
+                width={18}
+                height={18}
+                className="h-4 w-4 rounded-full"
+              />
+              <a
+                href="https://www.bsp-lab.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gray-900 transition-colors hover:text-primary"
+              >
+                BSP Lab
+              </a>
+            </span>
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-900">
@@ -152,7 +154,7 @@ export function Footer() {
     <footer className="mt-auto border-t bg-gray-50 py-8">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div className="flex flex-col">
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <a
               href="https://qr.bsp-lab.dev/f/wxEpRhWB"
               target="_blank"
@@ -161,17 +163,25 @@ export function Footer() {
             >
               Leave us your feedback
             </a>
-            <p className="text-left text-sm text-gray-600">
-              © {year}{' '}
-              <a
-                href="https://www.bsp-lab.dev/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-gray-900 transition-colors hover:text-primary"
-              >
-                BSP Lab
-              </a>{' '}
-              • Bruno Penzar
+            <p className="text-sm text-gray-600">
+              <span className="inline-flex items-center gap-1">
+                © {year}
+                <Image
+                  src="/logo.png"
+                  alt="BSP Lab logo"
+                  width={18}
+                  height={18}
+                  className="h-4 w-4 rounded-full"
+                />
+                <a
+                  href="https://www.bsp-lab.dev/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-900 transition-colors hover:text-primary"
+                >
+                  BSP Lab
+                </a>
+              </span>
             </p>
           </div>
 
@@ -191,7 +201,7 @@ export function Footer() {
               ))}
             </div>
 
-            <div className="text-sm text-gray-500 md:text-right">
+            <div className="text-sm text-gray-500 text-center md:text-right">
               Contact:{' '}
               <button
                 type="button"
