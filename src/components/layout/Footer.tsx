@@ -174,6 +174,9 @@ export function Footer() {
                 BSP Lab
               </a>
             </p>
+            <p className="mt-2 text-[11px] text-gray-500">
+              BSP LAB, obrt za ostalo računalno programiranje, vl. Bruno Sebastian Penzar
+            </p>
           </div>
 
           <div className="flex flex-col items-center gap-3 text-gray-600 md:items-end">
