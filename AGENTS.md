@@ -193,7 +193,9 @@ Background jobs (analytics refresh):
 - Key functions:
   - `generate-qr-code` edge function validates ownership and inserts `qr_codes` (supabase/functions/generate-qr-code/index.ts).
   - `ensureDefaultQRCode` ensures a default QR code exists for a form (src/lib/qr-codes.ts, src/components/qr/qr-code-list.tsx).
-  - PDF sticker generation uses `pdf-lib` and client-side QR PNG conversion; layout is fixed to A4 12-up (70 x 67.7 mm), centered grid, 50 mm QR, header/footer at 6 mm with 3.5 mm gap, and only header/footer text + style + size (1-2 lines) are adjustable (src/components/qr/qr-code-list.tsx).
+  - PDF sticker generation uses `pdf-lib` and client-side QR PNG conversion; layout is fixed to A4 12-up (70 x 67.9 mm) with a 14 mm top margin, 50 mm QR, top title offset 5 mm, subtitle gap 4.2 mm, bottom footer offset 6 mm, and equalized text-to-QR gaps using font metrics (src/components/qr/qr-code-list.tsx).
+  - Top title is 10.3 pt (bold/regular), top subtitle is 7.6 pt (regular only), bottom title is 8 pt (bold/regular); subtitle is optional and the title shifts down when absent (src/components/qr/qr-code-list.tsx).
+  - QR previews/exports embed a circular logo from `public/logo.png` via `src/lib/qr-logo.ts`, use error correction level H, and downloads are fixed at 2048 px for PNG/SVG (src/components/qr/qr-code-list.tsx, src/components/qr/qr-code-generator.tsx).
 - Failure modes/gotchas:
   - Edge function requires `SUPABASE_URL`, service role key, and `APP_URL` to build short links (supabase/functions/generate-qr-code/index.ts).
 

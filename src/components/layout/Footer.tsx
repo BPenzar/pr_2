@@ -164,24 +164,15 @@ export function Footer() {
               Leave us your feedback
             </a>
             <p className="text-sm text-gray-600">
-              <span className="inline-flex items-center gap-1">
-                © {year}
-                <Image
-                  src="/logo.png"
-                  alt="BSP Lab logo"
-                  width={18}
-                  height={18}
-                  className="h-4 w-4 rounded-full"
-                />
-                <a
-                  href="https://www.bsp-lab.dev/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-gray-900 transition-colors hover:text-primary"
-                >
-                  BSP Lab
-                </a>
-              </span>
+              © {year} •{' '}
+              <a
+                href="https://www.bsp-lab.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-gray-900 transition-colors hover:text-primary"
+              >
+                BSP Lab
+              </a>
             </p>
           </div>
 
