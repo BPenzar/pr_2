@@ -42,11 +42,11 @@ export default function Home() {
                 <p className="mt-4 text-lg leading-relaxed text-gray-600 sm:text-lg">
                   Create simple feedback forms and share them instantly via link or QR code.
                   <br />
-                  Customers scan and respond in seconds; results appear instantly in your dashboard.
+                  Customers scan and respond in seconds; results appear instantly on your dashboard.
                   <br />
                   Built for physical locations, events, and websites where fast feedback matters.
                   <br /> 
-                  No complexity. Just clear, usable insights.
+                  No complexity, just clear insights.
                 </p>
                 
                 <div className="mt-14 flex w-full flex-col items-center gap-3 sm:mt-18">
