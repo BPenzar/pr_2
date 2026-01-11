@@ -91,7 +91,6 @@ export function Footer() {
           </div>
           <p className="mt-2 text-sm text-gray-600">
             <span className="inline-flex items-center gap-1">
-              © {year}
               <Image
                 src="/logo.png"
                 alt="BSP Lab logo"
