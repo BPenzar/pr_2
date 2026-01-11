@@ -82,24 +82,22 @@ export function Footer() {
       <footer className="mt-auto border-t bg-gray-50 pt-8 pb-28 sm:pb-8">
         <div className="mx-auto w-full max-w-3xl px-4 text-center sm:px-6">
           <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center justify-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="BSP Lab logo"
-                width={28}
-                height={28}
-                className="h-7 w-7"
-              />
-              <Link
-                href="/"
-                className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
-              >
-                Feedback Collector
-              </Link>
-            </div>
+            <Link
+              href="/"
+              className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
+            >
+              Feedback Collector
+            </Link>
           </div>
           <p className="mt-2 text-sm text-gray-600">
             © {year}{' '}
+            <Image
+              src="/logo.png"
+              alt="BSP Lab logo"
+              width={18}
+              height={18}
+              className="mx-1 inline h-4 w-4 rounded-full align-[-2px]"
+            />
             <a
               href="https://www.bsp-lab.dev/"
               target="_blank"
@@ -108,13 +106,6 @@ export function Footer() {
             >
               BSP Lab
             </a>{' '}
-            <Image
-              src="/logo.png"
-              alt="BSP Lab logo"
-              width={18}
-              height={18}
-              className="ml-2 inline h-4 w-4 align-[-2px]"
-            />
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-500">
             <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-900">
