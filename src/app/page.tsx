@@ -82,7 +82,7 @@ export default function Home() {
                   </span>
                   <div className="flex flex-col items-center gap-2">
                     <Image
-                      src="/qr-demo.png"
+                      src="/qr-demo.svg"
                       alt="QR code for the live feedback form"
                       width={220}
                       height={220}

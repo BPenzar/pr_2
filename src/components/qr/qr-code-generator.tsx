@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
+import QRCode from 'qrcode'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useCreateQRCode } from '@/hooks/use-qr-codes'
 import { DownloadIcon, ShareIcon, CopyIcon } from 'lucide-react'
+import {
+  QR_ERROR_CORRECTION_LEVEL,
+  QR_MARGIN,
+  getQrLogoDataUrl,
+  getQrLogoImageSettings,
+  renderQrWithLogoDataUrl,
+} from '@/lib/qr-logo'
 
 interface QRCodeGeneratorProps {
   formId: string
@@ -24,9 +32,28 @@ export function QRCodeGenerator({ formId, formName, onSuccess }: QRCodeGenerator
     id: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [qrLogoDataUrl, setQrLogoDataUrl] = useState<string | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
   const createQRCode = useCreateQRCode()
+
+  useEffect(() => {
+    let isActive = true
+
+    getQrLogoDataUrl()
+      .then((dataUrl) => {
+        if (isActive) {
+          setQrLogoDataUrl(dataUrl)
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load QR logo:', error)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +80,10 @@ export function QRCodeGenerator({ formId, formName, onSuccess }: QRCodeGenerator
   const handleDownloadSVG = () => {
     if (!svgRef.current || !generatedQR) return
 
-    const svgData = new XMLSerializer().serializeToString(svgRef.current)
+    const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement
+    svgClone.setAttribute('width', '2048')
+    svgClone.setAttribute('height', '2048')
+    const svgData = new XMLSerializer().serializeToString(svgClone)
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
     const svgUrl = URL.createObjectURL(svgBlob)
 
@@ -66,37 +96,30 @@ export function QRCodeGenerator({ formId, formName, onSuccess }: QRCodeGenerator
     URL.revokeObjectURL(svgUrl)
   }
 
-  const handleDownloadPNG = () => {
-    if (!svgRef.current || !generatedQR) return
+  const handleDownloadPNG = async () => {
+    if (!generatedQR) return
 
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const svgData = new XMLSerializer().serializeToString(svgRef.current)
-    const img = new Image()
-
-    img.onload = () => {
-      canvas.width = 512
-      canvas.height = 512
-      ctx.fillStyle = 'white'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-
-      canvas.toBlob((blob) => {
-        if (!blob) return
-        const url = URL.createObjectURL(blob)
-        const downloadLink = document.createElement('a')
-        downloadLink.href = url
-        downloadLink.download = `qr-code-${generatedQR.shortUrl}.png`
-        document.body.appendChild(downloadLink)
-        downloadLink.click()
-        document.body.removeChild(downloadLink)
-        URL.revokeObjectURL(url)
-      }, 'image/png')
+    try {
+      const size = 2048
+      const baseDataUrl = await QRCode.toDataURL(generatedQR.fullUrl, {
+        width: size,
+        margin: QR_MARGIN,
+        errorCorrectionLevel: QR_ERROR_CORRECTION_LEVEL,
+      })
+      const finalDataUrl = await renderQrWithLogoDataUrl(baseDataUrl, size)
+      const res = await fetch(finalDataUrl)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const downloadLink = document.createElement('a')
+      downloadLink.href = url
+      downloadLink.download = `qr-code-${generatedQR.shortUrl}.png`
+      document.body.appendChild(downloadLink)
+      downloadLink.click()
+      document.body.removeChild(downloadLink)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Failed to download QR code:', error)
     }
-
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData)
   }
 
   const handleCopyUrl = async () => {
@@ -187,8 +210,13 @@ export function QRCodeGenerator({ formId, formName, onSuccess }: QRCodeGenerator
                   ref={svgRef}
                   value={generatedQR.fullUrl}
                   size={256}
-                  level="M"
+                  level={QR_ERROR_CORRECTION_LEVEL}
                   includeMargin={true}
+                  imageSettings={
+                    qrLogoDataUrl
+                      ? getQrLogoImageSettings(256, qrLogoDataUrl)
+                      : undefined
+                  }
                 />
               </div>
 

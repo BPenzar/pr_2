@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
@@ -78,14 +79,27 @@ export function Footer() {
 
   if (isPublicForm) {
     return (
-      <footer className="mt-auto border-t bg-gray-50 py-8">
+      <footer className="mt-auto border-t bg-gray-50 pt-8 pb-28 sm:pb-8">
         <div className="mx-auto w-full max-w-3xl px-4 text-center sm:px-6">
-          <Link
-            href="/"
-            className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
-          >
-            Feedback Collector
-          </Link>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center justify-center gap-3">
+              <div className="rounded-full border border-gray-200 bg-white p-1 shadow-sm">
+                <Image
+                  src="/logo.png"
+                  alt="BSP Lab logo"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-full"
+                />
+              </div>
+              <Link
+                href="/"
+                className="text-sm font-semibold text-gray-900 transition-colors hover:text-primary"
+              >
+                Feedback Collector
+              </Link>
+            </div>
+          </div>
           <p className="mt-2 text-sm text-gray-600">
             © {year}{' '}
             <a
