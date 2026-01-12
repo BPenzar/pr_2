@@ -384,6 +384,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
           const gapPt = layoutSettings.gap * MM_TO_PT
           const labelWidthPt = layoutSettings.labelWidthMm * MM_TO_PT
           const labelHeightPt = layoutSettings.labelHeightMm * MM_TO_PT
+          const footerOffsetPt = FOOTER_OFFSET_MM * MM_TO_PT
           const qrSizePt = QR_SIZE_MM * MM_TO_PT
           const textPaddingPt = 1.5 * MM_TO_PT
           const maxTextWidth = labelWidthPt - 2 * textPaddingPt
@@ -443,28 +444,6 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
           const subtitleLineHeight = subtitleTextSize * TEXT_LINE_HEIGHT
           const bottomLineHeight = bottomTextSize * TEXT_LINE_HEIGHT
 
-          const topHasTitle = topLines.length > 0
-          const topHasSubtitle = subtitleLines.length > 0
-          const topTitleBlockHeight = topHasTitle
-            ? topMetrics.ascent + topMetrics.descender + topLineHeight * (topLines.length - 1)
-            : 0
-          const topSubtitleBlockHeight = topHasSubtitle
-            ? subtitleMetrics.ascent +
-              subtitleMetrics.descender +
-              subtitleLineHeight * (subtitleLines.length - 1)
-            : 0
-          const topBlockHeight =
-            topHasTitle || topHasSubtitle
-              ? topTitleBlockHeight +
-                topSubtitleBlockHeight +
-                (topHasTitle && topHasSubtitle ? subtitleGapPt : 0)
-              : 0
-          const bottomBlockHeight = bottomLines.length
-            ? bottomMetrics.ascent +
-              bottomMetrics.descender +
-              bottomLineHeight * (bottomLines.length - 1)
-            : 0
-
           let pageIndex = -1
 
           for (let labelIndex = 0; labelIndex < totalLabels; labelIndex++) {
@@ -482,38 +461,22 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             const yTop = pageHeightPt - startYPt - row * (labelHeightPt + gapPt)
             const yBottom = yTop - labelHeightPt
 
-            const qrX = x + (labelWidthPt - qrSizePt) / 2
-            const labelCenterY = yBottom + labelHeightPt / 2
-            const qrY = labelCenterY - qrSizePt / 2
-            const qrTop = qrY + qrSizePt
-            const qrBottom = qrY
-
-            const footerTopEdge = yBottom + FOOTER_OFFSET_MM * MM_TO_PT
-            const legacyTopTitleAnchorY = yTop - topTitleOffsetPt
-            const legacySubtitleBaselineY =
-              subtitleLines.length > 0 ? legacyTopTitleAnchorY - subtitleGapPt : null
-            const legacyTopBlockBottomEdge =
+            const footerTopEdge = yBottom + footerOffsetPt
+            const topTitleAnchorY = yTop - topTitleOffsetPt
+            const subtitleBaselineY =
+              subtitleLines.length > 0 ? topTitleAnchorY - subtitleGapPt : null
+            const topBlockBottomEdge =
               subtitleLines.length > 0
-                ? (legacySubtitleBaselineY ?? 0) - subtitleMetrics.descender
-                : legacyTopTitleAnchorY - subtitleGapPt - subtitleMetrics.descender
-            const legacyAvailableHeight = legacyTopBlockBottomEdge - footerTopEdge
-            const desiredGap = Math.max(0, (legacyAvailableHeight - qrSizePt) / 2)
-            const maxGap = Math.min(
-              yTop - qrTop - topBlockHeight,
-              qrBottom - yBottom - bottomBlockHeight
-            )
-            const textQrGap = Math.max(0, Math.min(desiredGap, maxGap))
-
-            const topBlockBottomEdge = qrTop + textQrGap
-            const bottomBlockTopEdge = qrBottom - textQrGap
-            const subtitleBaselineY = topHasSubtitle
-              ? topBlockBottomEdge + subtitleMetrics.descender
-              : null
-            const titleBaselineY = topHasTitle
-              ? topHasSubtitle
-                ? (subtitleBaselineY ?? 0) + subtitleGapPt
+                ? (subtitleBaselineY ?? 0) - subtitleMetrics.descender
+                : topTitleAnchorY - subtitleGapPt - subtitleMetrics.descender
+            const titleBaselineY =
+              subtitleLines.length > 0
+                ? topTitleAnchorY
                 : topBlockBottomEdge + topMetrics.descender
-              : null
+            const availableHeight = topBlockBottomEdge - footerTopEdge
+            const textQrGap = Math.max(0, (availableHeight - qrSizePt) / 2)
+            const qrX = x + (labelWidthPt - qrSizePt) / 2
+            const qrY = footerTopEdge + textQrGap
 
             page.drawImage(qrImage, {
               x: qrX,
@@ -522,7 +485,7 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
               height: qrSizePt,
             })
 
-            if (topLines.length && titleBaselineY !== null) {
+            if (topLines.length) {
               const topStartY = titleBaselineY + topLineHeight * (topLines.length - 1)
               topLines.forEach((lineText, index) => {
                 const textWidth = topFont.widthOfTextAtSize(lineText, topTextSize)
@@ -554,7 +517,8 @@ export function QRCodeList({ formId, formName }: QRCodeListProps) {
             }
 
             if (bottomLines.length) {
-              const bottomBaselineY = bottomBlockTopEdge - bottomMetrics.ascent
+              const bottomBaselineY =
+                footerTopEdge - bottomMetrics.ascent
               bottomLines.forEach((lineText, index) => {
                 const textWidth = bottomFont.widthOfTextAtSize(lineText, bottomTextSize)
                 const textY = bottomBaselineY - bottomLineHeight * index
