@@ -82,7 +82,7 @@ export function Footer() {
       <footer className="mt-auto border-t bg-gray-50 pt-8 pb-28 sm:pb-8">
         <div className="mx-auto w-full max-w-3xl px-4 text-center sm:px-6">
           <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
               <Image
                 src="/logo.png"
                 alt="BSP Lab logo"
