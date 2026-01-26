@@ -43,7 +43,7 @@ const socialLinks: Array<{
   },
 ]
 
-const CONTACT_EMAIL = 'contact@bsp-lab.dev'
+const CONTACT_EMAIL = 'bruno.penzar@bsp-lab.dev'
 
 export function Footer() {
   const year = new Date().getFullYear()

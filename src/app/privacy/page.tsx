@@ -26,8 +26,8 @@ export default function PrivacyPolicyPage() {
               OIB: 00357376233
               <br />
               Contact:{' '}
-              <a className="underline" href="mailto:privacy@bsp-lab.dev">
-                privacy@bsp-lab.dev
+              <a className="underline" href="mailto:bruno.penzar@bsp-lab.dev">
+                bruno.penzar@bsp-lab.dev
               </a>
             </p>
           </section>
@@ -151,7 +151,7 @@ export default function PrivacyPolicyPage() {
           <section className="mt-10 space-y-3 text-gray-700">
             <h2 className="text-xl font-semibold text-gray-900">12) Contact</h2>
             <p>
-              Privacy questions: <a className="underline" href="mailto:privacy@bsp-lab.dev">privacy@bsp-lab.dev</a>.
+              Privacy questions: <a className="underline" href="mailto:bruno.penzar@bsp-lab.dev">bruno.penzar@bsp-lab.dev</a>.
             </p>
           </section>
 

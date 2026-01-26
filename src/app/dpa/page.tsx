@@ -26,8 +26,8 @@ export default function DataProcessingAddendumPage() {
               OIB: 00357376233
               <br />
               Contact:{' '}
-              <a className="underline" href="mailto:privacy@bsp-lab.dev">
-                privacy@bsp-lab.dev
+              <a className="underline" href="mailto:bruno.penzar@bsp-lab.dev">
+                bruno.penzar@bsp-lab.dev
               </a>
             </p>
           </section>

@@ -26,8 +26,8 @@ export default function TermsOfServicePage() {
               OIB: 00357376233
               <br />
               Contact:{' '}
-              <a className="underline" href="mailto:privacy@bsp-lab.dev">
-                privacy@bsp-lab.dev
+              <a className="underline" href="mailto:bruno.penzar@bsp-lab.dev">
+                bruno.penzar@bsp-lab.dev
               </a>
             </p>
           </section>
@@ -149,8 +149,8 @@ export default function TermsOfServicePage() {
             <h2 className="text-xl font-semibold text-gray-900">14) Contact</h2>
             <p>
               For questions about these Terms, contact{' '}
-              <a className="underline" href="mailto:privacy@bsp-lab.dev">
-                privacy@bsp-lab.dev
+              <a className="underline" href="mailto:bruno.penzar@bsp-lab.dev">
+                bruno.penzar@bsp-lab.dev
               </a>
               .
             </p>
