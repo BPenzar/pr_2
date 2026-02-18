@@ -48,8 +48,6 @@ Required environment variables
 | SUPABASE_URL | Supabase URL for the edge function runtime | supabase/functions/generate-qr-code/index.ts | `https://<project>.supabase.co` | Yes for edge function |
 | APP_URL | Base URL used by edge function to build QR short links | supabase/functions/generate-qr-code/index.ts | `https://your-domain` | Yes for edge function |
 | IP_HASH_SALT | Salt for hashing IPs used in privacy-safe logging | src/lib/rate-limit.ts, src/app/api/client-info/route.ts | random string | Yes (privacy) |
-| UPSTASH_REDIS_REST_URL | Upstash Redis REST URL for rate limiting | src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts | `https://...upstash.io` | Optional (falls back to in-memory) |
-| UPSTASH_REDIS_REST_TOKEN | Upstash Redis REST token for rate limiting | src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts | `...` | Optional (falls back to in-memory) |
 | NEXT_PUBLIC_TURNSTILE_SITE_KEY | Cloudflare Turnstile site key for client CAPTCHA | src/components/public-form/public-form.tsx | `0x...` | Optional (CAPTCHA) |
 | TURNSTILE_SECRET_KEY | Cloudflare Turnstile secret for server verification | src/app/api/submit-form/route.ts | `0x...` | Optional (CAPTCHA) |
 
@@ -105,7 +103,7 @@ Components and responsibilities:
 - Next.js API routes for server-side operations that need the service role key (src/app/api/submit-form/route.ts, src/app/api/delete-account/route.ts, src/lib/supabase-admin.ts).
 - Supabase Postgres DB with RLS, RPCs, materialized views, and triggers (supabase/migrations/*.sql).
 - Supabase Edge Function `generate-qr-code` for QR creation and short URL generation (supabase/functions/generate-qr-code/index.ts, src/hooks/use-qr-codes.ts).
-- Upstash Redis for rate limiting (optional fallback to in-memory) (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts).
+- In-memory rate limiting for auth/API/submission and QR generation requests (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts).
 - Cloudflare Turnstile for CAPTCHA on suspicious submissions (src/components/public-form/public-form.tsx, src/app/api/submit-form/route.ts).
 
 High-level architecture diagram:
@@ -119,7 +117,7 @@ High-level architecture diagram:
    | 
    \-- [Supabase Edge Function: generate-qr-code] (supabase/functions/generate-qr-code/index.ts)
 
-[Upstash Redis] (rate limiting) <--- used by Next API + Edge Function (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts)
+[In-memory Rate Limit Store] (rate limiting) <--- used by Next API + Edge Function (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts)
 [Cloudflare Turnstile] (CAPTCHA) <--- used by submit-form API + public form UI (src/app/api/submit-form/route.ts, src/components/public-form/public-form.tsx)
 ```
 
@@ -172,10 +170,10 @@ Background jobs (analytics refresh):
   - `POST /api/submit-form` validates payload, checks limits, inserts response + items (src/app/api/submit-form/route.ts).
   - `checkForSpam` and CAPTCHA gating (src/lib/anti-spam.ts, src/app/api/submit-form/route.ts).
 - Interfaces/contracts: `responses` payload is `Record<questionId, string | string[]>` (src/app/api/submit-form/route.ts).
-- Dependencies: service role Supabase client (src/lib/supabase-admin.ts), optional Upstash rate limit (src/lib/rate-limit.ts), Turnstile site/secret keys (src/components/public-form/public-form.tsx, src/app/api/submit-form/route.ts).
+- Dependencies: service role Supabase client (src/lib/supabase-admin.ts), in-memory rate limit helpers (src/lib/rate-limit.ts), Turnstile site/secret keys (src/components/public-form/public-form.tsx, src/app/api/submit-form/route.ts).
 - Failure modes/gotchas:
   - If Turnstile keys are missing and spam score triggers CAPTCHA, API returns `CAPTCHA_NOT_CONFIGURED` (src/app/api/submit-form/route.ts).
-  - Rate limiting falls back to in-memory Map if Upstash env is missing, which is per-instance only (src/lib/rate-limit.ts).
+  - Rate limiting is in-memory per instance and resets on process restart (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts).
 
 ### Analytics + materialized views
 - Purpose: Provide response counts, trends, QR performance, and distribution charts.
@@ -269,11 +267,10 @@ Auth mechanism:
 
 External integrations:
 - Supabase (DB + Auth + Edge functions): configured via env vars and migrations (src/lib/supabase-client.ts, src/lib/supabase-admin.ts, supabase/config.toml, supabase/migrations/*).
-- Upstash Redis (rate limiting): optional; set `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts).
 - Cloudflare Turnstile: optional; set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` (src/components/public-form/public-form.tsx, src/app/api/submit-form/route.ts).
 
 Local testing notes:
-- Without Upstash, rate limiting is in-memory per server instance (src/lib/rate-limit.ts).
+- Rate limiting is in-memory per server instance (src/lib/rate-limit.ts, supabase/functions/generate-qr-code/index.ts).
 - Without Turnstile keys, CAPTCHA-required submissions fail with `CAPTCHA_NOT_CONFIGURED` (src/app/api/submit-form/route.ts).
 
 ## 8) Frontend (if present)
@@ -350,4 +347,4 @@ AGENTS.md is a living document.
   - Ask the user: "Add these updates to AGENTS.md?" (yes/no).
   - If yes, apply the patch and keep AGENTS.md consistent with the code.
 
-Last updated: 2026-01-09
+Last updated: 2026-02-18

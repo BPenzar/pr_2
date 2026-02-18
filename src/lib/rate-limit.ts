@@ -1,6 +1,4 @@
 import { createHash } from 'crypto'
-import { Ratelimit } from '@upstash/ratelimit'
-import { Redis } from '@upstash/redis'
 
 interface RateLimitEntry {
   count: number
@@ -24,12 +22,6 @@ export interface RateLimiter {
 
 const rateLimitStore = new Map<string, RateLimitEntry>()
 let warnedMissingIPHashSalt = false
-let warnedMissingUpstash = false
-
-const hasUpstashEnv = () =>
-  Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
-
-const toSecondsWindow = (windowMs: number) => Math.max(1, Math.ceil(windowMs / 1000))
 
 class InMemoryRateLimiter implements RateLimiter {
   private config: RateLimitConfig
@@ -90,51 +82,7 @@ class InMemoryRateLimiter implements RateLimiter {
   }
 }
 
-class UpstashRateLimiter implements RateLimiter {
-  private ratelimit: Ratelimit
-  private config: RateLimitConfig
-
-  constructor(config: RateLimitConfig) {
-    this.config = config
-    this.ratelimit = new Ratelimit({
-      redis: new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL ?? '',
-        token: process.env.UPSTASH_REDIS_REST_TOKEN ?? ''
-      }),
-      limiter: Ratelimit.slidingWindow(config.requests, `${toSecondsWindow(config.window)} s`),
-      analytics: true,
-      prefix: 'rate_limit'
-    })
-  }
-
-  async check(identifier: string): Promise<RateLimitResult> {
-    const key = createKey(identifier)
-    const result = await this.ratelimit.limit(key)
-    const resetTime =
-      typeof result.reset === 'number'
-        ? result.reset
-        : Date.now() + this.config.window
-
-    return {
-      allowed: result.success,
-      remaining: result.remaining ?? 0,
-      resetTime
-    }
-  }
-}
-
 function createRateLimiter(config: RateLimitConfig): RateLimiter {
-  if (hasUpstashEnv()) {
-    return new UpstashRateLimiter(config)
-  }
-
-  if (!warnedMissingUpstash) {
-    warnedMissingUpstash = true
-    console.warn(
-      'Missing Upstash Redis env vars; falling back to in-memory rate limiting. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.'
-    )
-  }
-
   return new InMemoryRateLimiter(config)
 }
 

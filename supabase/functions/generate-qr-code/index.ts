@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { Ratelimit } from "https://esm.sh/@upstash/ratelimit@1.2.3"
-import { Redis } from "https://esm.sh/@upstash/redis@1.34.3"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,29 +13,46 @@ interface RequestBody {
 
 const SHORT_URL_LENGTH = 8
 const SHORT_URL_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-let warnedMissingUpstash = false
+const QR_RATE_LIMIT_REQUESTS = 30
+const QR_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
+const qrRateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
-const createRateLimiter = () => {
-  const url = Deno.env.get('UPSTASH_REDIS_REST_URL') ?? ''
-  const token = Deno.env.get('UPSTASH_REDIS_REST_TOKEN') ?? ''
-
-  if (!url || !token) {
-    if (!warnedMissingUpstash) {
-      warnedMissingUpstash = true
-      console.warn('Missing UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN; rate limiting disabled.')
+const checkRateLimit = (identifier: string) => {
+  const now = Date.now()
+  for (const [key, entry] of qrRateLimitStore.entries()) {
+    if (now >= entry.resetTime) {
+      qrRateLimitStore.delete(key)
     }
-    return null
+  }
+  const current = qrRateLimitStore.get(identifier)
+
+  if (!current || now >= current.resetTime) {
+    qrRateLimitStore.set(identifier, {
+      count: 1,
+      resetTime: now + QR_RATE_LIMIT_WINDOW_MS,
+    })
+    return {
+      success: true,
+      remaining: QR_RATE_LIMIT_REQUESTS - 1,
+      resetTime: now + QR_RATE_LIMIT_WINDOW_MS,
+    }
   }
 
-  return new Ratelimit({
-    redis: new Redis({ url, token }),
-    limiter: Ratelimit.slidingWindow(30, '10 m'),
-    analytics: true,
-    prefix: 'rate_limit'
-  })
-}
+  if (current.count >= QR_RATE_LIMIT_REQUESTS) {
+    return {
+      success: false,
+      remaining: 0,
+      resetTime: current.resetTime,
+    }
+  }
 
-const rateLimiter = createRateLimiter()
+  current.count++
+  return {
+    success: true,
+    remaining: QR_RATE_LIMIT_REQUESTS - current.count,
+    resetTime: current.resetTime,
+  }
+}
 
 const createRateLimitHeaders = (remaining: number, resetTime: number) => ({
   'X-RateLimit-Remaining': remaining.toString(),
@@ -106,24 +121,19 @@ serve(async (req) => {
       )
     }
 
-    if (rateLimiter) {
-      const rateResult = await rateLimiter.limit(`qr:${user.id}`)
-      if (!rateResult.success) {
-        const resetTime = typeof rateResult.reset === 'number'
-          ? rateResult.reset
-          : Date.now() + 10 * 60 * 1000
-        return new Response(
-          JSON.stringify({ error: 'Too many QR code requests. Please try again later.' }),
-          {
-            status: 429,
-            headers: {
-              ...corsHeaders,
-              ...createRateLimitHeaders(rateResult.remaining ?? 0, resetTime),
-              'Content-Type': 'application/json'
-            }
+    const rateResult = checkRateLimit(`qr:${user.id}`)
+    if (!rateResult.success) {
+      return new Response(
+        JSON.stringify({ error: 'Too many QR code requests. Please try again later.' }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...createRateLimitHeaders(rateResult.remaining, rateResult.resetTime),
+            'Content-Type': 'application/json'
           }
-        )
-      }
+        }
+      )
     }
 
     // Get the request body

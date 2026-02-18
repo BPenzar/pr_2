@@ -24,7 +24,7 @@ QR-code powered feedback collection platform built with Next.js + TypeScript + S
 - **CSV export**: Export responses and form structure
 
 ### 🛡️ **Security & Performance**
-- **Rate limiting**: Form submissions (default 10 / 15 minutes per IP via Upstash Redis)
+- **Rate limiting**: Form submissions (default 10 / 15 minutes per IP)
 - **Anti-spam**: Honeypot + timing + content checks
 - **CAPTCHA**: Cloudflare Turnstile verification on suspicious submissions
 - **Privacy**: IP hashing via `IP_HASH_SALT`
@@ -83,8 +83,6 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 SUPABASE_URL=your_supabase_project_url
 APP_URL=http://localhost:3000
 IP_HASH_SALT=your_random_salt_here
-UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
 TURNSTILE_SECRET_KEY=your_turnstile_secret_key
 ```
@@ -189,7 +187,7 @@ GitHub Actions runs:
 ### Vercel (Recommended)
 
 1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`)
+2. Add environment variables in Vercel dashboard (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `IP_HASH_SALT`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`)
 3. Deploy automatically on every push to main
 
 For QR generation, the Supabase Edge Function `generate-qr-code` uses `APP_URL` and `SUPABASE_URL` to build the public short link (`/f/[shortUrl]`) and connect to the database.
