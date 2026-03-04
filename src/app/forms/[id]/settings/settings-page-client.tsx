@@ -12,6 +12,7 @@ import { ArrowLeftIcon, SaveIcon, TrashIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
+import { HeaderSignOutButton } from '@/components/layout/header-signout-button'
 
 interface FormSettingsPageClientProps {
   formId: string
@@ -111,6 +112,7 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
                 <SaveIcon className="w-4 h-4 mr-2" />
                 {updateForm.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
+              <HeaderSignOutButton />
             </div>
           </div>
         </div>

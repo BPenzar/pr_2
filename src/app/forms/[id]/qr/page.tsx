@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
+import { HeaderSignOutButton } from '@/components/layout/header-signout-button'
 
 export default function QRCodeManagementPage() {
   const params = useParams()
@@ -41,17 +42,20 @@ export default function QRCodeManagementPage() {
     <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <Link href={`/forms/${formId}`}>
-              <Button variant="ghost" size="sm" className="mr-4">
-                <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                Back to Form Builder
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">QR Code Management</h1>
-              <p className="text-gray-600">Manage QR codes for {form.name}</p>
+          <div className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Link href={`/forms/${formId}`}>
+                <Button variant="ghost" size="sm">
+                  <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                  Back to Form Builder
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">QR Code Management</h1>
+                <p className="text-gray-600">Manage QR codes for {form.name}</p>
+              </div>
             </div>
+            <HeaderSignOutButton />
           </div>
         </div>
       </div>

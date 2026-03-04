@@ -13,6 +13,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { ArrowLeftIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { AppShell } from '@/components/layout/app-shell'
+import { HeaderSignOutButton } from '@/components/layout/header-signout-button'
 
 type AlertMessage = { type: 'success' | 'error'; text: string } | null
 
@@ -133,6 +134,7 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
                   Back to Project
                 </Link>
               </Button>
+              <HeaderSignOutButton />
             </div>
           </div>
         </div>

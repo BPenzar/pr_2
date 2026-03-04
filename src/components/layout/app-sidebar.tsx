@@ -119,17 +119,33 @@ export function AppSidebar() {
     <aside className="hidden w-80 shrink-0 border-r border-slate-200 bg-white md:block">
       <div className="flex h-full flex-col">
         <div className="border-b border-slate-200 px-4 py-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-slate-900">Projects</div>
-              <div className="truncate text-xs text-muted-foreground">
-                {user?.email ?? '—'}
-              </div>
-            </div>
-            <Button size="sm" onClick={() => setCreateProjectOpen(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              New
+          <div className="space-y-3">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full justify-start',
+                pathname.startsWith('/dashboard') ? 'bg-slate-100' : ''
+              )}
+              asChild
+            >
+              <Link href="/dashboard">
+                <LayoutDashboardIcon className="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
             </Button>
+
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-slate-900">Projects</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {user?.email ?? '—'}
+                </div>
+              </div>
+              <Button size="sm" onClick={() => setCreateProjectOpen(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                New
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -223,12 +239,6 @@ export function AppSidebar() {
 
         <div className="border-t border-slate-200 p-3 space-y-2">
           <Button variant="ghost" className="w-full justify-start" asChild>
-            <Link href="/dashboard">
-              <LayoutDashboardIcon className="h-4 w-4 mr-2" />
-              Dashboard
-            </Link>
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" asChild>
             <Link href="/settings">
               <SettingsIcon className="h-4 w-4 mr-2" />
               Account settings
@@ -275,4 +285,3 @@ export function AppSidebar() {
     </aside>
   )
 }
-

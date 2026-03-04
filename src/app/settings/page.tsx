@@ -11,6 +11,8 @@ import { supabase } from '@/lib/supabase-client'
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { AppShell } from '@/components/layout/app-shell'
+import { HeaderSignOutButton } from '@/components/layout/header-signout-button'
 
 type AlertMessage = { type: 'success' | 'error'; text: string } | null
 
@@ -127,7 +129,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
@@ -142,6 +144,7 @@ export default function SettingsPage() {
                   Back to Dashboard
                 </Button>
               </Link>
+              <HeaderSignOutButton />
             </div>
           </div>
         </div>
@@ -248,6 +251,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppShell>
   )
 }

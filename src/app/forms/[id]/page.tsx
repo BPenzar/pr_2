@@ -11,9 +11,10 @@ import { QRCodeList } from '@/components/qr/qr-code-list'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeftIcon, SettingsIcon, EyeIcon, LayoutDashboard, Wrench, Table, QrCode } from 'lucide-react'
+import { SettingsIcon, EyeIcon, LayoutDashboard, Wrench, Table, QrCode } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AppShell } from '@/components/layout/app-shell'
+import { HeaderSignOutButton } from '@/components/layout/header-signout-button'
 
 export default function FormBuilderPage() {
   const params = useParams()
@@ -53,17 +54,16 @@ export default function FormBuilderPage() {
 
   if (!form) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Form not found</h2>
-          <p className="text-gray-600 mb-4">
-            The form you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
-          </p>
-          <Link href="/dashboard">
-            <Button>Back to Dashboard</Button>
-          </Link>
+      <AppShell>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Form not found</h2>
+            <p className="text-gray-600">
+              The form you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+            </p>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
@@ -77,12 +77,6 @@ export default function FormBuilderPage() {
               <p className="text-gray-600">Build and customize your feedback form</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/projects/${form.project.id}`}>
-                  <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                  Back to Project
-                </Link>
-              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/forms/${formId}/settings`}>
                   <SettingsIcon className="w-4 h-4 mr-2" />
@@ -99,6 +93,7 @@ export default function FormBuilderPage() {
                   Preview Form
                 </Link>
               </Button>
+              <HeaderSignOutButton />
             </div>
           </div>
         </div>

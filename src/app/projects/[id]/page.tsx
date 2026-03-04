@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CreateFormModal } from '@/components/forms/create-form-modal'
 import Link from 'next/link'
 import {
-  ArrowLeftIcon,
   PlusIcon,
   FileTextIcon,
   MessageSquareIcon,
@@ -46,17 +45,16 @@ export default function ProjectPage() {
 
   if (error || !project) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-          <p className="text-gray-600 mb-4">
-            The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
-          </p>
-          <Link href="/dashboard">
-            <Button>Back to Dashboard</Button>
-          </Link>
+      <AppShell>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Project not found</h2>
+            <p className="text-gray-600">
+              The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
+            </p>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
@@ -98,12 +96,6 @@ export default function ProjectPage() {
               <p className="text-gray-600">{project.description || 'No description'}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/dashboard">
-                  <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                  Back to Dashboard
-                </Link>
-              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/projects/${projectId}/settings`}>
                   <SettingsIcon className="w-4 h-4 mr-2" />

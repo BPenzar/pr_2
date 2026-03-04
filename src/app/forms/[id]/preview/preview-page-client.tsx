@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon, MonitorIcon, SmartphoneIcon } from 'lucide-react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/app-shell'
+import { HeaderSignOutButton } from '@/components/layout/header-signout-button'
 
 interface FormPreviewPageClientProps {
   formId: string
@@ -74,6 +75,7 @@ export function FormPreviewPageClient({ formId }: FormPreviewPageClientProps) {
               <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                 Preview Mode
               </div>
+              <HeaderSignOutButton />
               {/*
               <Button
                 variant={viewport === 'desktop' ? 'default' : 'outline'}
