@@ -41,7 +41,7 @@ function OnboardingContent() {
 
   useEffect(() => {
     if (shouldRedirect) {
-      router.replace('/forms')
+      router.replace('/dashboard')
     }
   }, [shouldRedirect, router])
 
@@ -71,8 +71,7 @@ function OnboardingContent() {
       })
 
       setTimeout(() => {
-        const formId = (result as any)?.form?.id as string | undefined
-        router.replace(formId ? `/forms/${formId}` : '/forms')
+        router.replace('/dashboard')
       }, 2000)
     } catch (error) {
       const serializedError =
@@ -94,7 +93,7 @@ function OnboardingContent() {
     if (account?.id) {
       await markOnboardingCompleted(account.id)
     }
-    router.replace('/forms')
+    router.replace('/dashboard')
   }
 
   if (shouldRedirect) {
@@ -131,7 +130,7 @@ function OnboardingContent() {
               Redirecting you to your dashboard...
             </p>
             <Button variant="link" className="mt-4 text-xs" onClick={() => {
-              router.replace('/forms')
+              router.replace('/dashboard')
             }}>
               Go now
             </Button>

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeftIcon, SettingsIcon, EyeIcon, LayoutDashboard, Wrench, Table, QrCode } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { AppShell } from '@/components/layout/app-shell'
 
 export default function FormBuilderPage() {
   const params = useParams()
@@ -67,7 +68,7 @@ export default function FormBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
@@ -153,6 +154,6 @@ export default function FormBuilderPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AppShell>
   )
 }

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const providerErrorDescription = requestUrl.searchParams.get('error_description')
   const redirectPath = requestUrl.searchParams.get('redirectTo')
   const safeRedirectPath =
-    redirectPath && redirectPath.startsWith('/') ? redirectPath : '/forms'
+    redirectPath && redirectPath.startsWith('/') ? redirectPath : '/dashboard'
 
   if (providerError) {
     const fallbackUrl = new URL('/auth/login', request.url)

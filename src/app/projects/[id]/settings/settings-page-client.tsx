@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { ArrowLeftIcon } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { AppShell } from '@/components/layout/app-shell'
 
 type AlertMessage = { type: 'success' | 'error'; text: string } | null
 
@@ -75,7 +76,7 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
 
     try {
       await deleteProject.mutateAsync(project.id)
-      router.replace('/forms')
+      router.replace('/dashboard')
     } catch (err: any) {
       setDeleteAlert({ type: 'error', text: err?.message || 'Failed to delete project. Please try again.' })
     }
@@ -115,7 +116,7 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
     : '—'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
@@ -242,6 +243,6 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppShell>
   )
 }

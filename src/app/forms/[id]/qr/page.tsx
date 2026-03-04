@@ -6,6 +6,7 @@ import { QRCodeList } from '@/components/qr/qr-code-list'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
+import { AppShell } from '@/components/layout/app-shell'
 
 export default function QRCodeManagementPage() {
   const params = useParams()
@@ -37,7 +38,7 @@ export default function QRCodeManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
@@ -58,6 +59,6 @@ export default function QRCodeManagementPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <QRCodeList formId={formId} formName={form.name} />
       </div>
-    </div>
+    </AppShell>
   )
 }

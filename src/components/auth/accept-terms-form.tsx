@@ -41,7 +41,7 @@ export function AcceptTermsForm() {
       metadata.terms_accepted_at &&
       metadata.privacy_accepted_at
     ) {
-      router.replace(redirectTo ?? '/forms')
+      router.replace(redirectTo ?? '/dashboard')
     }
   }, [loading, user, redirectTo, router])
 
@@ -70,7 +70,7 @@ export function AcceptTermsForm() {
         return
       }
 
-      router.replace(redirectTo ?? '/forms')
+      router.replace(redirectTo ?? '/dashboard')
     } finally {
       setIsSubmitting(false)
     }

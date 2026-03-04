@@ -10,6 +10,7 @@ import { ProjectList } from '@/components/projects/project-list'
 import { SettingsIcon, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase-client'
+import { AppShell } from '@/components/layout/app-shell'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -86,7 +87,7 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
@@ -206,6 +207,6 @@ export default function DashboardPage() {
           onShowCreateModalChange={setShowCreateModal}
         />
       </div>
-    </div>
+    </AppShell>
   )
 }

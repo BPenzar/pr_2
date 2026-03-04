@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import { AppShell } from '@/components/layout/app-shell'
 
 export default function ProjectPage() {
   const params = useParams()
@@ -88,7 +89,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
@@ -335,6 +336,6 @@ export default function ProjectPage() {
           onSuccess={handleFormCreated}
         />
       )}
-    </div>
+    </AppShell>
   )
 }

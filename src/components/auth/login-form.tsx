@@ -63,7 +63,7 @@ export function LoginForm() {
     if (error) {
       setError(error.message)
     } else {
-      router.push(redirectTo ?? '/forms')
+      router.push(redirectTo ?? '/dashboard')
     }
   }
 

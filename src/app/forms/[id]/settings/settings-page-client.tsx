@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { ArrowLeftIcon, SaveIcon, TrashIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AppShell } from '@/components/layout/app-shell'
 
 interface FormSettingsPageClientProps {
   formId: string
@@ -39,25 +40,29 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+      <AppShell>
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   if (!form) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="text-center">
-          <p className="text-gray-600">Form not found</p>
-          <Link href="/dashboard">
-            <Button className="mt-4">Back to Dashboard</Button>
-          </Link>
+      <AppShell>
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="text-center">
+            <p className="text-gray-600">Form not found</p>
+            <Link href="/dashboard">
+              <Button className="mt-4">Back to Dashboard</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
@@ -83,7 +88,7 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
@@ -254,6 +259,6 @@ export function FormSettingsPageClient({ formId }: FormSettingsPageClientProps) 
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppShell>
   )
 }

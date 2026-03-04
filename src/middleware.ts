@@ -108,7 +108,7 @@ export async function middleware(request: NextRequest) {
   if (isAcceptTermsPath && session && !needsLegalAcceptance) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     const safeRedirectTo =
-      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/forms'
+      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/dashboard'
     return NextResponse.redirect(new URL(safeRedirectTo, request.url))
   }
 
@@ -120,7 +120,7 @@ export async function middleware(request: NextRequest) {
     }
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     const safeRedirectTo =
-      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/forms'
+      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/dashboard'
     return NextResponse.redirect(new URL(safeRedirectTo, request.url))
   }
 

@@ -7,6 +7,7 @@ import { FormPreview } from '@/components/public-form/form-preview'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon, MonitorIcon, SmartphoneIcon } from 'lucide-react'
 import Link from 'next/link'
+import { AppShell } from '@/components/layout/app-shell'
 
 interface FormPreviewPageClientProps {
   formId: string
@@ -19,25 +20,29 @@ export function FormPreviewPageClient({ formId }: FormPreviewPageClientProps) {
 
   if (formLoading || questionsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading preview...</p>
+      <AppShell>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading preview...</p>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
   if (!form || !questions) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Form not found</p>
-          <Link href="/dashboard">
-            <Button className="mt-4">Back to Dashboard</Button>
-          </Link>
+      <AppShell>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Form not found</p>
+            <Link href="/dashboard">
+              <Button className="mt-4">Back to Dashboard</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
@@ -51,7 +56,7 @@ export function FormPreviewPageClient({ formId }: FormPreviewPageClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
@@ -93,6 +98,6 @@ export function FormPreviewPageClient({ formId }: FormPreviewPageClientProps) {
       </div>
 
       <FormPreview form={formData} stacked={viewport === 'mobile'} />
-    </div>
+    </AppShell>
   )
 }

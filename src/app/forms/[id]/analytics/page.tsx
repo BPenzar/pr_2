@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Link from 'next/link'
 import { ArrowLeftIcon, BarChart3Icon, TableIcon } from 'lucide-react'
+import { AppShell } from '@/components/layout/app-shell'
 
 export default function FormAnalyticsPage() {
   const params = useParams()
@@ -40,7 +41,7 @@ export default function FormAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell>
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
@@ -80,6 +81,6 @@ export default function FormAnalyticsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </AppShell>
   )
 }
