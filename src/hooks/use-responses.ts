@@ -6,6 +6,11 @@ import { Response, ResponseItem } from '@/types/database'
 import { useAuth } from '@/contexts/auth-context'
 import { normalizeChoiceOptions } from '@/lib/question-utils'
 
+type ResponseTrendPoint = {
+  response_date: string
+  responses_count: number
+}
+
 export function useResponses(formId?: string) {
   const { account } = useAuth()
 
@@ -98,14 +103,20 @@ export function useFormAnalytics(formId?: string) {
       if (formError) throw formError
 
       // Get response count by day (last 30 days)
-      const { data: dailyResponses, error: dailyError } = await supabase
-        .from('response_trends')
+      const { data: dailyResponsesRaw, error: dailyError } = await supabase
+        .rpc('get_user_response_trends')
         .select('response_date, responses_count')
         .eq('form_id', formId)
         .gte('response_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
         .order('response_date', { ascending: true })
 
       if (dailyError) console.warn('Failed to get daily responses:', dailyError)
+
+      const dailyResponsesArray = Array.isArray(dailyResponsesRaw)
+        ? dailyResponsesRaw
+        : dailyResponsesRaw
+          ? [dailyResponsesRaw]
+          : []
 
       const { data: fallbackResponses, error: fallbackError } = await supabase
         .from('responses')
@@ -115,7 +126,16 @@ export function useFormAnalytics(formId?: string) {
 
       if (fallbackError) console.warn('Failed to get fallback response timeline:', fallbackError)
 
-      let trendData = dailyResponses || []
+      let trendData: ResponseTrendPoint[] = (dailyResponsesArray as Array<{
+        response_date: string | null
+        responses_count: number | null
+      }>)
+        .filter((row) => !!row.response_date)
+        .map((row) => ({
+          response_date: row.response_date as string,
+          responses_count: row.responses_count ?? 0,
+        }))
+
       if (fallbackResponses && fallbackResponses.length) {
         const fallbackAggregatedMap = fallbackResponses.reduce((acc: Map<string, number>, row: { submitted_at: string }) => {
           const dateKey = row.submitted_at ? new Date(row.submitted_at).toISOString().slice(0, 10) : null
@@ -124,11 +144,11 @@ export function useFormAnalytics(formId?: string) {
           return acc
         }, new Map<string, number>())
 
-        const fallbackAggregated = Array.from<[string, number]>(fallbackAggregatedMap.entries())
+        const fallbackAggregated: ResponseTrendPoint[] = Array.from<[string, number]>(fallbackAggregatedMap.entries())
           .map(([response_date, responses_count]) => ({ response_date, responses_count }))
           .sort((a, b) => (a.response_date < b.response_date ? -1 : 1))
 
-        if (!trendData || trendData.length === 0) {
+        if (trendData.length === 0) {
           trendData = fallbackAggregated
         } else {
           const latestTrend = trendData[trendData.length - 1]?.response_date
@@ -207,7 +227,7 @@ export function useProjectAnalytics(projectId?: string) {
 
       // Use materialized view for better performance
       const { data: summary, error } = await supabase
-        .from('dashboard_summary')
+        .rpc('get_user_dashboard_summary')
         .select('*')
         .eq('project_id', projectId)
         .single()
@@ -230,9 +250,8 @@ export function useAccountAnalytics() {
 
       // Get summary for all projects
       const { data: summaries, error } = await supabase
-        .from('dashboard_summary')
+        .rpc('get_user_dashboard_summary')
         .select('*')
-        .eq('account_id', account.id)
 
       if (error) throw error
 

@@ -106,7 +106,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAcceptTermsPath && session && !needsLegalAcceptance) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    const safeRedirectTo =
+      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/forms'
+    return NextResponse.redirect(new URL(safeRedirectTo, request.url))
   }
 
   if (isAuthPath && session) {
@@ -115,7 +118,10 @@ export async function middleware(request: NextRequest) {
       redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
       return NextResponse.redirect(redirectUrl)
     }
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    const safeRedirectTo =
+      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/forms'
+    return NextResponse.redirect(new URL(safeRedirectTo, request.url))
   }
 
   return supabaseResponse

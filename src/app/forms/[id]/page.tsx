@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useForm } from '@/hooks/use-forms'
 import { FormBuilder } from '@/components/forms/form-builder'
@@ -20,6 +20,14 @@ export default function FormBuilderPage() {
   const { data: form, isLoading } = useForm(formId)
   const [activeTab, setActiveTab] = useState<'response-analytics' | 'qr-analytics' | 'builder' | 'responses' | 'qr-codes'>('response-analytics')
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('lastOpenedFormId', formId)
+    } catch {
+      // ignore
+    }
+  }, [formId])
 
   const handleTabChange = useCallback((value: string) => {
     const nextTab = value as typeof activeTab

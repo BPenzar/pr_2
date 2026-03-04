@@ -75,7 +75,7 @@ export function ProjectSettingsPageClient({ projectId }: ProjectSettingsPageClie
 
     try {
       await deleteProject.mutateAsync(project.id)
-      router.replace('/dashboard')
+      router.replace('/forms')
     } catch (err: any) {
       setDeleteAlert({ type: 'error', text: err?.message || 'Failed to delete project. Please try again.' })
     }
